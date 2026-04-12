@@ -1,0 +1,21 @@
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Obsidian
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# Cursor / VS Code
+.vscode/
+*.log
+
+# Temporary files
+*.tmp
+~$*
+
+# Large media files (GitHub 100MB limit)
+*.mp4
+003-Kindle-Project/情報販売の落とし穴/00_参考資料_ここにファイルを入れる/
