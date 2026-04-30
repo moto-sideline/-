@@ -1,0 +1,116 @@
+@charset "utf-8";
+/* CSS Document */
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ul,
+ol,
+dl,
+dt,
+dt,
+dd,
+li,
+table,
+th,
+td,
+form,
+select,
+option,
+address,
+pre,
+strong,
+em,
+caption,
+cite,
+code,
+dfn,
+var,
+div {
+	margin: 0;
+	padding: 0;
+	text-decoration: none;
+	font-weight: normal;
+	font-style: normal;
+}
+img {
+	vertical-align: middle;
+	border-style: none;
+	max-width: 100%;
+	height: auto;
+}
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+caption,
+th {
+	text-align: left;
+}
+fieldset {
+	border: 0;
+}
+hr {
+	display: none;
+}
+ol,
+ul {
+	list-style: none;
+}
+ul ul,
+ol ul,
+ul ol,
+ol ol,
+dl ul,
+dl ol,
+dl dl,
+td td,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-size: 100%;
+}
+html {
+	overflow-y: scroll;
+}
+body a:hover {
+	text-decoration: none;
+}
+article, aside, details, figcaption, figure, footer, header, hgroup, main, menu, nav, section, summary {
+    display: block;
+}
+ul.disc li {
+	list-style: disc inside;
+}
+body,
+td,
+th {
+	word-wrap: break-word;
+}
+.clearfix::after, #page::after, #box::after, .main::after, .nav ul::after {
+  content: ""; 
+  display: block; 
+  clear: both;
+}
+*, ::before, ::after {
+    box-sizing: border-box;
+}
+p:last-child, .block:last-of-type, .register-block .register-info .text p:last-of-type {
+	padding-bottom: 0;
+}
+.text-center {
+	text-align: center;
+}
+.text-yellow {
+	color: #f4d400;
+}
+.d-flex {
+	display: flex;
+}

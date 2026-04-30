@@ -1,0 +1,40 @@
+$(document).ready(function() {
+
+	/*---------------- Detect Browser  ----------------*/
+	var ua = navigator.userAgent;
+	
+	var IE = ua.match(/msie/i),
+			IE6 = ua.match(/msie [6.]/i),
+			IE7 = ua.match(/msie [7.]/i),
+			IE8 = ua.match(/msie [8.]/i),
+			IE9 = ua.match(/msie [9.]/i),
+			IE10 = ua.match(/msie [10.]/i),
+			Chrome = ua.match(/chrome/i),
+			Safari = ua.match(/safari/i),
+			fireFox = ua.match(/firefox/i),
+			Opera = ua.match(/opera/i);
+		
+	if (IE) {
+			$("html").addClass('ie');
+			if (IE6) {
+					$("html").addClass('ie6');
+			} else if (IE7) {
+					$("html").addClass('ie7');
+			} else if (IE8) {
+					$("html").addClass('ie8');
+			} else if (IE9) {
+					$("html").addClass('ie9');
+			} else if (IE10) {
+					$("html").addClass('ie10');
+			}
+	}else if(Chrome){
+			$("html").addClass('chrome');
+	}else if(Safari){
+			$("html").addClass('safari');
+	}else if(fireFox){
+			$("html").addClass('firefox');
+	}else if(Opera){
+			$("html").addClass('opera');
+	}
+  
+});

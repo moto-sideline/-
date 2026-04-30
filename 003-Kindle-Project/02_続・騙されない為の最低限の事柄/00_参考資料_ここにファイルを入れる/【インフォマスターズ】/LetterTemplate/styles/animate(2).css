@@ -1,0 +1,52 @@
+@-webkit-keyframes bound {
+  0% {
+    transform: scale(.92);
+    box-shadow: 0 3px 6px -1px #888;
+    background: #c00;
+  }
+  100% {
+    transform:scale(1.02);
+    box-shadow: 0 8px 13px -4px #888;
+    background: #e60000
+  }
+}
+@-moz-keyframes bound {
+  0% {
+    transform: scale(.92);
+    box-shadow: 0 3px 6px -1px #888;
+    background: #c00;
+  }
+  100% {
+    transform:scale(1.02);
+    box-shadow: 0 8px 13px -4px #888;
+    background: #e60000
+  }
+}
+@-o-keyframes bound {
+  0% {
+    transform: scale(.92);
+    box-shadow: 0 3px 6px -1px #888;
+    background: #c00;
+  }
+  100% {
+    transform:scale(1.02);
+    box-shadow: 0 8px 13px -4px #888;
+    background: #e60000
+  }
+}
+@keyframes bound {
+  0% {
+    transform: scale(.92);
+    box-shadow: 0 3px 6px -1px #888;
+    background: #c00;
+  }
+  100% {
+    transform:scale(1.02);
+    box-shadow: 0 8px 13px -4px #888;
+    background: #e60000
+  }
+}
+
+.bound-animate {
+  animation: bound .5s ease-in infinite alternate;
+}

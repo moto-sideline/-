@@ -1,0 +1,53 @@
+﻿var cookie_name = 'countdown_cookie_12345'; // クッキー名
+var limit_days = (1 / 24 / 60); // カウントダウンの日数
+var jump_url = 'index2.html'; // 時間切れの時にジャンプさせるURL
+
+var first = 0;
+var limit = 0;
+
+$(function(){
+    first = get_firstaccess();
+    limit = first + (limit_days * 24 * 60 * 60 * 1000);
+    update_countdown();
+});
+
+/* 初回接続時のタイムスタンプを返す.これが初回接続ならクッキーも食べさせる. */
+function get_firstaccess(){
+    var first = ($.cookie(cookie_name));
+
+    if (!first){
+        // 初回アクセス
+        first = (new Date()).getTime();
+        $.cookie(cookie_name, first, {expires: 30000000}); // 30日くらい持たせる
+    }
+
+    return parseInt(first);
+}
+
+/* 実際に表示を更新. 時間切れなら指定したURLに飛ばす. */
+function update_countdown(){
+    var diff = (limit - (new Date()).getTime());
+    // 時間切れチェック
+    if (diff <= 0){
+    var text = '受付終了準備中';
+    $('.countdown').text(text); // 表示を更新
+        return;
+    }
+
+    var	day = Math.floor(diff / (24 * 60 * 60 * 1000));
+    var	hour = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    var	min = Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 1000)) % 60;
+    var	sec = Math.floor((diff % (24 * 60 * 60 * 1000)) / 1000) % 60 % 60;
+    var	mili = Math.floor((diff % (24 * 60 * 60 * 1000)) / 10) % 100;
+
+    var text =  num_format(sec) + '秒 ' + num_format(mili);
+    $('.countdown').text(text); // 表示を更新
+
+    setTimeout('update_countdown()', 10); // 10ms毎に更新
+}
+
+/* 数値を2桁に揃えるだけ */
+function num_format(num){
+    num = '00' + num;
+    return(num.substring(num.length -2, num.length));
+}
