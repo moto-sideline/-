@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Publishing Engine | Powered by Angie</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-feather-alt"></i>
+                <span>AI出版エンジン</span>
+            </div>
+            
+            <nav class="nav-group">
+                <div class="nav-item active">
+                    <i class="fas fa-comment-dots"></i>
+                    <span>対話・執筆</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-book"></i>
+                    <span>プロジェクト一覧</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-user-circle"></i>
+                    <span>プロフィール設定</span>
+                </div>
+                <div class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span>システム設定</span>
+                </div>
+            </nav>
+
+            <div class="nav-item">
+                <i class="fas fa-question-circle"></i>
+                <span>ヘルプ</span>
+            </div>
+        </aside>
+
+        <!-- Main Chat Section -->
+        <main class="chat-section">
+            <header class="section-header">
+                <div class="title-info">
+                    <h2>アンジーとの対話</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-dim);">現在のプロジェクト: 続・騙されない為の最低限の事柄</p>
+                </div>
+                <div class="actions">
+                    <button class="nav-item" style="border: 1px solid var(--border); padding: 8px 15px;">
+                        <i class="fas fa-sync"></i> 同期
+                    </button>
+                </div>
+            </header>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be injected here -->
+                <div class="message-wrapper angie">
+                    <div class="avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message angie">
+                        もとさん、こんばんは。今日はどんな「学び」を形にしましょうか？<br>
+                        考えをそのままここに流し込んでください。私が一冊の本へと編み上げます。
+                    </div>
+                    <div class="message-time">22:30</div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <textarea id="userInput" placeholder="ここに考えを流し込む..." rows="1"></textarea>
+                    <button class="send-btn" id="sendBtn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Manuscript Canvas (Right) -->
+        <section class="canvas-section">
+            <header class="section-header">
+                <h3>原稿キャンバス</h3>
+                <i class="fas fa-expand-alt" style="cursor: pointer; color: var(--text-dim);"></i>
+            </header>
+
+            <div class="canvas-content" id="manuscriptCanvas">
+                <div class="manuscript-card">
+                    <h4 style="color: var(--accent-primary); margin-bottom: 10px;">構成案（プロット）</h4>
+                    <div id="plotList">
+                        <div class="chapter-item">
+                            <span class="chapter-number">Chapter 1</span>
+                            <div class="chapter-title">なぜ職人が「別の顔」で書くのか</div>
+                        </div>
+                        <div class="chapter-item">
+                            <span class="chapter-number">Chapter 2</span>
+                            <div class="chapter-title">セールスレター解体新書</div>
+                        </div>
+                        <div class="chapter-item" style="opacity: 0.5;">
+                            <span class="chapter-number">Chapter 3</span>
+                            <div class="chapter-title">（対話から生成中...）</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="manuscript-card">
+                    <h4 style="margin-bottom: 15px;">ライブ・プレビュー</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-dim); font-style: italic;">
+                        「職人の世界で言えば、一分の狂いもなく設計された精巧な機械のようなものです...」
+                    </p>
+                </div>
+            </div>
+
+            <button class="crystallize-btn">
+                <i class="fas fa-gem"></i>
+                <span>原稿を研ぎ出し・出力</span>
+            </button>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
