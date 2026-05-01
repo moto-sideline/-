@@ -355,7 +355,83 @@ textarea:focus { outline: none; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Adjustments --- */
+
+/* Sidebar Toggle (Hidden on Desktop) */
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        bottom: 0;
+        z-index: 999;
+        transition: left 0.3s ease;
+        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .sidebar-toggle {
+        display: flex;
+    }
+
+    .main-workspace {
+        flex-direction: column;
+        padding-top: 60px;
+    }
+
+    .chat-section {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        flex: none;
+        height: 60vh;
+    }
+
+    .canvas-section {
+        height: 60vh;
+    }
+    
+    .chat-messages {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .quick-actions {
+        padding: 10px 15px;
+    }
+    
+    .action-btn {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .section-header h2, .section-header h3 {
+        font-size: 1rem;
+    }
 }

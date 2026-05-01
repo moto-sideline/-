@@ -185,4 +185,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // Simulate file selection
         addMessage("資料を読み込みました！内容をスキャンして、執筆のヒントとして活用させていただきますね。非常に興味深い内容です...", "angie");
     });
+
+    // Sidebar Toggle Logic
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+        const icon = sidebarToggle.querySelector('i');
+        if (sidebar.classList.contains('active')) {
+            icon.className = 'fas fa-times';
+        } else {
+            icon.className = 'fas fa-bars';
+        }
+    });
+
+    // Close sidebar when clicking main workspace on mobile
+    document.querySelector('.main-workspace').addEventListener('click', () => {
+        if (sidebar.classList.contains('active')) {
+            sidebar.classList.remove('active');
+            sidebarToggle.querySelector('i').className = 'fas fa-bars';
+        }
+    });
 });
