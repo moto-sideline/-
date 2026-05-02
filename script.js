@@ -1,4 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // アプリ（ウィンドウ）として起動した時の初期サイズを設定
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        // ウィンドウが大きすぎる場合のみ、指定のサイズにリサイズを試みる
+        if (window.innerWidth > 850) {
+            window.resizeTo(850, 850);
+        }
+    }
+
     const chatMessages = document.getElementById('chatMessages');
     const userInput = document.getElementById('userInput');
     const plotList = document.getElementById('plotList');
@@ -143,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close canvas when clicking chat area on mobile (if canvas is open)
     document.querySelector('.line-chat').addEventListener('click', (e) => {
-        if (window.innerWidth <= 900 && middleCanvas.classList.contains('active') && !e.target.closest('#toggleCanvasBtn')) {
+        if (window.innerWidth <= 700 && middleCanvas.classList.contains('active') && !e.target.closest('#toggleCanvasBtn')) {
             middleCanvas.classList.remove('active');
             toggleCanvasBtn.querySelector('i').className = 'fas fa-columns';
         }

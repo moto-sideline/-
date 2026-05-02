@@ -432,7 +432,7 @@ textarea:focus { outline: none; }
 }
 
 /* Responsive */
-@media (max-width: 900px) {
+@media (max-width: 700px) {
     .line-middle {
         position: absolute;
         left: 60px;
