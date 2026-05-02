@@ -87,20 +87,24 @@ body {
 
 /* Column 2: Middle Canvas / List */
 .line-middle {
-    width: 320px;
+    width: 0; /* デフォルトで閉じる（またはPCでの初期状態を制御） */
     flex-shrink: 0;
     background-color: var(--line-middle-bg);
-    border-right: 1px solid var(--line-middle-border);
+    border-right: none;
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease, transform 0.3s ease;
+    transition: width 0.3s ease, opacity 0.3s ease;
     z-index: 90;
     overflow-x: hidden;
+    opacity: 0;
+    pointer-events: none;
 }
 
-.line-middle.hidden {
-    width: 0;
-    border-right: none;
+.line-middle.active {
+    width: 320px;
+    border-right: 1px solid var(--line-middle-border);
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .middle-header {
@@ -265,7 +269,7 @@ body {
 }
 
 .toggle-btn {
-    display: none; /* Hidden by default if window is wide enough */
+    display: block; /* PCでもスマホでも常に表示して、自由に開閉できるようにする */
 }
 
 /* Chat Messages */
@@ -440,16 +444,22 @@ textarea:focus { outline: none; }
         bottom: 0;
         transform: translateX(-100%);
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        width: calc(100vw - 60px); /* 画面幅に合わせて可変に */
-        max-width: 320px; /* ただし320pxは超えないように */
+        width: calc(100vw - 60px);
+        max-width: 320px;
+        opacity: 1;
+        pointer-events: auto;
+        border-right: 1px solid var(--line-middle-border);
     }
 
     .line-middle.active {
+        width: calc(100vw - 60px);
+        max-width: 320px;
         transform: translateX(0);
+        opacity: 1;
     }
 
     .toggle-btn {
-        display: block; /* Show toggle button on narrow screens */
+        display: block;
     }
 }
 
