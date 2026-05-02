@@ -133,16 +133,25 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessage("資料を読み込みました！執筆のヒントとして活用させていただきますね。", "angie");
     });
 
-    // Toggle Canvas Logic (for narrow screens)
+    // Toggle Canvas Logic
     const toggleCanvasBtn = document.getElementById('toggleCanvasBtn');
     const middleCanvas = document.getElementById('middleCanvas');
     
     toggleCanvasBtn.addEventListener('click', () => {
-        middleCanvas.classList.toggle('active');
+        // PCとスマホで挙動を分ける
+        if (window.innerWidth > 750) {
+            // PCでは「隠す（hidden）」を切り替え
+            middleCanvas.classList.toggle('hidden');
+        } else {
+            // スマホでは「表示（active）」を切り替え
+            middleCanvas.classList.toggle('active');
+        }
         
-        // Icon change
+        // アイコンの切り替え
         const icon = toggleCanvasBtn.querySelector('i');
-        if (middleCanvas.classList.contains('active')) {
+        const isVisible = window.innerWidth > 750 ? !middleCanvas.classList.contains('hidden') : middleCanvas.classList.contains('active');
+        
+        if (isVisible) {
             icon.className = 'fas fa-times';
         } else {
             icon.className = 'fas fa-columns';

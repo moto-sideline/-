@@ -87,24 +87,35 @@ body {
 
 /* Column 2: Middle Canvas / List */
 .line-middle {
-    width: 0; /* デフォルトで閉じる（またはPCでの初期状態を制御） */
-    flex-shrink: 0;
+    flex: 1; /* 50:50 の比率 */
+    min-width: 0;
     background-color: var(--line-middle-bg);
-    border-right: none;
+    border-right: 1px solid var(--line-middle-border);
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease, opacity 0.3s ease;
+    transition: all 0.3s ease;
     z-index: 90;
     overflow-x: hidden;
+    opacity: 1;
+}
+
+/* 非表示・スマホ時の状態 */
+.line-middle.hidden {
+    flex: 0;
+    width: 0;
+    border-right: none;
     opacity: 0;
     pointer-events: none;
 }
 
-.line-middle.active {
-    width: 320px;
-    border-right: 1px solid var(--line-middle-border);
-    opacity: 1;
-    pointer-events: auto;
+/* Column 3: Main Chat Area */
+.line-chat {
+    flex: 1; /* 50:50 の比率 */
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+    background-color: var(--line-chat-bg);
 }
 
 .middle-header {
@@ -203,14 +214,7 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Column 3: Main Chat Area */
-.line-chat {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    position: relative;
-}
+/* (Removed duplicate definition) */
 
 .chat-header {
     height: 60px;
@@ -436,45 +440,29 @@ textarea:focus { outline: none; }
 }
 
 /* Responsive */
-@media (max-width: 700px) {
+@media (max-width: 750px) {
     .line-middle {
+        /* 画面が狭くなったら自動的に非表示（hiddenと同じ状態）に */
+        flex: 0;
+        width: 0;
+        border-right: none;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .line-middle.active {
+        /* スマホでボタンを押した時だけ、チャットの上に重ねて表示 */
         position: absolute;
         left: 60px;
         top: 0;
         bottom: 0;
-        transform: translateX(-100%);
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         width: calc(100vw - 60px);
-        max-width: 320px;
+        flex: none;
         opacity: 1;
         pointer-events: auto;
-        border-right: 1px solid var(--line-middle-border);
-    }
-
-    .line-middle.active {
-        width: calc(100vw - 60px);
-        max-width: 320px;
         transform: translateX(0);
-        opacity: 1;
-    }
-
-    .toggle-btn {
-        display: block;
-    }
-}
-
-@media (max-width: 500px) {
-    .line-middle {
-        width: calc(100vw - 60px);
-    }
-    
-    .chat-header-right .header-icon {
-        padding: 0 5px;
-        font-size: 1.1rem;
-    }
-
-    .chat-title h2 {
-        font-size: 1rem;
+        z-index: 200;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.2);
     }
 }
 
