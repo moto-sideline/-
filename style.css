@@ -440,7 +440,8 @@ textarea:focus { outline: none; }
         bottom: 0;
         transform: translateX(-100%);
         box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        width: 320px;
+        width: calc(100vw - 60px); /* 画面幅に合わせて可変に */
+        max-width: 320px; /* ただし320pxは超えないように */
     }
 
     .line-middle.active {
@@ -458,8 +459,12 @@ textarea:focus { outline: none; }
     }
     
     .chat-header-right .header-icon {
-        margin-left: 5px;
-        gap: 5px;
+        padding: 0 5px;
+        font-size: 1.1rem;
+    }
+
+    .chat-title h2 {
+        font-size: 1rem;
     }
 }
 
