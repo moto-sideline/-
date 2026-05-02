@@ -1,0 +1,17 @@
+{
+  "name": "AI-Angie-App",
+  "short_name": "Angie",
+  "description": "AI Publishing Engine Powered by Angie",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#7494c0",
+  "theme_color": "#212121",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2592/2592230.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
