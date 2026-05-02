@@ -76,22 +76,52 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = '';
         userInput.style.height = 'auto';
 
+        // キャンバスの処理エフェクト
+        const middleCanvas = document.getElementById('middleCanvas');
+        middleCanvas.style.opacity = '0.7';
+
         // Simulate AI thinking
         setTimeout(() => {
-            let response = "承知しました。その大切な想い、しっかりと受け止めました。";
+            middleCanvas.style.opacity = '1';
+            let response = "";
             
-            // Basic logic to add plot
-            if (text.includes("章") || text.includes("構成")) {
-                const chapterTitle = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : (text.length > 10 ? text.substring(0, 10) + "..." : text);
-                response = `素晴らしいですね。「${chapterTitle}」として、構成案（プロット）に組み込んでおきました。`;
+            // --- 高度な解釈ロジック ---
+            
+            // 1. 本の企画・アイデアを提案された場合
+            if (text.includes("書きたい") || text.includes("本にしたい") || text.includes("テーマ")) {
+                const theme = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : text.replace(/(書きたい|本にしたい|テーマ|について)/g, "").trim();
+                
+                response = `『${theme}』ですね。素晴らしいテーマです！読者の心に刺さるよう、このような3章構成（プロット）を組んでみましたがいかがでしょうか？右側のキャンバスに展開しておきますね。`;
+                
+                // 3つの構成案を自動生成
+                const suggestions = [
+                    `なぜ今、${theme}が必要なのか`,
+                    `実践：${theme}を形にする技術`,
+                    `未来：${theme}がもたらす変化`
+                ];
+                
+                plotList.innerHTML = ''; // クリア
+                suggestions.forEach((item, index) => {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'chapter-item';
+                    newItem.innerHTML = `
+                        <div class="chapter-info">
+                            <span class="chapter-number">Chapter ${index + 1}</span>
+                            <div class="chapter-title">${item}</div>
+                        </div>
+                    `;
+                    plotList.appendChild(newItem);
+                });
+
+            } 
+            // 2. 章の追加や修正の場合
+            else if (text.includes("章") || text.includes("構成") || text.includes("追加")) {
+                const chapterTitle = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : (text.length > 15 ? text.substring(0, 15) + "..." : text);
+                response = `承知しました。「${chapterTitle}」を新しい章として構成に組み込みました。物語の厚みがさらに増しましたね。`;
                 
                 const currentChapters = document.querySelectorAll('.chapter-item:not(.empty)');
                 const nextNum = currentChapters.length + 1;
                 
-                // Remove empty indicator if exists
-                const emptyNode = document.querySelector('.chapter-item.empty');
-                if (emptyNode) emptyNode.remove();
-
                 const newItem = document.createElement('div');
                 newItem.className = 'chapter-item';
                 newItem.innerHTML = `
@@ -101,18 +131,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 plotList.appendChild(newItem);
-            } else {
-                // Update Live Preview
+            } 
+            // 3. 執筆内容（想い）の入力の場合
+            else {
+                response = "その視点、非常に鋭いです！もとさんの「生の声」が聞こえてくるようです。その想いを核にして、読者が読みやすい文章に研ぎ出しておきます。";
+                
+                // ライブプレビューの更新（少し装飾をリッチに）
                 const previewArea = document.querySelector('.preview-text');
-                previewArea.innerHTML = `『${text}』<br><br><span style="color:#d4af37; font-size:0.85rem;">✨ アンジーの眼差し：この言葉が読者の心に深く刺さる一節になりそうです。</span>`;
+                previewArea.innerHTML = `
+                    <span style="color:var(--text-meta); display:block; margin-bottom:10px;">【アンジーによる執筆プレビュー】</span>
+                    「${text}」<br><br>
+                    <span style="color:var(--accent-gold); font-size:0.85rem; border-top:1px dashed #ccc; display:block; padding-top:10px;">
+                        ✨ アンジーの眼差し：この言葉の裏にある「職人の矜持」を強調することで、読者の信頼を勝ち取れる一節になります。
+                    </span>
+                `;
             }
 
             addMessage(response, 'angie');
             
-            // Scroll to bottom of canvas if active
             const middleContent = document.querySelector('.middle-content');
             if(middleContent) middleContent.scrollTop = middleContent.scrollHeight;
-        }, 1000);
+        }, 1200);
     };
 
     // Handle Enter key for send
