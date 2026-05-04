@@ -10,6 +10,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatMessages = document.getElementById('chatMessages');
     const userInput = document.getElementById('userInput');
     const plotList = document.getElementById('plotList');
+    const previewArea = document.querySelector('.preview-text');
+
+    // --- 状態管理と永続化のロジック ---
+    let appState = {
+        chatHistory: [],
+        plots: [],
+        preview: ''
+    };
+
+    const saveData = () => {
+        localStorage.setItem('magicLampState', JSON.stringify(appState));
+    };
+
+    const loadData = () => {
+        const saved = localStorage.getItem('magicLampState');
+        if (saved) {
+            appState = JSON.parse(saved);
+            
+            // チャット履歴の復元
+            appState.chatHistory.forEach(msg => {
+                renderMessage(msg.text, msg.sender, msg.time);
+            });
+
+            // プロットの復元
+            renderPlots();
+
+            // プレビューの復元
+            if (appState.preview) {
+                previewArea.innerHTML = appState.preview;
+            }
+        } else {
+            // 初期メッセージ（履歴がない場合）
+            addMessage("もとさん、おはようございます！今日はどんな物語を紡ぎましょうか？", "angie");
+        }
+    };
+
+    const renderPlots = () => {
+        plotList.innerHTML = '';
+        appState.plots.forEach((item, index) => {
+            const newItem = document.createElement('div');
+            newItem.className = 'chapter-item';
+            newItem.innerHTML = `
+                <div class="chapter-info">
+                    <span class="chapter-number">Chapter ${index + 1}</span>
+                    <div class="chapter-title">${item}</div>
+                </div>
+            `;
+            plotList.appendChild(newItem);
+        });
+    };
 
     // Auto-resize textarea
     userInput.addEventListener('input', function() {
@@ -25,8 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${ampm} ${displayHours}:${mins}`;
     };
 
-    const addMessage = (text, sender) => {
-        const timeStr = formatTime(new Date());
+    const renderMessage = (text, sender, timeStr) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
         
@@ -50,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             innerHTML = `
                 <div class="avatar"><i class="fas fa-robot"></i></div>
                 <div class="message-content">
-                    <div class="sender-name">アンジー</div>
+                    <div class="sender-name">ジーニー</div>
                     <div class="bubble-row">
                         <div class="bubble angie">
                             ${text.replace(/\n/g, '<br>')}
@@ -66,6 +115,13 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = innerHTML;
         chatMessages.appendChild(wrapper);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+    };
+
+    const addMessage = (text, sender) => {
+        const timeStr = formatTime(new Date());
+        appState.chatHistory.push({ text, sender, time: timeStr });
+        renderMessage(text, sender, timeStr);
+        saveData();
     };
 
     const handleSend = () => {
@@ -94,24 +150,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 response = `『${theme}』ですね。素晴らしいテーマです！読者の心に刺さるよう、このような3章構成（プロット）を組んでみましたがいかがでしょうか？右側のキャンバスに展開しておきますね。`;
                 
                 // 3つの構成案を自動生成
-                const suggestions = [
+                appState.plots = [
                     `なぜ今、${theme}が必要なのか`,
                     `実践：${theme}を形にする技術`,
                     `未来：${theme}がもたらす変化`
                 ];
-                
-                plotList.innerHTML = ''; // クリア
-                suggestions.forEach((item, index) => {
-                    const newItem = document.createElement('div');
-                    newItem.className = 'chapter-item';
-                    newItem.innerHTML = `
-                        <div class="chapter-info">
-                            <span class="chapter-number">Chapter ${index + 1}</span>
-                            <div class="chapter-title">${item}</div>
-                        </div>
-                    `;
-                    plotList.appendChild(newItem);
-                });
+                renderPlots();
+                saveData();
 
             } 
             // 2. 章の追加や修正の場合
@@ -119,32 +164,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const chapterTitle = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : (text.length > 15 ? text.substring(0, 15) + "..." : text);
                 response = `承知しました。「${chapterTitle}」を新しい章として構成に組み込みました。物語の厚みがさらに増しましたね。`;
                 
-                const currentChapters = document.querySelectorAll('.chapter-item:not(.empty)');
-                const nextNum = currentChapters.length + 1;
-                
-                const newItem = document.createElement('div');
-                newItem.className = 'chapter-item';
-                newItem.innerHTML = `
-                    <div class="chapter-info">
-                        <span class="chapter-number">Chapter ${nextNum}</span>
-                        <div class="chapter-title">${chapterTitle}</div>
-                    </div>
-                `;
-                plotList.appendChild(newItem);
+                appState.plots.push(chapterTitle);
+                renderPlots();
+                saveData();
             } 
             // 3. 執筆内容（想い）の入力の場合
             else {
                 response = "その視点、非常に鋭いです！もとさんの「生の声」が聞こえてくるようです。その想いを核にして、読者が読みやすい文章に研ぎ出しておきます。";
                 
-                // ライブプレビューの更新（少し装飾をリッチに）
-                const previewArea = document.querySelector('.preview-text');
-                previewArea.innerHTML = `
-                    <span style="color:var(--text-meta); display:block; margin-bottom:10px;">【アンジーによる執筆プレビュー】</span>
+                // ライブプレビューの更新
+                appState.preview = `
+                    <span style="color:var(--text-meta); display:block; margin-bottom:10px;">【ジーニーによる執筆プレビュー】</span>
                     「${text}」<br><br>
                     <span style="color:var(--accent-gold); font-size:0.85rem; border-top:1px dashed #ccc; display:block; padding-top:10px;">
-                        ✨ アンジーの眼差し：この言葉の裏にある「職人の矜持」を強調することで、読者の信頼を勝ち取れる一節になります。
+                        ✨ ジーニーの眼差し：この言葉の裏にある「職人の矜持」を強調することで、読者の信頼を勝ち取れる一節になります。
                     </span>
                 `;
+                previewArea.innerHTML = appState.preview;
+                saveData();
             }
 
             addMessage(response, 'angie');
@@ -233,4 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('theme', 'light');
         }
     });
+
+    // 最後にデータをロード
+    loadData();
 });

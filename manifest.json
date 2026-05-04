@@ -1,7 +1,7 @@
 {
-  "name": "AI-Angie-App",
-  "short_name": "Angie",
-  "description": "AI Publishing Engine Powered by Angie",
+  "name": "Magic Lamp Engine",
+  "short_name": "Genie",
+  "description": "Magic Lamp Engine Powered by Genie",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#7494c0",

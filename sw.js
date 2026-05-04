@@ -1,4 +1,4 @@
-const CACHE_NAME = 'angie-app-v1';
+const CACHE_NAME = 'magic-lamp-v1';
 const urlsToCache = [
   './',
   './index.html',
