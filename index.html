@@ -2,14 +2,29 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Lamp Engine | Powered by Genie</title>
-    <link rel="stylesheet" href="style.css?v=4">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Magic Lamp Engine | ジーニー</title>
+    
+    <!-- PWA Metadata -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#7494c0">
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <!-- External Assets -->
+    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('Genie is ready!', reg.scope);
+                }).catch(err => {
+                    console.log('Magic failed...', err);
+                });
+            });
         }
     </script>
 </head>
@@ -19,22 +34,22 @@
         <!-- 1列目: 左端の細いナビゲーションバー -->
         <nav class="line-nav">
             <div class="nav-top">
-                <div class="nav-icon active"><i class="fas fa-user"></i></div>
-                <div class="nav-icon"><i class="fas fa-comment-dots"></i><span class="badge">1</span></div>
-                <div class="nav-icon"><i class="fas fa-feather-alt"></i></div>
-                <div class="nav-icon"><i class="fas fa-book"></i></div>
-                <div class="nav-icon"><i class="fab fa-line"></i></div>
+                <div class="nav-icon active" title="ホーム"><i class="fas fa-home"></i></div>
+                <div class="nav-icon" title="メッセージ"><i class="fas fa-comment-dots"></i><span class="badge">1</span></div>
+                <div class="nav-icon" title="執筆記録"><i class="fas fa-feather-alt"></i></div>
+                <div class="nav-icon" title="本棚"><i class="fas fa-book"></i></div>
+                <div class="nav-icon" title="外部連携"><i class="fab fa-line"></i></div>
             </div>
             <div class="nav-bottom">
-                <div class="nav-icon" id="themeToggleBtn"><i class="fas fa-moon"></i></div>
-                <div class="nav-icon"><i class="fas fa-cog"></i></div>
+                <div class="nav-icon" id="themeToggleBtn" title="テーマ切替"><i class="fas fa-moon"></i></div>
+                <div class="nav-icon" title="設定"><i class="fas fa-cog"></i></div>
             </div>
         </nav>
 
-        <!-- 2列目: 中央のキャンバス（LINEのトーク一覧にあたる部分） -->
+        <!-- 2列目: 中央のキャンバス（ワークスペース） -->
         <section class="line-middle" id="middleCanvas">
             <div class="middle-header">
-                <h2>Magic Lamp Engine</h2>
+                <h2>原稿キャンバス</h2>
                 <div class="header-actions">
                     <i class="fas fa-sort-amount-down"></i>
                 </div>
@@ -53,33 +68,16 @@
                 <div class="manuscript-card">
                     <h4>構成案（プロット）</h4>
                     <div id="plotList">
-                        <div class="chapter-item">
-                            <div class="chapter-info">
-                                <span class="chapter-number">Chapter 1</span>
-                                <div class="chapter-title">なぜ職人が「別の顔」で書くのか</div>
-                            </div>
-                        </div>
-                        <div class="chapter-item">
-                            <div class="chapter-info">
-                                <span class="chapter-number">Chapter 2</span>
-                                <div class="chapter-title">セールスレター解体新書</div>
-                            </div>
-                        </div>
-                        <div class="chapter-item empty">
-                            <div class="chapter-info">
-                                <span class="chapter-number">Chapter 3</span>
-                                <div class="chapter-title">（対話から生成中...）</div>
-                            </div>
-                        </div>
+                        <!-- 以前のプロットがここに表示されます -->
                     </div>
                 </div>
 
                 <!-- Live Preview -->
                 <div class="manuscript-card">
                     <h4>ライブ・プレビュー</h4>
-                    <p class="preview-text">
-                        「職人の世界で言えば、一分の狂いもなく設計された精巧な機械のようなものです...」
-                    </p>
+                    <div id="previewArea" class="preview-text">
+                        メッセージから魔法を紡ぎ出します...
+                    </div>
                 </div>
 
                 <button class="crystallize-btn">
@@ -88,56 +86,24 @@
             </div>
         </section>
 
-        <!-- 3列目: 右側のトーク画面 -->
+        <!-- 3列目: 右側のチャット画面 -->
         <main class="line-chat">
             <header class="chat-header">
                 <div class="chat-header-left">
-                    <div class="chat-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="chat-avatar"><i class="fas fa-bolt"></i></div>
                     <div class="chat-title">
                         <h2>ジーニー</h2>
-                        <div class="chat-subtitle">プロジェクト: 続・騙されない為の最低限の事柄</div>
+                        <div class="chat-subtitle">AI Writing Partner</div>
                     </div>
                 </div>
                 <div class="chat-header-right">
-                    <button class="header-icon"><i class="fas fa-search"></i></button>
-                    <button class="header-icon"><i class="fas fa-phone-alt"></i></button>
-                    <button class="header-icon"><i class="fas fa-file-alt"></i></button>
-                    <button class="header-icon toggle-btn" id="toggleCanvasBtn"><i class="fas fa-columns"></i></button>
+                    <button class="header-icon" title="検索"><i class="fas fa-search"></i></button>
+                    <button class="header-icon toggle-btn" id="toggleCanvasBtn" title="ワークスペース切替"><i class="fas fa-columns"></i></button>
                 </div>
             </header>
 
             <div class="chat-messages" id="chatMessages">
-                <!-- Angie Message -->
-                <div class="message-wrapper angie">
-                    <div class="avatar"><i class="fas fa-robot"></i></div>
-                    <div class="message-content">
-                        <div class="sender-name">ジーニー</div>
-                        <div class="bubble-row">
-                            <div class="bubble angie">
-                                もとさん、こんばんは。今日はどんな「願い（アイデア）」を形にしましょうか？<br>
-                                ランプをこするように、考えをそのままここに流し込んでください。私が一冊の本へと編み上げます。
-                            </div>
-                            <div class="message-meta">
-                                <span class="time">午後 10:30</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Message -->
-                <div class="message-wrapper user">
-                    <div class="message-content">
-                        <div class="bubble-row">
-                            <div class="message-meta">
-                                <span class="read">既読</span>
-                                <span class="time">午後 10:35</span>
-                            </div>
-                            <div class="bubble user">
-                                今回は第4章の「職人の指先のブレーキ」について深掘りしたいな。
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- メッセージがここに表示されます -->
             </div>
 
             <div class="chat-input-area">
@@ -148,8 +114,8 @@
                 </div>
                 <div class="input-container">
                     <textarea id="userInput" placeholder="メッセージを入力" rows="1"></textarea>
-                    <div class="input-actions">
-                        <i class="far fa-smile tool-icon"></i>
+                    <div class="input-actions" id="sendBtn">
+                        <i class="fas fa-paper-plane tool-icon" style="color: var(--accent); cursor: pointer;"></i>
                     </div>
                 </div>
             </div>
@@ -157,6 +123,6 @@
         
     </div>
 
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>

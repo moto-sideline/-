@@ -1,17 +1,28 @@
 {
   "name": "Magic Lamp Engine",
-  "short_name": "Genie",
-  "description": "Magic Lamp Engine Powered by Genie",
+  "short_name": "ジーニー",
+  "description": "もとさんのKindle出版を加速させる魔法のランプ・エンジン",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#7494c0",
-  "theme_color": "#212121",
+  "background_color": "#abc1d1",
+  "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/2592/2592230.png",
-      "sizes": "512x512",
+      "src": "icon.png",
+      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
-  ]
+  ],
+  "scope": "./"
 }

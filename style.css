@@ -9,7 +9,7 @@
     
     --line-chat-bg: #7494c0; /* LINE Blue */
     --line-bubble-user: #85e249; /* LINE Green */
-    --line-bubble-angie: #ffffff;
+    --line-bubble-genie: #ffffff;
     
     --text-main: #111111;
     --text-dim: #8b949e;
@@ -87,7 +87,7 @@ body {
 
 /* Column 2: Middle Canvas / List */
 .line-middle {
-    flex: 1; /* 50:50 の比率 */
+    flex: 1;
     min-width: 0;
     background-color: var(--line-middle-bg);
     border-right: 1px solid var(--line-middle-border);
@@ -99,7 +99,6 @@ body {
     opacity: 1;
 }
 
-/* 非表示・スマホ時の状態 */
 .line-middle.hidden {
     flex: 0;
     width: 0;
@@ -110,7 +109,7 @@ body {
 
 /* Column 3: Main Chat Area */
 .line-chat {
-    flex: 1; /* 50:50 の比率 */
+    flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -214,8 +213,6 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* (Removed duplicate definition) */
-
 .chat-header {
     height: 60px;
     background-color: #ffffff;
@@ -273,7 +270,7 @@ body {
 }
 
 .toggle-btn {
-    display: block; /* PCでもスマホでも常に表示して、自由に開閉できるようにする */
+    display: block;
 }
 
 /* Chat Messages */
@@ -340,18 +337,18 @@ body {
     word-break: break-word;
 }
 
-.bubble.angie {
-    background-color: var(--line-bubble-angie);
+.bubble.genie {
+    background-color: var(--line-bubble-genie);
     border-top-left-radius: 4px;
 }
 
-.bubble.angie::before {
+.bubble.genie::before {
     content: '';
     position: absolute;
     top: 10px;
     left: -8px;
     border: 8px solid transparent;
-    border-right-color: var(--line-bubble-angie);
+    border-right-color: var(--line-bubble-genie);
     border-left: 0;
     border-top: 0;
 }
@@ -442,7 +439,6 @@ textarea:focus { outline: none; }
 /* Responsive */
 @media (max-width: 750px) {
     .line-middle {
-        /* 画面が狭くなったら自動的に非表示（hiddenと同じ状態）に */
         flex: 0;
         width: 0;
         border-right: none;
@@ -451,7 +447,6 @@ textarea:focus { outline: none; }
     }
 
     .line-middle.active {
-        /* スマホでボタンを押した時だけ、チャットの上に重ねて表示 */
         position: absolute;
         left: 60px;
         top: 0;
@@ -473,7 +468,7 @@ body.dark-theme {
     --line-middle-border: #2c2c2c;
     --line-chat-bg: #0b141a;
     --line-bubble-user: #005c4b;
-    --line-bubble-angie: #202c33;
+    --line-bubble-genie: #202c33;
     --text-main: #e9edef;
     --text-dim: #8696a0;
     --text-meta: #8696a0;
