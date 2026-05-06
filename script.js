@@ -26,17 +26,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (saved) {
             appState = JSON.parse(saved);
             renderAll();
+            // Returning user greeting
+            addMessage("おかえりなさい！また一緒に魔法を紡げるのを楽しみにしていました。続きから始めましょうか？", 'genie');
         } else {
-            // Initial Welcome Message
-            const welcomeText = "もとさん、おかえりなさい！\n新しくなった『Magic Lamp Engine』へようこそ。\n\nランプの煤を払い、より強力な魔法（ジーニー）を宿しました。今日はどんな願い（アイデア）を形にしましょうか？";
-            addMessage(welcomeText, 'genie');
+            // Detailed First-time Onboarding
+            const introLines = [
+                "初めまして！私はジーニー。あなたの『本を書きたい』という願いを叶えるためにやってきました。🧞‍♂️✨",
+                "難しいことは何もいりません。あなたが誰かに伝えたいこと、大切にしている想いを、私にそのまま話しかけてください。",
+                "まずは、あなたが今考えている『本のテーマ』や『気になるキーワード』を一つ、教えていただけますか？そこから一緒に物語を編み上げていきましょう。"
+            ];
+            introLines.forEach((line, index) => {
+                setTimeout(() => addMessage(line, 'genie'), index * 1000);
+            });
         }
 
         // Theme preference
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             body.classList.add('dark-theme');
-            themeToggleBtn.querySelector('i').className = 'fas fa-sun';
+            const icon = themeToggleBtn.querySelector('i');
+            if (icon) icon.className = 'fas fa-sun';
         }
     };
 
@@ -137,22 +146,22 @@ document.addEventListener('DOMContentLoaded', () => {
             let response = "";
             
             if (text.includes("書きたい") || text.includes("テーマ")) {
-                const theme = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : "素晴らしいテーマ";
-                response = `『${theme}』ですね。もとさんの情熱が伝わってきます！\nその想いを骨格（プロット）に落とし込んでみました。ワークスペースを確認してみてください。`;
+                const theme = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : text.replace("について書きたい", "").trim();
+                response = `『${theme}』、とても素敵なテーマですね！\nあなたの想いを大切に受け取って、まずは3つの章からなる「骨格（プロット）」を組み立ててみました。\n\n画面の左側（ワークスペース）を確認してみてください。`;
                 
                 appState.plots = [
-                    `${theme}の真実と誤解`,
-                    `実践：${theme}を極めるステップ`,
-                    `到達点：${theme}が変える未来`
+                    `${theme}の真実と、私たちが知るべきこと`,
+                    `実践：${theme}を一歩ずつ形にする方法`,
+                    `未来への展望：${theme}がもたらす変化`
                 ];
                 renderPlots();
             } else {
-                response = "その言葉、いいですね！読者の心に深く刺さるよう、表現を研ぎ澄ましておきます。プレビューに反映させました。";
+                response = "そのお話、もっと詳しく聞かせてください。読者の心に深く刺さる一冊にするために、あなたの言葉を一つひとつ研ぎ澄ませていきますね。";
                 appState.preview = `
                     <span style="color:var(--text-meta); display:block; margin-bottom:10px;">【ジーニーによる執筆プレビュー】</span>
                     「${text}」<br><br>
                     <span style="color:var(--accent-gold); font-size:0.85rem; border-top:1px dashed var(--line-middle-border); display:block; padding-top:10px;">
-                        ✨ ジーニーの眼差し：この言葉の裏にある「執筆の情熱」を強調することで、読者の信頼を勝ち取れる一節になります。
+                        ✨ ジーニーの眼差し：この言葉には、読者の悩みに対する「答え」が隠されています。ここを深掘りすることで、信頼される本になりますよ。
                     </span>
                 `;
                 previewArea.innerHTML = appState.preview;
