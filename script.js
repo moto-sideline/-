@@ -14,7 +14,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let appState = {
         chatHistory: [],
         plots: [],
-        preview: ''
+        preview: '',
+        knowledge: '',
+        userName: null,
+        onboardingStep: 0 // 0: 名前確認中, 1: テーマ確認中, 2: 通常モード
+    };
+
+    // 敬称（さん、さま等）の重複を防ぐヘルパー関数
+    const formatName = (name) => {
+        if (!name) return '';
+        // すでに敬称がついている場合はそのまま返す
+        if (name.match(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/)) {
+            return name;
+        }
+        return `${name}さん`;
     };
 
     const saveData = () => {
@@ -25,22 +38,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const saved = localStorage.getItem('magicLampState');
         if (saved) {
             appState = JSON.parse(saved);
+            // 互換性のため古いデータへの対応
+            if (appState.onboardingStep === undefined) appState.onboardingStep = 2;
+            
             renderAll();
-            // Returning user greeting
-            addMessage("おかえりなさい！また一緒に魔法を紡げるのを楽しみにしていました。続きから始めましょうか？", 'genie');
+            
+            // セッション開始時のみの挨拶（履歴には残さない）
+            setTimeout(() => {
+                const nameStr = appState.userName ? `${formatName(appState.userName)}、` : '';
+                renderMessage(`おかえりなさい！${nameStr}また一緒に魔法を紡げるのを楽しみにしていました。続きから始めましょうか？`, 'genie', formatTime());
+            }, 500);
         } else {
-            // Detailed First-time Onboarding
+            // 初回オンボーディング（名前を尋ねる）
+            appState.onboardingStep = 0;
             const introLines = [
                 "初めまして！私はジーニー。あなたの『本を書きたい』という願いを叶えるためにやってきました。🧞‍♂️✨",
-                "難しいことは何もいりません。あなたが誰かに伝えたいこと、大切にしている想いを、私にそのまま話しかけてください。",
-                "まずは、あなたが今考えている『本のテーマ』や『気になるキーワード』を一つ、教えていただけますか？そこから一緒に物語を編み上げていきましょう。"
+                "難しいことは何もいりません。私があなたの思考を引き出し、整理していきますので、リラックスして話しかけてくださいね。",
+                "まずは、あなたの名前を教えていただけますか？ニックネームやペンネームでも大丈夫です。これからあなたをその名前でお呼びしますね。"
             ];
             introLines.forEach((line, index) => {
                 setTimeout(() => addMessage(line, 'genie'), index * 1000);
             });
         }
 
-        // Theme preference
+        // テーマの復元
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             body.classList.add('dark-theme');
@@ -141,35 +162,189 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = '';
         userInput.style.height = 'auto';
 
-        // Simulated thinking effect
+        // ジーニーの思考中エフェクト
         setTimeout(() => {
             let response = "";
             
-            if (text.includes("書きたい") || text.includes("テーマ")) {
-                const theme = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : text.replace("について書きたい", "").trim();
-                response = `『${theme}』、とても素敵なテーマですね！\nあなたの想いを大切に受け取って、まずは3つの章からなる「骨格（プロット）」を組み立ててみました。\n\n画面の左側（ワークスペース）を確認してみてください。`;
+            // オンボーディング：名前の確認
+            if (appState.onboardingStep === 0) {
+                // 名前の抽出ロジック（挨拶、一人称、語尾を除去）
+                let name = text
+                    .replace(/^(はじめまして|こんにちは|こんばんは|あの、|あの|あ、|えっと|やっぱり|やっぱ|じゃあ|それでは|そうしたら)[、。\s]*/g, '') // 挨拶・つなぎ言葉を除去
+                    .replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)(は|の名前は|のなまえは|って)[、。\s]*/g, '') // 一人称を除去
+                    .replace(/(です|と申します|と言います|だよ|だ|って呼んで.*|と呼んで.*|でお願いします).*$/g, '') // 語尾を除去
+                    .replace(/^[、。\s]+|[、。\s]+$/g, '') // 先頭や末尾に残った余計な記号を削除
+                    .trim();
                 
-                appState.plots = [
-                    `${theme}の真実と、私たちが知るべきこと`,
-                    `実践：${theme}を一歩ずつ形にする方法`,
-                    `未来への展望：${theme}がもたらす変化`
-                ];
-                renderPlots();
-            } else {
-                response = "そのお話、もっと詳しく聞かせてください。読者の心に深く刺さる一冊にするために、あなたの言葉を一つひとつ研ぎ澄ませていきますね。";
-                appState.preview = `
-                    <span style="color:var(--text-meta); display:block; margin-bottom:10px;">【ジーニーによる執筆プレビュー】</span>
-                    「${text}」<br><br>
-                    <span style="color:var(--accent-gold); font-size:0.85rem; border-top:1px dashed var(--line-middle-border); display:block; padding-top:10px;">
-                        ✨ ジーニーの眼差し：この言葉には、読者の悩みに対する「答え」が隠されています。ここを深掘りすることで、信頼される本になりますよ。
-                    </span>
-                `;
-                previewArea.innerHTML = appState.preview;
+                // もし全て消えてしまったら元のテキストを使う（フェイルセーフ）
+                if (!name) name = text.trim();
+
+                appState.userName = name;
+                appState.onboardingStep = 1;
+                
+                const formattedName = formatName(name);
+                response = `${formattedName}ですね！素敵な響きです。\nそれでは${formattedName}。あなたが今、一番伝えたい『本のテーマ』や『気になるキーワード』を一つ、教えていただけますか？そこから一緒に物語を編み上げていきましょう！`;
+                
+            } 
+            // 通常の対話・プロデュースモード
+            else {
+                // 名前変更の検知（「やっぱり」などの口語を先に除去）
+                const cleanText = text.replace(/^(やっぱり|やっぱ|じゃあ|それでは|あ、|あの、|えっと)[、。\s]*/g, '');
+                const nameChangeMatch = cleanText.match(/(?:これからは)?(?:私の名前は|名前を)?\s*(.+?)\s*(?:に名前を変えて|に名前を変更して|って呼んで|と呼んで)(?:ください|ね|よ|)*$/);
+                
+                if (nameChangeMatch) {
+                    const newName = nameChangeMatch[1].replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)は/, '').trim();
+                    appState.userName = newName;
+                    const formattedNewName = formatName(newName);
+                    response = `承知いたしました！これからは「${formattedNewName}」とお呼びしますね。${formattedNewName}、引き続き執筆を進めていきましょう！`;
+                } 
+                else {
+                    const namePrefix = appState.userName ? `${formatName(appState.userName)}、` : '';
+                    
+                    if (text.match(/テーマ|書きたい|タイトル|件名/)) {
+                        const theme = text.match(/「(.*?)」/) ? text.match(/「(.*?)」/)[1] : text.replace(/(テーマ|について書きたい)/g, "").trim();
+                        response = `『${theme}』ですね。${namePrefix}素晴らしい着眼点です！\n読者が思わず手に取ってしまうような「骨組み」を考えてみました。\n\n左側のワークスペースを見てください。ここから、さらにあなたの熱を込めていきましょう。`;
+                        
+                        appState.plots = [
+                            `プロローグ：なぜ今、${theme}が必要なのか`,
+                            `第1章：誰もが陥る${theme}の罠`,
+                            `第2章：ジーニー流・${theme}を攻略する3つの秘策`,
+                            `第3章：実録！${theme}で人生が変わった人たち`,
+                            `エピローグ：次の一歩を踏み出すあなたへ`
+                        ];
+                        renderPlots();
+                    } else if (text.length > 30) {
+                        response = `${namePrefix}素晴らしい深掘りです！そのディテールこそが本の「魂」になりますね。今の内容をプレビューに反映しました。構成案のどこに組み込むのが一番しっくりくるか、一緒に考えていきましょうか？`;
+                        updatePreview(text);
+                    } else {
+                        response = "なるほど、その視点は面白いですね。もう少し具体的に、例えば「どんな悩みを持つ人に届けたいか」を教えていただけますか？";
+                        updatePreview(text);
+                    }
+                }
             }
 
             addMessage(response, 'genie');
             saveData();
         }, 1200);
+
+    };
+
+    const updatePreview = (text) => {
+        const previewContent = `
+            <div class="preview-item">
+                <span class="preview-label">【ジーニーの執筆メモ】</span>
+                <p>${text}</p>
+                <div class="genie-insight">
+                    ✨ 出版のヒント：このエピソードは、第1章の「共感」を呼ぶパートで非常に強力な武器になります。
+                </div>
+            </div>
+        `;
+        appState.preview = previewContent + (appState.preview || '');
+        previewArea.innerHTML = appState.preview;
+        saveData();
+    };
+
+    // --- 新機能：エクスポート（結晶化） ---
+    const handleExport = () => {
+        if (appState.plots.length === 0 && !appState.preview) {
+            alert("まだ出力できる魔法が溜まっていないようです。まずはジーニーと対話して、原稿の種を蒔きましょう！");
+            return;
+        }
+
+        const date = new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
+        let content = `=======================================\n`;
+        content += ` Magic Lamp 原稿データ (${date})\n`;
+        content += `=======================================\n\n`;
+        
+        content += `【 構成案（プロット） 】\n`;
+        appState.plots.forEach((p, i) => content += `${i + 1}. ${p}\n`);
+        
+        content += `\n---------------------------------------\n`;
+        content += `【 執筆プレビュー・メモ 】\n\n`;
+        
+        // HTMLタグを除去してテキストのみ抽出
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = appState.preview;
+        // 改行が見やすく反映されるように調整
+        const textContent = (tempDiv.innerText || tempDiv.textContent).replace(/\n\s*\n/g, '\n\n');
+        content += textContent;
+
+        // Blobの型をプレーンテキストに変更
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        // 拡張子を.txtに変更
+        a.download = `manuscript_${date}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        addMessage("原稿の出力が完了しました！ダウンロードしたテキストファイル（.txt）を開いてみてくださいね。スマホのメモ帳やパソコンですぐに確認できますよ。", 'genie');
+    };
+
+    // --- 新機能：ファイル読み込み（ドロップゾーン） ---
+    const dropZone = document.getElementById('dropZone');
+    
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent)';
+            dropZone.style.background = 'rgba(88, 166, 255, 0.1)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = '#ccc';
+            dropZone.style.background = '#fff';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#ccc';
+            dropZone.style.background = '#fff';
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === "text/plain" || file.name.endsWith('.md')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const content = event.target.result;
+                    appState.knowledge = content;
+                    addMessage(`資料『${file.name}』を読み込みました！この内容を踏まえて、最高の一冊を組み立てていきますね。`, 'genie');
+                    updatePreview(`【読み込み済み資料：${file.name}】\n${content.substring(0, 100)}...`);
+                    saveData();
+                };
+                reader.readAsText(file);
+            } else {
+                alert("テキストファイル（.txt または .md）を投げ込んでくださいね。");
+            }
+        });
+
+        dropZone.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.txt,.md';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        appState.knowledge = event.target.result;
+                        addMessage(`資料『${file.name}』を読み込みました！`, 'genie');
+                        updatePreview(`【読み込み済み資料：${file.name}】\n${event.target.result.substring(0, 100)}...`);
+                        saveData();
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        });
+    }
+
+    // --- 新機能：リセット（新プロジェクト） ---
+    const resetProject = () => {
+        if (confirm("現在進行中の魔法（データ）をすべて消去して、新しい本を作り始めますか？\n（出力済みのファイルは消えません）")) {
+            localStorage.removeItem('magicLampState');
+            location.reload();
+        }
     };
 
     // --- Listeners ---
@@ -181,6 +356,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     sendBtn.addEventListener('click', handleSend);
+
+    const crystallizeBtn = document.querySelector('.crystallize-btn');
+    if (crystallizeBtn) {
+        crystallizeBtn.addEventListener('click', handleExport);
+    }
+
+    const homeIcon = document.querySelector('.nav-icon[title="ホーム"]');
+    if (homeIcon) {
+        homeIcon.addEventListener('click', resetProject);
+    }
 
     toggleCanvasBtn.addEventListener('click', () => {
         if (window.innerWidth > 750) {

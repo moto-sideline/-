@@ -186,6 +186,32 @@ body {
     line-height: 1.5;
 }
 
+.preview-item {
+    background: #fdfdfd;
+    border-left: 3px solid var(--accent);
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 0 4px 4px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.preview-label {
+    font-size: 0.7rem;
+    color: var(--text-meta);
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.genie-insight {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--line-middle-border);
+    font-size: 0.8rem;
+    color: var(--accent-gold);
+    font-style: italic;
+}
+
 .knowledge-upload {
     margin-bottom: 15px;
 }
@@ -497,6 +523,15 @@ body.dark-theme .chapter-item {
 
 body.dark-theme .preview-text {
     color: #d1d5db;
+}
+
+body.dark-theme .preview-item {
+    background: #252d33;
+    border-left-color: var(--accent);
+}
+
+body.dark-theme .genie-insight {
+    border-top-color: #333;
 }
 
 body.dark-theme .drop-zone {
