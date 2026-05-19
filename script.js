@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalBtn = document.getElementById('closeModalBtn');
     const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
     const apiKeyInput = document.getElementById('apiKeyInput');
+    const apiModelSelect = document.getElementById('apiModelSelect');
     
     // Left Nav Icons & Bookshelf
     const navHome = document.getElementById('navHome');
@@ -568,6 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settingsBtn) {
         settingsBtn.addEventListener('click', () => {
             apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
+            apiModelSelect.value = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
             apiSettingsModal.classList.remove('hidden');
         });
     }
@@ -581,6 +583,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveApiKeyBtn) {
         saveApiKeyBtn.addEventListener('click', () => {
             const key = apiKeyInput.value.trim();
+            const model = apiModelSelect.value;
+            
+            localStorage.setItem('geminiModel', model);
+            
             if (key) {
                 const isNewKey = !localStorage.getItem('geminiApiKey');
                 localStorage.setItem('geminiApiKey', key);
@@ -592,7 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     appState.onboardingStep = 0;
                     addMessage("初めまして、あなたのおかげで私ジーニーはついに覚醒しました！\nあなたの『本を書きたい』という願いを叶えるために、魔法のランプから出てきました🧞‍♂️✨\n\nまずは、あなたの呼び名を教えていただけますか？", 'genie');
                 } else {
-                    alert("APIキーを更新しました！");
+                    alert("設定を保存しました！");
                 }
             } else {
                 localStorage.removeItem('geminiApiKey');
@@ -702,8 +708,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        const model = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
