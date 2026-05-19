@@ -34,15 +34,15 @@
         <!-- 1列目: 左端の細いナビゲーションバー -->
         <nav class="line-nav">
             <div class="nav-top">
-                <div class="nav-icon active" title="ホーム"><i class="fas fa-home"></i></div>
-                <div class="nav-icon" title="メッセージ"><i class="fas fa-comment-dots"></i><span class="badge">1</span></div>
-                <div class="nav-icon" title="執筆記録"><i class="fas fa-feather-alt"></i></div>
-                <div class="nav-icon" title="本棚"><i class="fas fa-book"></i></div>
-                <div class="nav-icon" title="外部連携"><i class="fab fa-line"></i></div>
+                <div class="nav-icon active" id="navHome" title="ホーム（初期化）"><i class="fas fa-home"></i></div>
+                <div class="nav-icon" id="navChat" title="メッセージ"><i class="fas fa-comment-dots"></i></div>
+                <div class="nav-icon" id="navRecord" title="執筆記録（拡大）"><i class="fas fa-feather-alt"></i></div>
+                <div class="nav-icon" id="navBookshelf" title="本棚（マニュアル）"><i class="fas fa-book"></i></div>
+                <div class="nav-icon" id="navLine" title="外部連携（LINE）"><i class="fab fa-line"></i></div>
             </div>
             <div class="nav-bottom">
                 <div class="nav-icon" id="themeToggleBtn" title="テーマ切替"><i class="fas fa-moon"></i></div>
-                <div class="nav-icon" title="設定"><i class="fas fa-cog"></i></div>
+                <div class="nav-icon" id="settingsBtn" title="設定 (API)"><i class="fas fa-cog"></i></div>
             </div>
         </nav>
 
@@ -123,6 +123,51 @@
         
     </div>
 
-    <script src="script.js?v=4"></script>
+    <!-- Bookshelf Modal (Manuals) -->
+    <div id="bookshelfModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-book"></i> 本棚（魔法の書）</h3>
+                <span class="close-modal" id="closeBookshelfBtn">&times;</span>
+            </div>
+            <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                <h4 style="margin-bottom: 10px; color: var(--accent);">📖 覚醒の儀式（APIキーの取り方）</h4>
+                <ol style="margin-left: 20px; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;">
+                    <li><a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>にアクセスします。</li>
+                    <li>Googleアカウントでログインします。</li>
+                    <li>画面上の「Create API Key」ボタンを押します。</li>
+                    <li>発行された「AIza...」から始まる長い文字列をコピーします。</li>
+                    <li>このアプリの左下にある【⚙️設定】からキーを貼り付けて保存します。</li>
+                </ol>
+
+                <h4 style="margin-bottom: 10px; color: var(--accent);">📖 ジーニーの得意技</h4>
+                <ul style="margin-left: 20px; font-size: 0.9rem; line-height: 1.6;">
+                    <li>テーマの深掘りからプロット（目次）の作成</li>
+                    <li>目次ごとの執筆アシスト（壁打ち）</li>
+                    <li>Kindle出稿までのステップバイステップ案内</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Settings Modal -->
+    <div id="apiSettingsModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-magic"></i> ジーニーの覚醒（API設定）</h3>
+                <span class="close-modal" id="closeModalBtn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Gemini APIキーを入力すると、ジーニーが本物のAIとして会話できるようになります。（※未入力の場合は擬似AIモードで動作します）</p>
+                <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="api-key-input">
+                <p class="modal-hint"><a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> から無料でキーを取得できます。</p>
+            </div>
+            <div class="modal-footer">
+                <button id="saveApiKeyBtn" class="primary-btn">保存して覚醒</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=5"></script>
 </body>
 </html>
