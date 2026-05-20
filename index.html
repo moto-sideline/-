@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=7">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
@@ -132,12 +132,13 @@
             </div>
             <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
                 <h4 style="margin-bottom: 10px; color: var(--accent);">📖 覚醒の儀式（APIキーの取り方）</h4>
+                <p class="modal-hint" style="margin-bottom: 12px;">※ API取得ページは<strong>別タブ</strong>で開きます。このアプリのタブは閉じずに戻ってきてください。</p>
                 <ol style="margin-left: 20px; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;">
-                    <li><a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>にアクセスします。</li>
+                    <li>下のボタンから <a href="https://aistudio.google.com/app/apikey" class="external-api-link" rel="noopener noreferrer">Google AI Studio</a> を開きます。</li>
                     <li>Googleアカウントでログインします。</li>
                     <li>画面上の「Create API Key」ボタンを押します。</li>
                     <li>発行された「AIza...」から始まる長い文字列をコピーします。</li>
-                    <li>このアプリの左下にある【⚙️設定】からキーを貼り付けて保存します。</li>
+                    <li>このアプリのタブに戻り、左下の【⚙️設定】からキーを貼り付けて保存します。</li>
                 </ol>
 
                 <h4 style="margin-bottom: 10px; color: var(--accent);">📖 ジーニーの得意技</h4>
@@ -146,6 +147,10 @@
                     <li>目次ごとの執筆アシスト（壁打ち）</li>
                     <li>Kindle出稿までのステップバイステップ案内</li>
                 </ul>
+            </div>
+            <div class="modal-footer modal-footer--split">
+                <button type="button" id="openApiFromBookshelfBtn" class="secondary-btn open-api-btn">APIキーを取得（別タブ）</button>
+                <button type="button" id="closeBookshelfFooterBtn" class="secondary-btn">閉じる</button>
             </div>
         </div>
     </div>
@@ -161,23 +166,31 @@
                 <p>Gemini APIキーを入力すると、ジーニーが本物のAIとして会話できるようになります。（※未入力の場合は擬似AIモードで動作します）</p>
                 <label for="apiKeyInput" style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">Gemini APIキー</label>
                 <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="api-key-input">
-                <p class="modal-hint" style="margin-bottom: 15px;"><a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a> から無料でキーを取得できます。</p>
+                <p class="modal-hint" style="margin-bottom: 10px;"><a href="https://aistudio.google.com/app/apikey" class="external-api-link" rel="noopener noreferrer">Google AI Studio</a> から無料でキーを取得できます（別タブで開きます）。</p>
+                <button type="button" id="openApiFromSettingsBtn" class="secondary-btn" style="width: 100%; margin-bottom: 15px;">APIキーを取得する（別タブで開く）</button>
                 
                 <label for="apiModelSelect" style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">使用するAIモデル</label>
-                <select id="apiModelSelect" class="api-key-input" style="background: #fff; cursor: pointer;">
+                <select id="apiModelSelect" class="api-key-input" style="background: #fff; cursor: pointer; margin-bottom: 15px;">
                     <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (標準・高機能)</option>
                     <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (軽量・混雑時おすすめ)</option>
                     <option value="gemini-2.0-flash">Gemini 2.0 Flash (高速)</option>
                     <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (超軽量)</option>
                     <option value="gemini-2.5-pro">Gemini 2.5 Pro (超高機能・制限強め)</option>
                 </select>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                    <label for="userNameInput" style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">あなたの呼び名 (ニックネーム)</label>
+                    <input type="text" id="userNameInput" placeholder="もとさん" class="api-key-input" style="background: #fff;">
+                    <p class="modal-hint" style="margin-top: 5px;">ジーニーがあなたを呼ぶ時の名前です。</p>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button id="saveApiKeyBtn" class="primary-btn">保存して覚醒</button>
+            <div class="modal-footer modal-footer--split">
+                <button type="button" id="closeApiSettingsFooterBtn" class="secondary-btn">閉じる</button>
+                <button type="button" id="saveApiKeyBtn" class="primary-btn">保存して覚醒</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=9"></script>
 </body>
 </html>

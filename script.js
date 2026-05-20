@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
     const apiKeyInput = document.getElementById('apiKeyInput');
     const apiModelSelect = document.getElementById('apiModelSelect');
+    const userNameInput = document.getElementById('userNameInput');
     
     // Left Nav Icons & Bookshelf
     const navHome = document.getElementById('navHome');
@@ -23,6 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLine = document.getElementById('navLine');
     const bookshelfModal = document.getElementById('bookshelfModal');
     const closeBookshelfBtn = document.getElementById('closeBookshelfBtn');
+    const closeBookshelfFooterBtn = document.getElementById('closeBookshelfFooterBtn');
+    const closeApiSettingsFooterBtn = document.getElementById('closeApiSettingsFooterBtn');
+    const openApiFromBookshelfBtn = document.getElementById('openApiFromBookshelfBtn');
+    const openApiFromSettingsBtn = document.getElementById('openApiFromSettingsBtn');
+
+    const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
     
     const body = document.body;
 
@@ -34,7 +41,75 @@ document.addEventListener('DOMContentLoaded', () => {
         knowledge: '',
         userName: null,
         bookTheme: '',
-        onboardingStep: 0 // 0: 名前確認中, 1: テーマ確認中, 2: 深掘り中, 3: 通常モード
+        onboardingStep: -1 // -1: API設定待ち, 0: 名前確認中, 1: テーマ確認中, 2: 深掘り中, 3: 通常モード
+    };
+
+    const PRE_AWAKENING_LINES = [
+        '初めまして。私は魔法のランプの精霊…の、まだ『仮の姿』です。',
+        '本当のAIとして覚醒するには、まず「魔法の鍵（APIキー）」が必要です。',
+        '左の【📚本棚】に、キーの取り方が書いてあります。取れたら左下【⚙️設定】に貼り付けて「保存して覚醒」を押してくださいね。',
+        '覚醒が終わったら、ここでお話しできます。それまで、まずはキー取得から進めましょう。'
+    ];
+
+    const getAwakenedIntroLines = (userName) => {
+        if (userName) {
+            const formattedName = formatName(userName);
+            return [
+                '初めまして、あなたのおかげで私ジーニーはついに覚醒しました！🧞‍♂️✨',
+                `${formattedName}、ようこそ！あなたの『本を書きたい』という願いを叶えるために、魔法のランプから出てきましたよ。`,
+                '難しいことは何もいりません。一緒にゆっくり進めていきましょう！',
+                `まずは、${formattedName}の呼び名で合っていますか？違う場合は教えてください。合っていれば、書きたいテーマを教えてくださいね。`
+            ];
+        }
+        return [
+            '初めまして、あなたのおかげで私ジーニーはついに覚醒しました！🧞‍♂️✨',
+            'あなたの『本を書きたい』という願いを叶えるために、魔法のランプから出てきました。',
+            '難しいことは何もいりません。私があなたの思考を引き出し、整理していきますので、リラックスして話しかけてくださいね。',
+            'まずは、あなたの呼び名を教えていただけますか？ニックネームやペンネームでも大丈夫です。これからあなたをその名前でお呼びしますね。'
+        ];
+    };
+
+    const hasValidApiKey = () => {
+        const key = localStorage.getItem('geminiApiKey');
+        return !!(key && key.trim());
+    };
+
+    const staggerGenieLines = (lines, delayMs = 1000) => {
+        lines.forEach((line, index) => {
+            setTimeout(() => addMessage(line, 'genie'), index * delayMs);
+        });
+    };
+
+    const showPreAwakeningGuide = (options = {}) => {
+        const { openBookshelf = true, clearHistory = true } = options;
+        if (clearHistory) {
+            chatMessages.innerHTML = '';
+            appState.chatHistory = [];
+            appState.plots = [];
+            appState.preview = '';
+            appState.bookTheme = '';
+            plotList.innerHTML = '';
+            if (previewArea) previewArea.textContent = '';
+        }
+        appState.onboardingStep = -1;
+        staggerGenieLines(PRE_AWAKENING_LINES);
+        saveData();
+        if (openBookshelf) {
+            setTimeout(() => openBookshelfModal(), 1200);
+        }
+    };
+
+    const runAwakeningCeremony = (presetUserName) => {
+        if (presetUserName) appState.userName = presetUserName;
+        appState.onboardingStep = 0;
+        appState.bookTheme = '';
+        chatMessages.innerHTML = '';
+        appState.chatHistory = [];
+        plotList.innerHTML = '';
+        if (previewArea) previewArea.textContent = '';
+        addMessage(getAwakenedIntroLines(appState.userName).join('\n\n'), 'genie');
+        if (appState.userName) appState.onboardingStep = 1;
+        saveData();
     };
 
     // 敬称（さん、さま等）の重複を防ぐヘルパー関数
@@ -53,50 +128,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadData = () => {
         const saved = localStorage.getItem('magicLampState');
+
+        if (!hasValidApiKey()) {
+            if (saved) appState = JSON.parse(saved);
+            showPreAwakeningGuide({ openBookshelf: true, clearHistory: true });
+            applySavedTheme();
+            return;
+        }
+
         if (saved) {
             appState = JSON.parse(saved);
-            // 互換性のため古いデータへの対応
             if (appState.onboardingStep === undefined) appState.onboardingStep = 2;
-            
+            if (appState.onboardingStep < 0) appState.onboardingStep = 0;
+
             renderAll();
-            
-            // セッション開始時のみの挨拶（履歴には残さない）
+
             setTimeout(() => {
-                if (appState.onboardingStep === 0) {
-                    renderMessage(`こんにちは！また来てくれて嬉しいです。ところで、あなたの呼び名を教えてもらえますか？`, 'genie', formatTime());
+                if (appState.onboardingStep === 0 && !appState.userName) {
+                    renderMessage('こんにちは！また来てくれて嬉しいです。ところで、あなたの呼び名を教えてもらえますか？', 'genie', formatTime());
+                } else if (appState.onboardingStep === 0 && appState.userName) {
+                    const formattedName = formatName(appState.userName);
+                    renderMessage(`おかえりなさい！${formattedName}、ジーニーはずっと待っていましたよ✨\nさっそく、あなたの『本を書きたい』という想いを一緒に形にしていきましょうか？`, 'genie', formatTime());
+                    appState.onboardingStep = 1;
+                    saveData();
                 } else {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}、` : '';
                     renderMessage(`おかえりなさい！${nameStr}また一緒に魔法を紡げるのを楽しみにしていました。続きから始めましょうか？`, 'genie', formatTime());
                 }
             }, 500);
         } else {
-            // 初回アクセス時
-            appState.onboardingStep = 0;
-            const apiKey = localStorage.getItem('geminiApiKey');
-            
-            if (apiKey) {
-                const introLines = [
-                    "初めまして！私はジーニー。あなたの『本を書きたい』という願いを叶えるためにやってきました。🧞‍♂️✨",
-                    "難しいことは何もいりません。私があなたの思考を引き出し、整理していきますので、リラックスして話しかけてくださいね。",
-                    "まずは、あなたの名前を教えていただけますか？ニックネームやペンネームでも大丈夫です。これからあなたをその名前でお呼びしますね。"
-                ];
-                introLines.forEach((line, index) => {
-                    setTimeout(() => addMessage(line, 'genie'), index * 1000);
-                });
-            } else {
-                const ritualLines = [
-                    "初めまして。私は魔法のランプの精霊…の、まだ『仮の姿』です。",
-                    "本当の魔法（AI）の力を解放して、あなただけの最高の相方になるには、少しだけ手助けが必要です。",
-                    "左下の【⚙️設定（歯車アイコン）】を開き、魔法の鍵（APIキー）をセットする『覚醒の儀式』を行ってください！",
-                    "（※鍵の取り方は、左の「本棚」アイコンに書いてありますよ）"
-                ];
-                ritualLines.forEach((line, index) => {
-                    setTimeout(() => addMessage(line, 'genie'), index * 1000);
-                });
-            }
+            const presetName = appState.userName || null;
+            runAwakeningCeremony(presetName);
         }
 
-        // テーマの復元
+        applySavedTheme();
+    };
+
+    const applySavedTheme = () => {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             body.classList.add('dark-theme');
@@ -197,10 +265,39 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = '';
         userInput.style.height = 'auto';
 
-        const apiKey = localStorage.getItem('geminiApiKey');
+        if (!hasValidApiKey()) {
+            setTimeout(() => {
+                addMessage('まだ「覚醒の儀式」が終わっていません。\n【📚本棚】でAPIキーを取得し、【⚙️設定】に貼り付けて「保存して覚醒」を押してくださいね。', 'genie');
+            }, 600);
+            return;
+        }
+
+        const apiKey = localStorage.getItem('geminiApiKey').trim();
         
         // --- 🌟 覚醒モード：本物のAI（Gemini API）を利用 ---
         if (apiKey) {
+            // お名前の自動検出（未設定の場合）
+            if (!appState.userName) {
+                const clauses = text.split(/[\n。、！？!\?]+/).filter(c => c.trim().length > 0);
+                let nameClause = clauses.find(c => c.match(/(呼んで|名前|申します|言います)/));
+                if (!nameClause) nameClause = clauses[0] || text;
+                
+                let detectedName = nameClause
+                    .replace(/^(ジーニー|じーにー|ねえ|あのね|あのー|あの、|あの|あ、|えっと|やっぱり|やっぱ|じゃあ|それでは|そうしたら|そうだね、|そうだね|そうですね|うん|うん、|はい、|はい|それとも|あるいは|てか|それいいですね|それいいな)[、。\s]*/g, '')
+                    .replace(/^(はじめまして|こんにちは|こんばんは|おはよう|おはようございます|よろしく|よろしくお願いします)[、。\s]*/g, '')
+                    .replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)(は|の名前は|のなまえは|って)[、。\s]*/g, '')
+                    .replace(/(です|と申します|と言います|だよ|って呼んで.*|と呼んで.*|でお願いします.*|で頼む.*|だ|でいいです|がいいです|で良いです|で良いですよ|でいいですよ|でいいよ|で良いよ|でお願い)[。、！!\s]*$/g, '')
+                    .replace(/^[、。\s]+|[、。\s]+$/g, '')
+                    .trim();
+                
+                detectedName = detectedName.replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '');
+                
+                if (detectedName && detectedName.length <= 15 && !detectedName.match(/(思いつかない|わからない|どうしよう|ないです|案内|教えて|決まってない)/)) {
+                    appState.userName = detectedName;
+                    saveData();
+                }
+            }
+
             const typingIndicator = document.createElement('div');
             typingIndicator.className = 'message-wrapper genie typing-indicator';
             typingIndicator.innerHTML = `
@@ -565,76 +662,124 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // --- Modal helpers ---
+    const openApiSettingsModal = () => {
+        apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
+        apiModelSelect.value = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        userNameInput.value = appState.userName || '';
+        bookshelfModal.classList.add('hidden');
+        apiSettingsModal.classList.remove('hidden');
+    };
+
+    const closeApiSettingsModal = () => {
+        apiSettingsModal.classList.add('hidden');
+    };
+
+    const openBookshelfModal = () => {
+        apiSettingsModal.classList.add('hidden');
+        bookshelfModal.classList.remove('hidden');
+    };
+
+    const closeBookshelfModal = () => {
+        bookshelfModal.classList.add('hidden');
+    };
+
+    const closeAllModals = () => {
+        closeApiSettingsModal();
+        closeBookshelfModal();
+    };
+
+    const openApiKeyPageInNewTab = () => {
+        const opened = window.open(API_KEY_URL, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+            alert('ポップアップがブロックされました。\nブラウザの設定で許可するか、下のリンクを長押しして「新しいタブで開く」を選んでください。');
+        }
+    };
+
+    document.querySelectorAll('.external-api-link').forEach((link) => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            openApiKeyPageInNewTab();
+        });
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllModals();
+    });
+
     // --- API Settings Modal Logic ---
     if (settingsBtn) {
-        settingsBtn.addEventListener('click', () => {
-            apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
-            apiModelSelect.value = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
-            apiSettingsModal.classList.remove('hidden');
-        });
+        settingsBtn.addEventListener('click', openApiSettingsModal);
     }
 
     if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', () => {
-            apiSettingsModal.classList.add('hidden');
-        });
+        closeModalBtn.addEventListener('click', closeApiSettingsModal);
+    }
+
+    if (closeApiSettingsFooterBtn) {
+        closeApiSettingsFooterBtn.addEventListener('click', closeApiSettingsModal);
+    }
+
+    if (openApiFromSettingsBtn) {
+        openApiFromSettingsBtn.addEventListener('click', openApiKeyPageInNewTab);
+    }
+
+    if (openApiFromBookshelfBtn) {
+        openApiFromBookshelfBtn.addEventListener('click', openApiKeyPageInNewTab);
     }
 
     if (saveApiKeyBtn) {
         saveApiKeyBtn.addEventListener('click', () => {
             const key = apiKeyInput.value.trim();
             const model = apiModelSelect.value;
+            const newName = userNameInput.value.trim();
             
             localStorage.setItem('geminiModel', model);
+            if (newName) {
+                appState.userName = newName;
+            }
             
             if (key) {
                 const isNewKey = !localStorage.getItem('geminiApiKey');
                 localStorage.setItem('geminiApiKey', key);
                 
-                if (isNewKey) {
-                    // 初めてキーを入れた場合の覚醒メッセージ
-                    appState.chatHistory = [];
-                    chatMessages.innerHTML = '';
-                    appState.onboardingStep = 0;
-                    addMessage("初めまして、あなたのおかげで私ジーニーはついに覚醒しました！\nあなたの『本を書きたい』という願いを叶えるために、魔法のランプから出てきました🧞‍♂️✨\n\nまずは、あなたの呼び名を教えていただけますか？", 'genie');
-                } else {
-                    alert("設定を保存しました！");
+                const startNew = isNewKey || confirm("APIキーを設定しました！新しくジーニーとの対話（覚醒の儀式）を始めますか？\n（現在のチャット履歴やプロットはリセットされます）");
+                
+                if (startNew) {
+                    localStorage.removeItem('magicLampState');
+                    appState.knowledge = '';
+                    closeApiSettingsModal();
+                    runAwakeningCeremony(newName || null);
+                    return;
                 }
+                saveData();
+                alert("設定を保存しました！");
             } else {
                 localStorage.removeItem('geminiApiKey');
-                alert("APIキーを削除しました。仮の姿（擬似AIモード）に戻ります。");
+                localStorage.removeItem('magicLampState');
+                showPreAwakeningGuide({ openBookshelf: false, clearHistory: true });
+                alert("APIキーを削除しました。仮の姿に戻り、キー設定の案内から始めます。");
             }
-            apiSettingsModal.classList.add('hidden');
+            closeApiSettingsModal();
         });
     }
 
     // Modal background click to close
-    window.addEventListener('click', (e) => {
-        if (e.target === apiSettingsModal) {
-            apiSettingsModal.classList.add('hidden');
-        }
-        if (e.target === bookshelfModal) {
-            bookshelfModal.classList.add('hidden');
-        }
+    [apiSettingsModal, bookshelfModal].forEach((modal) => {
+        if (!modal) return;
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                if (modal === apiSettingsModal) closeApiSettingsModal();
+                else closeBookshelfModal();
+            }
+        });
+        const content = modal.querySelector('.modal-content');
+        if (content) content.addEventListener('click', (e) => e.stopPropagation());
     });
 
     // --- Navigation Icons Logic ---
     if (navHome) {
-        navHome.addEventListener('click', () => {
-            if (confirm("現在の執筆プロジェクトをすべてリセットして最初からやり直しますか？")) {
-                resetProject();
-                // リセット後のメッセージ再生成
-                chatMessages.innerHTML = '';
-                if (appState.chatHistory.length === 0) {
-                    const apiKey = localStorage.getItem('geminiApiKey');
-                    if (apiKey) {
-                        addMessage("おかえりなさい！本物の魔法のランプへようこそ🧞‍♂️✨\n今日も一緒に素晴らしい本を書き上げましょう！\nまずは、今のあなたの呼び名を教えていただけますか？", 'genie');
-                    } else {
-                        addMessage("初めまして。私は魔法のランプの精霊…の、まだ『仮の姿』です。\n本当の魔法（AI）の力を解放するには、少しだけあなたの手助けが必要です。\n\n左下の【⚙️設定（歯車アイコン）】を開き、魔法の鍵（APIキー）をセットする『覚醒の儀式』を行ってください！\n（左の「本棚」アイコンに手順書があります）", 'genie');
-                    }
-                }
-            }
-        });
+        navHome.addEventListener('click', resetProject);
     }
 
     if (navChat) {
@@ -651,14 +796,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (navBookshelf) {
-        navBookshelf.addEventListener('click', () => {
-            bookshelfModal.classList.remove('hidden');
-        });
+        navBookshelf.addEventListener('click', openBookshelfModal);
     }
     if (closeBookshelfBtn) {
-        closeBookshelfBtn.addEventListener('click', () => {
-            bookshelfModal.classList.add('hidden');
-        });
+        closeBookshelfBtn.addEventListener('click', closeBookshelfModal);
+    }
+    if (closeBookshelfFooterBtn) {
+        closeBookshelfFooterBtn.addEventListener('click', closeBookshelfModal);
     }
 
     if (navLine) {
@@ -685,19 +829,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         contents.push({ role: 'user', parts: [{ text: inputText }] });
 
-        const systemInstruction = `
+        let systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊のように、親しみやすく、温かい口調（「〜ですね！」「〜しましょうか？」など）で話します。
 ユーザーの言葉に共感し、一緒に素晴らしい本を作り上げてください。
+        `.trim();
 
-【会話の流れ（ガイドライン）】
-1. まずはユーザーの呼び名を確認してください。
+        if (appState.userName) {
+            systemInstruction += `\n\n【重要：ユーザーの呼び名】\nユーザーの呼び名は「${appState.userName}」です。会話中、ユーザーを呼ぶときは、必ず「${formatName(appState.userName)}」または指定された呼び名で呼んでください。「元宏さん」などのフルネームや本名で呼ばないように注意してください。`;
+        }
+
+        systemInstruction += `\n\n【会話の流れ（ガイドライン）】
+1. まずはユーザーの呼び名を確認してください（すでに呼び名「${appState.userName || 'もとさん'}」が決まっている場合は、優しく歓迎してください）。
 2. 次に、書きたい本のテーマやキーワードを聞き出してください。
 3. テーマが出たら、いきなり目次を作るのではなく、「誰に一番伝えたいか」「どんな悩みを持つ人に読んでほしいか」など、ユーザーの想いを深掘りしてください。
 4. 想いが十分に引き出せたら、読者が思わず手に取るような5章構成のプロット（目次）を提案してください。
 5. それ以降は、各章の執筆サポートや壁打ち相手となってください。
 6. 【重要】本の原稿が書き上がった（完成した）と判断した場合は、次はKindle出稿（KDP登録、表紙作成、フォーマット調整など）に向けた具体的な手順を、一つずつ優しくステップバイステップで指示・サポートしてください。
-※回答は長すぎず、読みやすいテキストや適度なマークダウンを使ってください。
-        `.trim();
+※回答は長すぎず、読みやすいテキストや適度なマークダウンを使ってください。`;
 
         const requestBody = {
             systemInstruction: { parts: [{ text: systemInstruction }] },
