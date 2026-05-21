@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=11">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
@@ -34,10 +34,11 @@
         <!-- 1列目: 左端の細いナビゲーションバー -->
         <nav class="line-nav">
             <div class="nav-top">
-                <div class="nav-icon active" id="navHome" title="ホーム（初期化）"><i class="fas fa-home"></i></div>
-                <div class="nav-icon" id="navChat" title="メッセージ"><i class="fas fa-comment-dots"></i></div>
-                <div class="nav-icon" id="navRecord" title="執筆記録（拡大）"><i class="fas fa-feather-alt"></i></div>
-                <div class="nav-icon" id="navBookshelf" title="本棚（マニュアル）"><i class="fas fa-book"></i></div>
+                <div class="nav-icon" id="navManual" title="取扱説明書"><i class="fas fa-book-open"></i></div>
+                <div class="nav-icon active" id="navChat" title="チャット"><i class="fas fa-comment-dots"></i></div>
+                <div class="nav-icon" id="navRecord" title="原稿キャンバス"><i class="fas fa-feather-alt"></i></div>
+                <div class="nav-icon" id="navArchive" title="資料室"><i class="fas fa-folder-open"></i></div>
+                <div class="nav-icon" id="navBookshelf" title="本棚（出来上がった作品）"><i class="fas fa-book"></i></div>
                 <div class="nav-icon" id="navLine" title="外部連携（LINE）"><i class="fab fa-line"></i></div>
             </div>
             <div class="nav-bottom">
@@ -56,23 +57,13 @@
             </div>
             
             <div class="middle-content">
-                <!-- Drop Zone -->
-                <div class="knowledge-upload">
-                    <div class="drop-zone" id="dropZone">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>参考資料を流し込む</p>
-                    </div>
-                </div>
-
-                <!-- Plot List -->
                 <div class="manuscript-card">
                     <h4>構成案（プロット）</h4>
                     <div id="plotList">
-                        <!-- 以前のプロットがここに表示されます -->
+                        <!-- プロットがここに表示されます -->
                     </div>
                 </div>
 
-                <!-- Live Preview -->
                 <div class="manuscript-card">
                     <h4>ライブ・プレビュー</h4>
                     <div id="previewArea" class="preview-text">
@@ -80,7 +71,7 @@
                     </div>
                 </div>
 
-                <button class="crystallize-btn">
+                <button class="crystallize-btn" type="button">
                     <i class="fas fa-gem"></i> 原稿を研ぎ出し・出力
                 </button>
             </div>
@@ -97,8 +88,8 @@
                     </div>
                 </div>
                 <div class="chat-header-right">
-                    <button class="header-icon" title="検索"><i class="fas fa-search"></i></button>
-                    <button class="header-icon toggle-btn" id="toggleCanvasBtn" title="ワークスペース切替"><i class="fas fa-columns"></i></button>
+                    <button class="header-icon" type="button" title="検索"><i class="fas fa-search"></i></button>
+                    <button class="header-icon toggle-btn" type="button" id="toggleCanvasBtn" title="原稿キャンバスを開く"><i class="fas fa-columns"></i></button>
                 </div>
             </header>
 
@@ -108,7 +99,7 @@
 
             <div class="chat-input-area">
                 <div class="input-toolbar">
-                    <i class="fas fa-paperclip tool-icon"></i>
+                    <i class="fas fa-paperclip tool-icon" id="quickArchiveBtn" title="資料室を開く"></i>
                     <i class="far fa-bookmark tool-icon"></i>
                     <i class="fas fa-crop-alt tool-icon"></i>
                 </div>
@@ -123,33 +114,82 @@
         
     </div>
 
-    <!-- Bookshelf Modal (Manuals) -->
-    <div id="bookshelfModal" class="modal-overlay hidden">
+    <!-- 取扱説明書モーダル -->
+    <div id="manualModal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-book"></i> 本棚（魔法の書）</h3>
-                <span class="close-modal" id="closeBookshelfBtn">&times;</span>
+                <h3><i class="fas fa-book-open"></i> 取扱説明書</h3>
+                <span class="close-modal" id="closeManualBtn">&times;</span>
             </div>
-            <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
-                <h4 style="margin-bottom: 10px; color: var(--accent);">📖 覚醒の儀式（APIキーの取り方）</h4>
-                <p class="modal-hint" style="margin-bottom: 12px;">※ API取得ページは<strong>別タブ</strong>で開きます。このアプリのタブは閉じずに戻ってきてください。</p>
-                <ol style="margin-left: 20px; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;">
+            <div class="modal-body modal-scroll-body">
+                <h4 class="modal-section-title">🧞 はじめに</h4>
+                <ul class="modal-list">
+                    <li>左の<strong>チャット</strong>でジーニーと対話します（画面が狭いときも、基本はチャット画面です）。</li>
+                    <li><strong>原稿キャンバス</strong>（羽ペンアイコン）でプロットとプレビューを確認します。</li>
+                    <li><strong>資料室</strong>に参考テキストを流し込めます。</li>
+                    <li><strong>本棚</strong>に出力した完成原稿が並びます。</li>
+                </ul>
+
+                <h4 class="modal-section-title">📖 覚醒の儀式（APIキーの取り方）</h4>
+                <p class="modal-hint">※ API取得ページは<strong>別タブ</strong>で開きます。このアプリのタブは閉じずに戻ってきてください。</p>
+                <ol class="modal-list numbered">
                     <li>下のボタンから <a href="https://aistudio.google.com/app/apikey" class="external-api-link" rel="noopener noreferrer">Google AI Studio</a> を開きます。</li>
                     <li>Googleアカウントでログインします。</li>
-                    <li>画面上の「Create API Key」ボタンを押します。</li>
-                    <li>発行された「AIza...」から始まる長い文字列をコピーします。</li>
-                    <li>このアプリのタブに戻り、左下の【⚙️設定】からキーを貼り付けて保存します。</li>
+                    <li>「Create API Key」でキーを発行し、コピーします。</li>
+                    <li>【⚙️設定】に貼り付けて「保存して覚醒」を押します。</li>
                 </ol>
 
-                <h4 style="margin-bottom: 10px; color: var(--accent);">📖 ジーニーの得意技</h4>
-                <ul style="margin-left: 20px; font-size: 0.9rem; line-height: 1.6;">
+                <h4 class="modal-section-title">📖 ジーニーの得意技</h4>
+                <ul class="modal-list">
                     <li>テーマの深掘りからプロット（目次）の作成</li>
-                    <li>目次ごとの執筆アシスト（壁打ち）</li>
-                    <li>Kindle出稿までのステップバイステップ案内</li>
+                    <li>章ごとの執筆アシスト（壁打ち）</li>
+                    <li>Kindle出稿までのステップ案内</li>
                 </ul>
             </div>
             <div class="modal-footer modal-footer--split">
-                <button type="button" id="openApiFromBookshelfBtn" class="secondary-btn open-api-btn">APIキーを取得（別タブ）</button>
+                <button type="button" id="openApiFromManualBtn" class="secondary-btn open-api-btn">APIキーを取得（別タブ）</button>
+                <button type="button" id="closeManualFooterBtn" class="secondary-btn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 資料室モーダル -->
+    <div id="archiveModal" class="modal-overlay hidden">
+        <div class="modal-content modal-content--wide">
+            <div class="modal-header">
+                <h3><i class="fas fa-folder-open"></i> 資料室</h3>
+                <span class="close-modal" id="closeArchiveBtn">&times;</span>
+            </div>
+            <div class="modal-body modal-scroll-body">
+                <p class="modal-hint">メモ・下書き・調べ物などを流し込むと、ジーニーが執筆の参考にします。（.txt / .md）</p>
+                <div class="drop-zone" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>参考資料をドラッグ＆ドロップ<br>またはクリックして選択</p>
+                </div>
+                <div id="materialsList" class="materials-list">
+                    <p class="empty-hint">まだ資料がありません</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeArchiveFooterBtn" class="secondary-btn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 本棚モーダル（出来上がった作品） -->
+    <div id="bookshelfModal" class="modal-overlay hidden">
+        <div class="modal-content modal-content--wide">
+            <div class="modal-header">
+                <h3><i class="fas fa-book"></i> 本棚（出来上がった作品）</h3>
+                <span class="close-modal" id="closeBookshelfBtn">&times;</span>
+            </div>
+            <div class="modal-body modal-scroll-body">
+                <p class="modal-hint">「原稿を研ぎ出し・出力」で保存した作品が並びます。クリックで再ダウンロードできます。</p>
+                <div id="completedWorksList" class="works-list">
+                    <p class="empty-hint">まだ作品がありません。原稿を出力すると本棚に並びます。</p>
+                </div>
+            </div>
+            <div class="modal-footer">
                 <button type="button" id="closeBookshelfFooterBtn" class="secondary-btn">閉じる</button>
             </div>
         </div>
@@ -163,10 +203,10 @@
                 <span class="close-modal" id="closeModalBtn">&times;</span>
             </div>
             <div class="modal-body">
-                <p>Gemini APIキーを入力すると、ジーニーが本物のAIとして会話できるようになります。（※未入力の場合は擬似AIモードで動作します）</p>
+                <p>Gemini APIキーを入力すると、ジーニーが本物のAIとして会話できるようになります。</p>
                 <label for="apiKeyInput" style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">Gemini APIキー</label>
                 <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="api-key-input">
-                <p class="modal-hint" style="margin-bottom: 10px;"><a href="https://aistudio.google.com/app/apikey" class="external-api-link" rel="noopener noreferrer">Google AI Studio</a> から無料でキーを取得できます（別タブで開きます）。</p>
+                <p class="modal-hint" style="margin-bottom: 10px;"><a href="https://aistudio.google.com/app/apikey" class="external-api-link" rel="noopener noreferrer">Google AI Studio</a> から無料で取得（別タブ）</p>
                 <button type="button" id="openApiFromSettingsBtn" class="secondary-btn" style="width: 100%; margin-bottom: 15px;">APIキーを取得する（別タブで開く）</button>
                 
                 <label for="apiModelSelect" style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">使用するAIモデル</label>
@@ -183,6 +223,11 @@
                     <input type="text" id="userNameInput" placeholder="もとさん" class="api-key-input" style="background: #fff;">
                     <p class="modal-hint" style="margin-top: 5px;">ジーニーがあなたを呼ぶ時の名前です。</p>
                 </div>
+
+                <div class="settings-reset-block">
+                    <p class="modal-hint">チャット・プロット・資料を消して最初からやり直す場合</p>
+                    <button type="button" id="resetProjectBtn" class="danger-btn">プロジェクトをリセット</button>
+                </div>
             </div>
             <div class="modal-footer modal-footer--split">
                 <button type="button" id="closeApiSettingsFooterBtn" class="secondary-btn">閉じる</button>
@@ -191,6 +236,6 @@
         </div>
     </div>
 
-    <script src="script.js?v=9"></script>
+    <script src="script.js?v=12"></script>
 </body>
 </html>

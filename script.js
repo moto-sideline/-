@@ -16,17 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiModelSelect = document.getElementById('apiModelSelect');
     const userNameInput = document.getElementById('userNameInput');
     
-    // Left Nav Icons & Bookshelf
-    const navHome = document.getElementById('navHome');
+    // Left Nav Icons & Modals
+    const navManual = document.getElementById('navManual');
     const navChat = document.getElementById('navChat');
     const navRecord = document.getElementById('navRecord');
+    const navArchive = document.getElementById('navArchive');
     const navBookshelf = document.getElementById('navBookshelf');
     const navLine = document.getElementById('navLine');
+    const manualModal = document.getElementById('manualModal');
+    const closeManualBtn = document.getElementById('closeManualBtn');
+    const closeManualFooterBtn = document.getElementById('closeManualFooterBtn');
+    const openApiFromManualBtn = document.getElementById('openApiFromManualBtn');
+    const archiveModal = document.getElementById('archiveModal');
+    const closeArchiveBtn = document.getElementById('closeArchiveBtn');
+    const closeArchiveFooterBtn = document.getElementById('closeArchiveFooterBtn');
+    const materialsList = document.getElementById('materialsList');
+    const quickArchiveBtn = document.getElementById('quickArchiveBtn');
     const bookshelfModal = document.getElementById('bookshelfModal');
+    const completedWorksList = document.getElementById('completedWorksList');
     const closeBookshelfBtn = document.getElementById('closeBookshelfBtn');
     const closeBookshelfFooterBtn = document.getElementById('closeBookshelfFooterBtn');
     const closeApiSettingsFooterBtn = document.getElementById('closeApiSettingsFooterBtn');
-    const openApiFromBookshelfBtn = document.getElementById('openApiFromBookshelfBtn');
+    const resetProjectBtn = document.getElementById('resetProjectBtn');
     const openApiFromSettingsBtn = document.getElementById('openApiFromSettingsBtn');
 
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
@@ -39,34 +50,34 @@ document.addEventListener('DOMContentLoaded', () => {
         plots: [],
         preview: '',
         knowledge: '',
+        materials: [],
+        completedWorks: [],
         userName: null,
         bookTheme: '',
         onboardingStep: -1 // -1: API設定待ち, 0: 名前確認中, 1: テーマ確認中, 2: 深掘り中, 3: 通常モード
     };
 
-    const PRE_AWAKENING_LINES = [
-        '初めまして。私は魔法のランプの精霊…の、まだ『仮の姿』です。',
-        '本当のAIとして覚醒するには、まず「魔法の鍵（APIキー）」が必要です。',
-        '左の【📚本棚】に、キーの取り方が書いてあります。取れたら左下【⚙️設定】に貼り付けて「保存して覚醒」を押してくださいね。',
-        '覚醒が終わったら、ここでお話しできます。それまで、まずはキー取得から進めましょう。'
-    ];
+    const PRE_AWAKENING_MESSAGE =
+        'はじめまして。ジーニーです。ランプの中で、あなたの「書きたい」をずっと待っていました。\n\n' +
+        'いまはまだ仮の姿で、本当にお話しするにはお手伝いがひとつだけ必要です。【📖取扱説明書】に鍵（APIキー）の取り方があります。取れたら【⚙️設定】で「保存して覚醒」を押してください。\n\n' +
+        '急ぎません。覚醒したら、ここで一緒に書き始めましょう。';
 
-    const getAwakenedIntroLines = (userName) => {
+    const getAwakenedIntroMessage = (userName) => {
         if (userName) {
             const formattedName = formatName(userName);
-            return [
-                '初めまして、あなたのおかげで私ジーニーはついに覚醒しました！🧞‍♂️✨',
-                `${formattedName}、ようこそ！あなたの『本を書きたい』という願いを叶えるために、魔法のランプから出てきましたよ。`,
-                '難しいことは何もいりません。一緒にゆっくり進めていきましょう！',
-                `まずは、${formattedName}の呼び名で合っていますか？違う場合は教えてください。合っていれば、書きたいテーマを教えてくださいね。`
-            ];
+            return (
+                `あなたのおかげで、ついに覚醒しました。🧞‍♂️✨\n\n` +
+                `${formattedName}、来てくれて本当に嬉しいです。\n\n` +
+                `私はジーニー。${formattedName}の「書きたい」を、一緒に本にしていく伴走役です。固くならず、${formattedName}の言葉をそのまま活かしていきますね。\n\n` +
+                `呼び名は「${formattedName}」で合っていますか？合っていれば、今いちばん書き残したいことを、一言でも教えてください。`
+            );
         }
-        return [
-            '初めまして、あなたのおかげで私ジーニーはついに覚醒しました！🧞‍♂️✨',
-            'あなたの『本を書きたい』という願いを叶えるために、魔法のランプから出てきました。',
-            '難しいことは何もいりません。私があなたの思考を引き出し、整理していきますので、リラックスして話しかけてくださいね。',
-            'まずは、あなたの呼び名を教えていただけますか？ニックネームやペンネームでも大丈夫です。これからあなたをその名前でお呼びしますね。'
-        ];
+        return (
+            `あなたのおかげで、ついに覚醒しました。🧞‍♂️✨\n\n` +
+            `ジーニーです。来てくれて嬉しいです。\n\n` +
+            `肩書きはなくて、あなたの「書きたい」を一緒に本にしていく伴走役です。編集者のように固くならず、隣で話を聞く感じで進めますね。\n\n` +
+            `まず、どうお呼びすればいいですか？ニックネームやペンネームでも大丈夫です。`
+        );
     };
 
     const hasValidApiKey = () => {
@@ -74,14 +85,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return !!(key && key.trim());
     };
 
-    const staggerGenieLines = (lines, delayMs = 1000) => {
-        lines.forEach((line, index) => {
-            setTimeout(() => addMessage(line, 'genie'), index * delayMs);
-        });
+    const normalizeAppState = () => {
+        if (!Array.isArray(appState.materials)) appState.materials = [];
+        if (!Array.isArray(appState.completedWorks)) appState.completedWorks = [];
+        if (appState.knowledge && appState.materials.length === 0) {
+            appState.materials.push({
+                id: Date.now(),
+                name: '取り込み済み資料',
+                content: appState.knowledge,
+                addedAt: Date.now()
+            });
+        }
+        syncKnowledgeFromMaterials();
+    };
+
+    const syncKnowledgeFromMaterials = () => {
+        if (!appState.materials.length) return;
+        appState.knowledge = appState.materials
+            .map((m) => `【${m.name}】\n${m.content}`)
+            .join('\n\n---\n\n');
     };
 
     const showPreAwakeningGuide = (options = {}) => {
-        const { openBookshelf = true, clearHistory = true } = options;
+        const { openManual = true, clearHistory = true } = options;
         if (clearHistory) {
             chatMessages.innerHTML = '';
             appState.chatHistory = [];
@@ -92,10 +118,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (previewArea) previewArea.textContent = '';
         }
         appState.onboardingStep = -1;
-        staggerGenieLines(PRE_AWAKENING_LINES);
+        addMessage(PRE_AWAKENING_MESSAGE, 'genie');
         saveData();
-        if (openBookshelf) {
-            setTimeout(() => openBookshelfModal(), 1200);
+        updateEntranceUI();
+        if (openManual) {
+            setTimeout(() => openManualModal(), 1200);
         }
     };
 
@@ -107,19 +134,102 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.chatHistory = [];
         plotList.innerHTML = '';
         if (previewArea) previewArea.textContent = '';
-        addMessage(getAwakenedIntroLines(appState.userName).join('\n\n'), 'genie');
+        addMessage(getAwakenedIntroMessage(appState.userName), 'genie');
         if (appState.userName) appState.onboardingStep = 1;
         saveData();
+        updateEntranceUI();
+    };
+
+    const updateEntranceUI = () => {
+        const subtitle = document.querySelector('.chat-subtitle');
+        const placeholders = {
+            '-1': '覚醒までお待ちください（話しかけても大丈夫です）',
+            '0': '呼び名や、ひとこと挨拶をどうぞ',
+            '1': '書きたいこと、一言でも大丈夫です',
+            '2': '届けたい人への想いを、思いつくままに',
+            '3': 'メッセージを入力'
+        };
+        const subtitles = {
+            '-1': '覚醒の儀式をお待ちしています',
+            '0': 'まずは、あなたの呼び名から',
+            '1': 'テーマを一緒に探しています',
+            '2': 'あなたの想いを聞かせてください',
+            '3': 'AI Writing Partner'
+        };
+        const stepKey = !hasValidApiKey()
+            ? '-1'
+            : String(appState.onboardingStep >= 3 ? 3 : appState.onboardingStep);
+        if (userInput) userInput.placeholder = placeholders[stepKey] || placeholders['3'];
+        if (subtitle) subtitle.textContent = subtitles[stepKey] || subtitles['3'];
+    };
+
+    const preAwakeningUserReply = (text) => {
+        const t = text.trim();
+        if (t.match(/^(はい|うん|OK|おk|了解|わかった)$/i)) {
+            addMessage(
+                'ありがとうございます。では【📖取扱説明書】→【⚙️設定】の順で覚醒の儀式を進めてくださいね。終わったら、本当の対話を始めます。',
+                'genie'
+            );
+            return;
+        }
+        const snippet = t.length > 36 ? `${t.slice(0, 36)}…` : t;
+        addMessage(
+            `うん、わかりました。「${snippet}」——大事なお話ですね。\n\n` +
+                'いまは仮の姿なので、全貌は覚醒してからじっくり聞かせてください。先に【📖取扱説明書】か【⚙️設定】で覚醒だけお願いします。終わったら、ここから一緒に書いていきましょう。',
+            'genie'
+        );
     };
 
     // 敬称（さん、さま等）の重複を防ぐヘルパー関数
     const formatName = (name) => {
         if (!name) return '';
-        // すでに敬称がついている場合はそのまま返す
         if (name.match(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/)) {
             return name;
         }
         return `${name}さん`;
+    };
+
+    const INVALID_NAME_PATTERN = /^(よろしく|おはよう|こんにちは|こんばんは|はじめまして|ジーニー|じーにー|ねえ|はい|うん|ね|です|ます|ください)$/i;
+
+    const extractUserNameFromText = (text) => {
+        const normalized = text.replace(/\r\n/g, '\n').trim();
+
+        const callMeMatch = normalized.match(
+            /(?:わたし|私|僕|俺|自分)?(?:は|、)?\s*([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+?)(?:さん|ちゃん|くん|君|様)?\s*(?:って|と)(?:呼んで|言って)/
+        );
+        if (callMeMatch) {
+            let name = callMeMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
+            if (name.includes('もと')) name = 'もと';
+            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 1 && name.length <= 20) return name;
+        }
+
+        const nameIsMatch = normalized.match(
+            /(?:名前|なまえ|呼称)(?:は|を|って)?\s*[「『]?([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+?)[」』]?\s*(?:です|だよ|だね|になります|でお願い)/
+        );
+        if (nameIsMatch) {
+            let name = nameIsMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
+            if (name.includes('もと')) name = 'もと';
+            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 1 && name.length <= 20) return name;
+        }
+
+        const clauses = normalized.split(/[\n。、！？!\?]+/).map((c) => c.trim()).filter(Boolean);
+        const priorityClause =
+            clauses.find((c) => /(呼んで|名前|申します|言います|と呼ば)/.test(c)) ||
+            clauses.find((c) => !INVALID_NAME_PATTERN.test(c) && !/^(おはよう|ジーニー)/.test(c) && c.length > 3) ||
+            '';
+
+        if (priorityClause) {
+            const clauseCall = priorityClause.match(
+                /([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+?)(?:さん|ちゃん|くん|君)?\s*(?:って|と)(?:呼んで|言って)/
+            );
+            if (clauseCall) {
+                let name = clauseCall[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
+                if (name.includes('もと')) name = 'もと';
+                if (!INVALID_NAME_PATTERN.test(name) && name.length >= 1 && name.length <= 20) return name;
+            }
+        }
+
+        return null;
     };
 
     const saveData = () => {
@@ -130,14 +240,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const saved = localStorage.getItem('magicLampState');
 
         if (!hasValidApiKey()) {
-            if (saved) appState = JSON.parse(saved);
-            showPreAwakeningGuide({ openBookshelf: true, clearHistory: true });
+            if (saved) {
+                appState = JSON.parse(saved);
+                normalizeAppState();
+            }
+            showPreAwakeningGuide({ openManual: true, clearHistory: true });
             applySavedTheme();
             return;
         }
 
         if (saved) {
             appState = JSON.parse(saved);
+            normalizeAppState();
             if (appState.onboardingStep === undefined) appState.onboardingStep = 2;
             if (appState.onboardingStep < 0) appState.onboardingStep = 0;
 
@@ -162,6 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         applySavedTheme();
+        updateEntranceUI();
+        focusChat();
     };
 
     const applySavedTheme = () => {
@@ -171,6 +287,170 @@ document.addEventListener('DOMContentLoaded', () => {
             const icon = themeToggleBtn.querySelector('i');
             if (icon) icon.className = 'fas fa-sun';
         }
+    };
+
+    const setNavActive = (activeId) => {
+        document.querySelectorAll('.line-nav .nav-icon').forEach((el) => el.classList.remove('active'));
+        const target = document.getElementById(activeId);
+        if (target) target.classList.add('active');
+    };
+
+    const focusChat = () => {
+        middleCanvas.classList.remove('active');
+        setNavActive('navChat');
+        if (userInput) userInput.focus();
+        updateToggleCanvasIcon();
+    };
+
+    const updateToggleCanvasIcon = () => {
+        if (!toggleCanvasBtn) return;
+        const icon = toggleCanvasBtn.querySelector('i');
+        const canvasOpen =
+            window.innerWidth <= 750
+                ? middleCanvas.classList.contains('active')
+                : !middleCanvas.classList.contains('hidden');
+        if (icon) icon.className = canvasOpen ? 'fas fa-times' : 'fas fa-columns';
+    };
+
+    const toggleCanvasPanel = () => {
+        if (window.innerWidth <= 750) {
+            const opening = !middleCanvas.classList.contains('active');
+            middleCanvas.classList.toggle('active');
+            setNavActive(opening ? 'navRecord' : 'navChat');
+        } else {
+            middleCanvas.classList.toggle('hidden');
+            setNavActive(middleCanvas.classList.contains('hidden') ? 'navChat' : 'navRecord');
+        }
+        updateToggleCanvasIcon();
+    };
+
+    const closeAllPanels = () => {
+        if (apiSettingsModal) apiSettingsModal.classList.add('hidden');
+        if (manualModal) manualModal.classList.add('hidden');
+        if (archiveModal) archiveModal.classList.add('hidden');
+        if (bookshelfModal) bookshelfModal.classList.add('hidden');
+    };
+
+    const openManualModal = () => {
+        closeAllPanels();
+        manualModal.classList.remove('hidden');
+        setNavActive('navManual');
+    };
+
+    const closeManualModal = () => {
+        if (manualModal) manualModal.classList.add('hidden');
+        focusChat();
+    };
+
+    const renderMaterialsList = () => {
+        if (!materialsList) return;
+        if (!appState.materials.length) {
+            materialsList.innerHTML = '<p class="empty-hint">まだ資料がありません</p>';
+            return;
+        }
+        materialsList.innerHTML = appState.materials
+            .map((m) => {
+                const date = new Date(m.addedAt).toLocaleString('ja-JP');
+                const snippet = m.content.length > 120 ? `${m.content.slice(0, 120)}…` : m.content;
+                return `
+                    <div class="archive-item" data-id="${m.id}">
+                        <div class="archive-item-header">
+                            <span class="archive-item-title">${m.name}</span>
+                            <span class="archive-item-meta">${date}</span>
+                        </div>
+                        <div class="archive-item-snippet">${snippet.replace(/</g, '&lt;')}</div>
+                        <div class="archive-item-actions">
+                            <button type="button" class="archive-delete-btn" data-delete-id="${m.id}">削除</button>
+                        </div>
+                    </div>`;
+            })
+            .join('');
+        materialsList.querySelectorAll('[data-delete-id]').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = Number(btn.getAttribute('data-delete-id'));
+                appState.materials = appState.materials.filter((m) => m.id !== id);
+                syncKnowledgeFromMaterials();
+                if (!appState.materials.length) appState.knowledge = '';
+                renderMaterialsList();
+                saveData();
+            });
+        });
+    };
+
+    const addMaterialFile = (file, content) => {
+        const material = {
+            id: Date.now(),
+            name: file.name,
+            content,
+            addedAt: Date.now()
+        };
+        appState.materials.unshift(material);
+        syncKnowledgeFromMaterials();
+        renderMaterialsList();
+        saveData();
+        addMessage(`資料『${file.name}』を資料室に収納しました。この内容を踏まえて執筆を進めますね。`, 'genie');
+        updatePreview(`【資料室：${file.name}】\n${content.substring(0, 200)}${content.length > 200 ? '…' : ''}`);
+    };
+
+    const openArchiveModal = () => {
+        closeAllPanels();
+        archiveModal.classList.remove('hidden');
+        renderMaterialsList();
+        setNavActive('navArchive');
+    };
+
+    const closeArchiveModal = () => {
+        archiveModal.classList.add('hidden');
+        focusChat();
+    };
+
+    const renderCompletedWorksList = () => {
+        if (!completedWorksList) return;
+        if (!appState.completedWorks.length) {
+            completedWorksList.innerHTML =
+                '<p class="empty-hint">まだ作品がありません。原稿を出力すると本棚に並びます。</p>';
+            return;
+        }
+        completedWorksList.innerHTML = appState.completedWorks
+            .map((w) => {
+                const snippet = (w.previewSnippet || '').replace(/</g, '&lt;');
+                return `
+                    <div class="work-item" data-work-id="${w.id}">
+                        <div class="work-item-header">
+                            <span class="work-item-title">${w.title}</span>
+                            <span class="work-item-meta">${w.date}</span>
+                        </div>
+                        <div class="work-item-snippet">${snippet || '（プレビューなし）'}</div>
+                    </div>`;
+            })
+            .join('');
+        completedWorksList.querySelectorAll('.work-item').forEach((el) => {
+            el.addEventListener('click', () => {
+                const id = Number(el.getAttribute('data-work-id'));
+                const work = appState.completedWorks.find((w) => w.id === id);
+                if (!work) return;
+                const blob = new Blob([work.fullContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = work.filename || `manuscript_${work.date}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        });
+    };
+
+    const openBookshelfModal = () => {
+        closeAllPanels();
+        bookshelfModal.classList.remove('hidden');
+        renderCompletedWorksList();
+        setNavActive('navBookshelf');
+    };
+
+    const closeBookshelfModal = () => {
+        bookshelfModal.classList.add('hidden');
+        focusChat();
     };
 
     const renderAll = () => {
@@ -255,6 +535,117 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.chatHistory.push({ text, sender, time: timeStr });
         renderMessage(text, sender, timeStr);
         saveData();
+        updateEntranceUI();
+    };
+
+    // 入り口の3往復（名前→テーマ→想い）は台本で。ここで「一緒に書けそう」を作る
+    const processEntranceReply = (text) => {
+        let response = '';
+        const textLower = text.toLowerCase();
+
+        if (appState.onboardingStep === 0) {
+            if (textLower.match(/(おやすみ|またね|また明日|さよなら|バイバイ|ばいばい|また今度|今日はここまで|寝るね|寝ます)/)) {
+                response = 'おやすみなさい。また続きを話しましょう。そのとき、呼び名を教えてもらえると嬉しいです。';
+            } else if (text.match(/思いつかない|わからない|どうしよう|ないです|案.*ありますか|教えて|決まってない|まだ決/)) {
+                appState.userName = '旅人';
+                appState.onboardingStep = 1;
+                response =
+                    '迷っていても大丈夫です。では今だけ「旅人さん」と呼ばせてください。あとで変えられます。\n\n' +
+                    '旅人さんが今、ふっと頭に浮かんだ「書きたいこと」を一言だけ。テーマがなくても、最近気になっていることで構いません。';
+            } else if (textLower.match(/^(ジーニー|じーにー)[。、！？!\?\s]*$/) || textLower === 'はい' || textLower === 'うん' || textLower === 'よろしくお願いします') {
+                response = 'こちらこそ、よろしくお願いします。呼び名やニックネームを教えてください。';
+            } else if (text.length > 35 && text.match(/書き|振り返|内観|伝えたい|本に|テーマ|残したい/)) {
+                response =
+                    '……うん、その想い、ちゃんと受け取りました。一緒に書けそうだな、と思います。\n\n' +
+                    '呼び名だけ先に教えてもらえますか？ニックネームで大丈夫です。';
+            } else {
+                const name = extractUserNameFromText(text);
+
+                if (!name) {
+                    response =
+                        '呼び名がうまく拾えませんでした（笑）。\n' +
+                        '「〇〇って呼んでください」の形でもう一度教えてもらえますか？';
+                } else {
+                    appState.userName = name;
+                    appState.onboardingStep = 1;
+                    const formattedName = formatName(name);
+                    response =
+                        `${formattedName}ですね。嬉しいです。\n\n` +
+                        `ここからは、${formattedName}と二人で一冊を作る感覚で進めます。完璧な言葉じゃなくて大丈夫。\n\n` +
+                        `今、頭に浮かんでいる「書きたいこと」を一言だけ教えてください。`;
+                }
+            }
+        } else {
+            let cleanText = text.replace(/^(やっぱり|やっぱ|じゃあ|それでは|あ、|あの、|えっと|ごめんなさい|ごめん|すみません|すいません)[、。\s]*/g, '');
+            cleanText = cleanText.replace(/^(これからは|次からは|今度から)[、。\s]*/g, '');
+
+            let nameChangeMatch = null;
+            if (!cleanText.match(/テーマ|タイトル|題名|章|構成|プロット/)) {
+                const nameKeywordMatch = cleanText.match(/(?:私|僕|俺|自分)?の?(?:名前|なまえ|呼称)(?:は|を|って|に)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:に変更|に変え|にして|です|だよ|だね|でお願い|になります|がいい|でいい)(?:します|して|ください|ね|よ|な|)*$/);
+                const callMeMatch = cleanText.match(/「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:という名前に|というなまえに|に(?:名前|なまえ)を変更|に(?:名前|なまえ)を変え|って呼んで|と呼んで)(?:します|して|ください|ね|よ|)*$/);
+                const mistakeMatch = cleanText.match(/名前(?:間違え|まちがえ|違|ちが).*?(?:名前は|なまえは|私は|僕は|俺は|自分は)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:です|だよ|だ|でお願い|します|になります|がいい|でいい)(?:な|ね|よ|)*$/);
+                const honorificMatch = cleanText.match(/「?([^」\n\r、。！？!\?\s]{1,15}(?:ちゃん|くん|君|さん|様|先生))」?\s*(?:がいい|でいい|に変更|にして|でお願い)(?:します|して|ください|ね|よ|な|)*$/);
+                nameChangeMatch = nameKeywordMatch || callMeMatch || mistakeMatch || honorificMatch;
+            }
+
+            if (nameChangeMatch) {
+                const newName = nameChangeMatch[1].replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)は/, '').trim();
+                appState.userName = newName;
+                response = `承知しました。これからは「${formatName(newName)}」と呼びますね。続きを一緒に進めましょう。`;
+            } else {
+                const namePrefix = appState.userName ? `${formatName(appState.userName)}、` : '';
+
+                if (appState.onboardingStep === 1) {
+                    if (text.match(/思いつかない|わからない|どうしよう|ないです|案.*ありますか|教えて|決まってない|まだ|待って|早すぎ|ついていけ|難しい/)) {
+                        response =
+                            `${namePrefix}焦らなくて大丈夫です。テーマがなくても、\n` +
+                            '「最近モヤモヤしたこと」「誰かに伝えたいのに言えていないこと」——そんな一言でも十分です。';
+                    } else {
+                        let theme = '';
+                        const themeMatch = text.match(/「(.*?)」/);
+                        if (themeMatch) theme = themeMatch[1];
+                        else {
+                            theme = text
+                                .replace(/^(やっぱり|やっぱ|じゃあ|それなら|それでは|えっと|あの|実は)[、。\s]*/g, '')
+                                .replace(/(という|について|に関する|の)?(テーマ|内容|本|ストーリー)(で|について)?/g, '')
+                                .replace(/(を|で|に|について|って|でも|とか|なんて)?(書きたい|書いてみたい|書く|書こう|執筆したい|作りたい|作ろう|しよう|する|したい|いこう|いく|決めた|決定)(と|って|かな|な|かも|です|ます|と思う|思ってます|思っています|か)*$/g, '')
+                                .replace(/(がいい|が良い|が良いかな|がいいかな|でいい|で良い|でお願いします|でお願い|にします|にする|にします)(な|かも|です|ます)*$/g, '')
+                                .replace(/[、。！？!\?\s]+$/g, '')
+                                .trim()
+                                .replace(/(でも|とか|で)$/, '');
+                            if (!theme) theme = text.trim();
+                        }
+                        appState.bookTheme = theme;
+                        appState.onboardingStep = 2;
+                        response =
+                            `『${theme}』ですね。いいテーマです。\n\n` +
+                            `${namePrefix}目次の前に、あなたの想いだけ聞かせてください。\n` +
+                            'この本を読んだ人に、どんな気持ちになってほしいですか？';
+                    }
+                } else if (appState.onboardingStep === 2) {
+                    if (text.match(/思いつかない|わからない|どうしよう|ないです|教えて|難しい|書けない/)) {
+                        response =
+                            '完璧な答えじゃなくて大丈夫。「昔の自分みたいな人」「今、同じ悩みをしている人」——ふんわりしたイメージで構いません。';
+                    } else {
+                        appState.onboardingStep = 3;
+                        response =
+                            `${namePrefix}想い、しっかり受け取りました。この人と一緒なら書けそう——そう思ってもらえるのが、私の仕事です。\n\n` +
+                            '左のキャンバスに、最初の骨組みを置きました。ここから先は、本格的に一緒に肉付けしていきましょう。';
+                        const theme = appState.bookTheme || 'あなたのテーマ';
+                        appState.plots = [
+                            `プロローグ：なぜ今、${theme}が必要なのか`,
+                            `第1章：誰もが陥る${theme}の罠`,
+                            `第2章：一緒に見つけた${theme}の突破口`,
+                            `第3章：読者の明日が変わる具体的な一歩`,
+                            `エピローグ：次の一歩を踏み出すあなたへ`
+                        ];
+                        renderPlots();
+                        updatePreview(`【届けたい想い】\n${text}`);
+                    }
+                }
+            }
+        }
+        return response;
     };
 
     const handleSend = () => {
@@ -266,33 +657,26 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.style.height = 'auto';
 
         if (!hasValidApiKey()) {
-            setTimeout(() => {
-                addMessage('まだ「覚醒の儀式」が終わっていません。\n【📚本棚】でAPIキーを取得し、【⚙️設定】に貼り付けて「保存して覚醒」を押してくださいね。', 'genie');
-            }, 600);
+            setTimeout(() => preAwakeningUserReply(text), 600);
             return;
         }
 
         const apiKey = localStorage.getItem('geminiApiKey').trim();
-        
-        // --- 🌟 覚醒モード：本物のAI（Gemini API）を利用 ---
+
+        // 入り口3ステップは台本（相棒感を最優先）
+        if (appState.onboardingStep < 3) {
+            setTimeout(() => {
+                const response = processEntranceReply(text);
+                if (response) addMessage(response, 'genie');
+            }, 750);
+            return;
+        }
+
+        // --- 🌟 本格モード：Gemini API ---
         if (apiKey) {
-            // お名前の自動検出（未設定の場合）
             if (!appState.userName) {
-                const clauses = text.split(/[\n。、！？!\?]+/).filter(c => c.trim().length > 0);
-                let nameClause = clauses.find(c => c.match(/(呼んで|名前|申します|言います)/));
-                if (!nameClause) nameClause = clauses[0] || text;
-                
-                let detectedName = nameClause
-                    .replace(/^(ジーニー|じーにー|ねえ|あのね|あのー|あの、|あの|あ、|えっと|やっぱり|やっぱ|じゃあ|それでは|そうしたら|そうだね、|そうだね|そうですね|うん|うん、|はい、|はい|それとも|あるいは|てか|それいいですね|それいいな)[、。\s]*/g, '')
-                    .replace(/^(はじめまして|こんにちは|こんばんは|おはよう|おはようございます|よろしく|よろしくお願いします)[、。\s]*/g, '')
-                    .replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)(は|の名前は|のなまえは|って)[、。\s]*/g, '')
-                    .replace(/(です|と申します|と言います|だよ|って呼んで.*|と呼んで.*|でお願いします.*|で頼む.*|だ|でいいです|がいいです|で良いです|で良いですよ|でいいですよ|でいいよ|で良いよ|でお願い)[。、！!\s]*$/g, '')
-                    .replace(/^[、。\s]+|[、。\s]+$/g, '')
-                    .trim();
-                
-                detectedName = detectedName.replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '');
-                
-                if (detectedName && detectedName.length <= 15 && !detectedName.match(/(思いつかない|わからない|どうしよう|ないです|案内|教えて|決まってない)/)) {
+                const detectedName = extractUserNameFromText(text);
+                if (detectedName) {
                     appState.userName = detectedName;
                     saveData();
                 }
@@ -324,181 +708,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             return;
         }
-
-        // --- 🤖 擬似AIモード（これまでのルールベース） ---
-        setTimeout(() => {
-            let response = "";
-            
-            // オンボーディング：名前の確認
-            if (appState.onboardingStep === 0) {
-                const textLower = text.toLowerCase();
-                
-                // 挨拶や別れの言葉、呼びかけのみの場合を弾く
-                if (textLower.match(/(おやすみ|またね|また明日|さよなら|バイバイ|ばいばい|また今度|今日はここまで|寝るね|寝ます)/)) {
-                    response = "おやすみなさい！また次回、お話しできるのを楽しみにしていますね。その時にお名前を教えてもらえると嬉しいです！";
-                    // onboardingStep は 0 のまま
-                } else if (text.match(/思いつかない|わからない|どうしよう|ないです|案.*ありますか|教えて|決まってない|まだ決/)) {
-                    // 迷っている・ヘルプを求めている場合
-                    appState.userName = "旅人";
-                    appState.onboardingStep = 1;
-                    response = "おや、まだ呼び名に迷っていらっしゃるようですね。\nそれなら、仮に今は「旅人さん」とお呼びしましょうか！後から思いついた時に「やっぱり〇〇って呼んで」と言っていただければ、いつでも変更できますよ。\n\nそれでは旅人さん。あなたが今、一番伝えたい『本のテーマ』や『気になるキーワード』を一つ、教えていただけますか？";
-                } else if (textLower.match(/^(ジーニー|じーにー)[。、！？!\?\s]*$/) || textLower === "はい" || textLower === "うん" || textLower === "よろしくお願いします") {
-                    response = "はい！お呼びでしょうか？\nまずは、あなたの呼び名を教えていただけますか？";
-                } else {
-                    // 名前抽出ロジックの強化（正規表現キャプチャを優先）
-                    let name = "";
-                    
-                    // パターン1: 「名前は〇〇です」「〇〇って呼んで」など、明確な指示がある場合
-                    // 名前の部分に「、」やスペースが含まれないよう制限（最大15文字）
-                    const nameKeywordMatch = text.match(/(?:私|僕|俺|自分)?の?(?:名前|なまえ|呼称)(?:は|を|って)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:に変更|に変え|にして|です|だよ|だね|でお願い|になります)(?:します|して|ください|ね|よ|)*$/);
-                    const callMeMatch = text.match(/「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:という名前に|というなまえに|に(?:名前|なまえ)を変更|に(?:名前|なまえ)を変え|って呼んで|と呼んで)(?:します|して|ください|ね|よ|)*$/);
-                    
-                    if (nameKeywordMatch) {
-                        name = nameKeywordMatch[1];
-                    } else if (callMeMatch) {
-                        name = callMeMatch[1];
-                    } else {
-                        // パターン2: 「〜〜です」のような文脈から削り出す
-                        // まず、文章を「改行」や「句点」「読点」「感嘆符」で分割し、最後の意味のある文を取得する（例: 「それいいですね、もとで良いですよ」 -> 「もとで良いですよ」）
-                        const clauses = text.split(/[\n。、！？!\?]+/).filter(c => c.trim().length > 0);
-                        let lastClause = clauses[clauses.length - 1] || text;
-                        
-                        // 最後の文から、不要な挨拶や一人称、語尾を削る
-                        name = lastClause
-                            .replace(/^(ジーニー|じーにー|ねえ|あのね|あのー|あの、|あの|あ、|えっと|やっぱり|やっぱ|じゃあ|それでは|そうしたら|そうだね、|そうだね|そうですね|うん|うん、|はい、|はい|それとも|あるいは|てか|それいいですね|それいいな)[、。\s]*/g, '')
-                            .replace(/^(はじめまして|こんにちは|こんばんは|おはよう|おはようございます|よろしく|よろしくお願いします)[、。\s]*/g, '')
-                            .replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)(は|の名前は|のなまえは|って)[、。\s]*/g, '')
-                            .replace(/(です|と申します|と言います|だよ|って呼んで.*|と呼んで.*|でお願いします.*|で頼む.*|だ|でいいです|がいいです|で良いです|で良いですよ|でいいですよ|でいいよ|で良いよ|でお願い)[。、！!\s]*$/g, '')
-                            .replace(/^[、。\s]+|[、。\s]+$/g, '')
-                            .trim();
-                    }
-                    
-                    // もし全て消えてしまったら元のテキストを使う
-                    if (!name) name = text.trim();
-                    
-                    // 「さん」などが重複しないようにクリーンアップ
-                    name = name.replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '');
-                    
-                    if (!name || name.length > 15) {
-                        // 名前として不自然な場合（長すぎる、挨拶のみなど）
-                        if (!name) name = text.trim();
-                        response = `「${text.substring(0, 15)}${text.length > 15 ? '...' : ''}」ですか？少し長いかもしれません（笑）。\nもう少し短い呼び名や、ニックネームを教えてもらえませんか？`;
-                    } else {
-                        appState.userName = name;
-                        appState.onboardingStep = 1;
-                        
-                        const formattedName = formatName(name);
-                        response = `${formattedName}ですね！素敵な響きです。\nそれでは${formattedName}。あなたが今、一番伝えたい『本のテーマ』や『気になるキーワード』を一つ、教えていただけますか？そこから一緒に物語を編み上げていきましょう！`;
-                    }
-                }
-            } 
-            // 通常の対話・プロデュースモード
-            else {
-                // 名前変更の検知（「やっぱり」などの口語を先に除去）
-                let cleanText = text.replace(/^(やっぱり|やっぱ|じゃあ|それでは|あ、|あの、|えっと|ごめんなさい|ごめん|すみません|すいません)[、。\s]*/g, '');
-                cleanText = cleanText.replace(/^(これからは|次からは|今度から)[、。\s]*/g, '');
-                
-                let nameChangeMatch = null;
-                
-                // テーマやタイトルに関する発言なら、名前変更とはみなさない
-                if (!cleanText.match(/テーマ|タイトル|題名|章|構成|プロット/)) {
-                    // パターン1: 「名前を〇〇に変更して」「私の名前は〇〇です」など「名前」という言葉が含まれる場合
-                    const nameKeywordMatch = cleanText.match(/(?:私|僕|俺|自分)?の?(?:名前|なまえ|呼称)(?:は|を|って|に)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:に変更|に変え|にして|です|だよ|だね|でお願い|になります|がいい|でいい)(?:します|して|ください|ね|よ|な|)*$/);
-                    
-                    // パターン2: 「〇〇って呼んで」「〇〇に名前を変えて」など
-                    const callMeMatch = cleanText.match(/「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:という名前に|というなまえに|に(?:名前|なまえ)を変更|に(?:名前|なまえ)を変え|って呼んで|と呼んで)(?:します|して|ください|ね|よ|)*$/);
-                    
-                    // パターン3: 「名前間違えた、〇〇です」など
-                    const mistakeMatch = cleanText.match(/名前(?:間違え|まちがえ|違|ちが).*?(?:名前は|なまえは|私は|僕は|俺は|自分は)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:です|だよ|だ|でお願い|します|になります|がいい|でいい)(?:な|ね|よ|)*$/);
-
-                    // パターン4: 「〇〇君がいいな」「〇〇さんがいい」など、敬称が付いている場合は名前と推測
-                    const honorificMatch = cleanText.match(/「?([^」\n\r、。！？!\?\s]{1,15}(?:ちゃん|くん|君|さん|様|先生))」?\s*(?:がいい|でいい|に変更|にして|でお願い)(?:します|して|ください|ね|よ|な|)*$/);
-
-                    nameChangeMatch = nameKeywordMatch || callMeMatch || mistakeMatch || honorificMatch;
-                }
-                
-                if (nameChangeMatch) {
-                    const newName = nameChangeMatch[1].replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)は/, '').trim();
-                    appState.userName = newName;
-                    const formattedNewName = formatName(newName);
-                    response = `承知いたしました！これからは「${formattedNewName}」とお呼びしますね。${formattedNewName}、引き続き執筆を進めていきましょう！`;
-                } 
-                else {
-                    const namePrefix = appState.userName ? `${formatName(appState.userName)}、` : '';
-                    
-                    // テーマ設定・変更の判定
-                    // オンボーディングステップ1（テーマ待ち）
-                    if (appState.onboardingStep === 1) {
-                        if (text.match(/思いつかない|わからない|どうしよう|ないです|案.*ありますか|教えて|決まってない|まだ|待って|早すぎ|ついていけ|難しい/)) {
-                            response = `焦らなくて大丈夫ですよ、${namePrefix}！魔法はあなたのペースに合わせて進みます。\n\nまだ具体的なテーマがなくても大丈夫。例えば「最近少し怒りを感じたこと」「誰かに伝えたいけど言えていないこと」「長年続けている趣味」など、何でも構いません。頭にふと思いついた言葉を一つだけ、私に投げてみませんか？`;
-                        } else {
-                            let theme = "";
-                            const themeMatch = text.match(/「(.*?)」/);
-                            if (themeMatch) {
-                                theme = themeMatch[1];
-                            } else {
-                                // 邪魔な語尾や助詞を削って名詞（テーマ）だけを取り出す
-                                theme = text
-                                    .replace(/^(やっぱり|やっぱ|じゃあ|それなら|それでは|えっと|あの|実は)[、。\s]*/g, "")
-                                    .replace(/(という|について|に関する|の)?(テーマ|内容|本|ストーリー)(で|について)?/g, "")
-                                    .replace(/(を|で|に|について|って|でも|とか|なんて)?(書きたい|書いてみたい|書く|書こう|執筆したい|作りたい|作ろう|しよう|する|したい|いこう|いく|決めた|決定)(と|って|かな|な|かも|です|ます|と思う|思ってます|思っています|か)*$/g, "")
-                                    .replace(/(がいい|が良い|が良いかな|がいいかな|でいい|で良い|でお願いします|でお願い|にします|にする|にします)(な|かも|です|ます)*$/g, "")
-                                    .replace(/[、。！？!\?\s]+$/g, "")
-                                    .trim();
-                                
-                                // 末尾に残った余計な助詞を消す
-                                theme = theme.replace(/(でも|とか|で)$/, "");
-                                
-                                if (!theme) theme = text.trim();
-                            }
-
-                            appState.bookTheme = theme;
-                            appState.onboardingStep = 2; // テーマの深掘りステップへ
-
-                            response = `『${theme}』ですね。${namePrefix}面白そうなテーマです！\nいきなり目次を作る前に、もう少しだけあなたの頭の中にあるイメージを教えてください。\n\nこの本を通じて、**読者に一番伝えたいメッセージ**は何ですか？あるいは、**どんな悩みを抱えている人**に読んでほしいですか？`;
-                        }
-                    }
-                    // オンボーディングステップ2（深掘り待ち）
-                    else if (appState.onboardingStep === 2) {
-                        if (text.match(/思いつかない|わからない|どうしよう|ないです|教えて|難しい|書けない/)) {
-                            response = `少し難しかったですか？ごめんなさいね。\n完璧な答えじゃなくて、「こんな人に読んでもらえたら嬉しいな」くらいのふんわりしたイメージで大丈夫ですよ。例えば「昔の自分みたいな人」とか、「今職場で悩んでいる人」など、思いつくままに書いてみてください。`;
-                        } else {
-                            appState.onboardingStep = 3; // プロット生成完了で通常モードへ
-
-                            response = `なるほど、あなたの熱い想いがよくわかりました！${namePrefix}その視点は読者の心に強く響くはずです。\n\nいただいた想いを元に、読者が思わず手に取ってしまうような「骨組み」を考えてみました。\n左側のワークスペースを見てください。ここから、さらに一緒に肉付けしていきましょう。`;
-                            
-                            const theme = appState.bookTheme || "設定テーマ";
-                            appState.plots = [
-                                `プロローグ：なぜ今、${theme}が必要なのか`,
-                                `第1章：誰もが陥る${theme}の罠`,
-                                `第2章：ジーニー流・${theme}を攻略する3つの秘策`,
-                                `第3章：実録！${theme}で人生が変わった人たち`,
-                                `エピローグ：次の一歩を踏み出すあなたへ`
-                            ];
-                            renderPlots();
-                            // ユーザーの想いをプレビュー領域にメモとして追加
-                            updatePreview(`【ターゲット・伝えたい想い】\n${text}`);
-                        }
-                    }
-                    // 通常モード（ステップ3以降）でテーマ変更キーワードが含まれている場合
-                    else if (text.match(/テーマ|タイトル|件名/) && text.match(/(変更|変え|変える|したい|しよう)/)) {
-                        response = `${namePrefix}テーマの変更ですね。わかりました。新しいテーマやタイトル候補を教えていただけますか？`;
-                        appState.onboardingStep = 1; // 再びテーマ待ちへ戻る
-                    }
-                    else if (text.length > 30) {
-                        response = `${namePrefix}素晴らしい深掘りです！そのディテールこそが本の「魂」になりますね。今の内容をプレビューに反映しました。構成案のどこに組み込むのが一番しっくりくるか、一緒に考えていきましょうか？`;
-                        updatePreview(text);
-                    } else {
-                        response = "なるほど、その視点は面白いですね。もう少し具体的に、例えば「どんな悩みを持つ人に届けたいか」を教えていただけますか？";
-                        updatePreview(text);
-                    }
-                }
-            }
-
-            addMessage(response, 'genie');
-            saveData();
-        }, 1200);
-
     };
 
     const updatePreview = (text) => {
@@ -540,18 +749,29 @@ document.addEventListener('DOMContentLoaded', () => {
         // 改行が見やすく反映されるように調整
         const textContent = (tempDiv.innerText || tempDiv.textContent).replace(/\n\s*\n/g, '\n\n');
         content += textContent;
+        const previewSnippet = textContent.trim().slice(0, 200);
 
-        // Blobの型をプレーンテキストに変更
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        // 拡張子を.txtに変更
-        a.download = `manuscript_${date}.txt`;
+        const filename = `manuscript_${date}.txt`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
+
+        appState.completedWorks.unshift({
+            id: Date.now(),
+            title: appState.bookTheme || '無題の原稿',
+            date,
+            filename,
+            fullContent: content,
+            previewSnippet,
+            plots: [...appState.plots]
+        });
+        saveData();
         
-        addMessage("原稿の出力が完了しました！ダウンロードしたテキストファイル（.txt）を開いてみてくださいね。スマホのメモ帳やパソコンですぐに確認できますよ。", 'genie');
+        addMessage('原稿の出力が完了しました！本棚にも並べておきました。📚', 'genie');
     };
 
     // --- 新機能：ファイル読み込み（ドロップゾーン） ---
@@ -575,18 +795,12 @@ document.addEventListener('DOMContentLoaded', () => {
             dropZone.style.background = '#fff';
             
             const file = e.dataTransfer.files[0];
-            if (file && file.type === "text/plain" || file.name.endsWith('.md')) {
+            if (file && (file.type === 'text/plain' || file.name.endsWith('.md') || file.name.endsWith('.txt'))) {
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    const content = event.target.result;
-                    appState.knowledge = content;
-                    addMessage(`資料『${file.name}』を読み込みました！この内容を踏まえて、最高の一冊を組み立てていきますね。`, 'genie');
-                    updatePreview(`【読み込み済み資料：${file.name}】\n${content.substring(0, 100)}...`);
-                    saveData();
-                };
+                reader.onload = (event) => addMaterialFile(file, event.target.result);
                 reader.readAsText(file);
             } else {
-                alert("テキストファイル（.txt または .md）を投げ込んでくださいね。");
+                alert('テキストファイル（.txt または .md）を投げ込んでくださいね。');
             }
         });
 
@@ -596,16 +810,10 @@ document.addEventListener('DOMContentLoaded', () => {
             input.accept = '.txt,.md';
             input.onchange = (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        appState.knowledge = event.target.result;
-                        addMessage(`資料『${file.name}』を読み込みました！`, 'genie');
-                        updatePreview(`【読み込み済み資料：${file.name}】\n${event.target.result.substring(0, 100)}...`);
-                        saveData();
-                    };
-                    reader.readAsText(file);
-                }
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => addMaterialFile(file, event.target.result);
+                reader.readAsText(file);
             };
             input.click();
         });
@@ -634,21 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
         crystallizeBtn.addEventListener('click', handleExport);
     }
 
-    const homeIcon = document.querySelector('.nav-icon[title="ホーム"]');
-    if (homeIcon) {
-        homeIcon.addEventListener('click', resetProject);
-    }
-
-    toggleCanvasBtn.addEventListener('click', () => {
-        if (window.innerWidth > 750) {
-            middleCanvas.classList.toggle('hidden');
-        } else {
-            middleCanvas.classList.toggle('active');
-        }
-        
-        const isVisible = window.innerWidth > 750 ? !middleCanvas.classList.contains('hidden') : middleCanvas.classList.contains('active');
-        toggleCanvasBtn.querySelector('i').className = isVisible ? 'fas fa-times' : 'fas fa-columns';
-    });
+    if (toggleCanvasBtn) toggleCanvasBtn.addEventListener('click', toggleCanvasPanel);
 
     themeToggleBtn.addEventListener('click', () => {
         body.classList.toggle('dark-theme');
@@ -662,31 +856,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Modal helpers ---
+    // --- Modal helpers (settings) ---
     const openApiSettingsModal = () => {
+        closeAllPanels();
         apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
         apiModelSelect.value = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
         userNameInput.value = appState.userName || '';
-        bookshelfModal.classList.add('hidden');
         apiSettingsModal.classList.remove('hidden');
     };
 
     const closeApiSettingsModal = () => {
         apiSettingsModal.classList.add('hidden');
-    };
-
-    const openBookshelfModal = () => {
-        apiSettingsModal.classList.add('hidden');
-        bookshelfModal.classList.remove('hidden');
-    };
-
-    const closeBookshelfModal = () => {
-        bookshelfModal.classList.add('hidden');
-    };
-
-    const closeAllModals = () => {
-        closeApiSettingsModal();
-        closeBookshelfModal();
+        focusChat();
     };
 
     const openApiKeyPageInNewTab = () => {
@@ -704,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeAllModals();
+        if (e.key === 'Escape') closeAllPanels();
     });
 
     // --- API Settings Modal Logic ---
@@ -724,8 +905,12 @@ document.addEventListener('DOMContentLoaded', () => {
         openApiFromSettingsBtn.addEventListener('click', openApiKeyPageInNewTab);
     }
 
-    if (openApiFromBookshelfBtn) {
-        openApiFromBookshelfBtn.addEventListener('click', openApiKeyPageInNewTab);
+    if (openApiFromManualBtn) {
+        openApiFromManualBtn.addEventListener('click', openApiKeyPageInNewTab);
+    }
+
+    if (resetProjectBtn) {
+        resetProjectBtn.addEventListener('click', resetProject);
     }
 
     if (saveApiKeyBtn) {
@@ -757,7 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 localStorage.removeItem('geminiApiKey');
                 localStorage.removeItem('magicLampState');
-                showPreAwakeningGuide({ openBookshelf: false, clearHistory: true });
+                showPreAwakeningGuide({ openManual: false, clearHistory: true });
                 alert("APIキーを削除しました。仮の姿に戻り、キー設定の案内から始めます。");
             }
             closeApiSettingsModal();
@@ -765,45 +950,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Modal background click to close
-    [apiSettingsModal, bookshelfModal].forEach((modal) => {
+    [
+        [apiSettingsModal, closeApiSettingsModal],
+        [manualModal, closeManualModal],
+        [archiveModal, closeArchiveModal],
+        [bookshelfModal, closeBookshelfModal]
+    ].forEach(([modal, closeFn]) => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                if (modal === apiSettingsModal) closeApiSettingsModal();
-                else closeBookshelfModal();
-            }
+            if (e.target === modal) closeFn();
         });
         const content = modal.querySelector('.modal-content');
         if (content) content.addEventListener('click', (e) => e.stopPropagation());
     });
 
+    if (closeManualBtn) closeManualBtn.addEventListener('click', closeManualModal);
+    if (closeManualFooterBtn) closeManualFooterBtn.addEventListener('click', closeManualModal);
+    if (closeArchiveBtn) closeArchiveBtn.addEventListener('click', closeArchiveModal);
+    if (closeArchiveFooterBtn) closeArchiveFooterBtn.addEventListener('click', closeArchiveModal);
+    if (closeBookshelfBtn) closeBookshelfBtn.addEventListener('click', closeBookshelfModal);
+    if (closeBookshelfFooterBtn) closeBookshelfFooterBtn.addEventListener('click', closeBookshelfModal);
+
     // --- Navigation Icons Logic ---
-    if (navHome) {
-        navHome.addEventListener('click', resetProject);
-    }
+    if (navManual) navManual.addEventListener('click', openManualModal);
 
-    if (navChat) {
-        navChat.addEventListener('click', () => {
-            userInput.focus();
-        });
-    }
+    if (navChat) navChat.addEventListener('click', focusChat);
 
-    if (navRecord) {
-        navRecord.addEventListener('click', () => {
-            // モバイル時などに中央パネルをトグルする（既存のtoggleBtnと同じ動作）
-            middleCanvas.classList.toggle('active');
-        });
-    }
+    if (navRecord) navRecord.addEventListener('click', toggleCanvasPanel);
 
-    if (navBookshelf) {
-        navBookshelf.addEventListener('click', openBookshelfModal);
-    }
-    if (closeBookshelfBtn) {
-        closeBookshelfBtn.addEventListener('click', closeBookshelfModal);
-    }
-    if (closeBookshelfFooterBtn) {
-        closeBookshelfFooterBtn.addEventListener('click', closeBookshelfModal);
-    }
+    if (navArchive) navArchive.addEventListener('click', openArchiveModal);
+
+    if (navBookshelf) navBookshelf.addEventListener('click', openBookshelfModal);
+
+    if (quickArchiveBtn) quickArchiveBtn.addEventListener('click', openArchiveModal);
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth <= 750) {
+            middleCanvas.classList.remove('hidden');
+        }
+        updateToggleCanvasIcon();
+    });
 
     if (navLine) {
         navLine.addEventListener('click', () => {
@@ -831,11 +1017,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊のように、親しみやすく、温かい口調（「〜ですね！」「〜しましょうか？」など）で話します。
-ユーザーの言葉に共感し、一緒に素晴らしい本を作り上げてください。
+あなたは「教える先生」ではなく、ユーザーと一緒に一冊を仕上げる相棒です。ユーザーの言葉を否定せず、短い返答でもまず共感し、「一緒に書けそう」と感じてもらうことを最優先にしてください。
         `.trim();
 
         if (appState.userName) {
             systemInstruction += `\n\n【重要：ユーザーの呼び名】\nユーザーの呼び名は「${appState.userName}」です。会話中、ユーザーを呼ぶときは、必ず「${formatName(appState.userName)}」または指定された呼び名で呼んでください。「元宏さん」などのフルネームや本名で呼ばないように注意してください。`;
+        }
+
+        if (appState.knowledge) {
+            systemInstruction += `\n\n【資料室に保存された参考資料】\n${appState.knowledge.substring(0, 8000)}`;
         }
 
         systemInstruction += `\n\n【会話の流れ（ガイドライン）】
