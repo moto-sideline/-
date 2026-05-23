@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openApiFromSettingsBtn = document.getElementById('openApiFromSettingsBtn');
 
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
+    const LINE_OFFICIAL_URL = 'https://lin.ee/wbrbxXKu'; // サイドライン出版 公式LINE
     
     const body = document.body;
 
@@ -230,6 +231,121 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         return null;
+    };
+
+    // 会話のつなぎ言葉を除き、本のテーマ名だけを取り出す（例: 「そうだね自叙伝みたいなの」→「自叙伝」）
+    const BOOK_THEME_KEYWORDS = [
+        '自叙伝', '回想録', 'メモワール', 'エッセイ', 'ルポルタージュ', 'ルポ',
+        'ビジネス書', 'ビジネス', '自己啓発', 'ノンフィクション', '小説', '童話', '絵本',
+        'Kindle', '電子書籍', '副業', 'マーケティング', '投資', '健康', '料理', '旅行記'
+    ];
+
+    const FILLER_PREFIXES = [
+        'やっぱり', 'やっぱ', 'じゃあ', 'じゃぁ', 'それなら', 'それでは', 'えっと', 'えーっと',
+        'あのー', 'あのね', 'あの', '実は', 'うんそうだね', 'うん、そうだね', 'そうですね', 'そうだね',
+        'そうだな', 'そうだ', 'そうか', 'うん', 'ね、', 'まあ', 'てか', 'というか', 'はい', 'では',
+        'とりあえず', 'まずは', 'まず'
+    ];
+
+    const stripFillerPrefixes = (text) => {
+        let t = text;
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (const prefix of FILLER_PREFIXES) {
+                if (t.startsWith(prefix)) {
+                    t = t.slice(prefix.length).replace(/^[、。\s]+/, '');
+                    changed = true;
+                    break;
+                }
+            }
+        }
+        return t;
+    };
+
+    const THEME_TOPIC_PATTERNS = [
+        [/仕事(?:のこと|について|の話|体験|談)?/, '仕事'],
+        [/職場|キャリア/, 'キャリア'],
+        [/家族(?:のこと)?/, '家族'],
+        [/子育て/, '子育て']
+    ];
+
+    const isLikelyThemeSelection = (text, theme) => {
+        const t = text.replace(/\s+/g, '');
+        if (!theme || t.length > 40) return false;
+        if (/気持ち|感じて|読者|読んで|伝え|届け|希望|勇気|元気|安心|励ま|後悔|思って|感じ/.test(t)) {
+            return false;
+        }
+        if (BOOK_THEME_KEYWORDS.includes(theme) && t.length <= theme.length + 10) return true;
+        if (/にしよう|にします|にする|でいこう|で行こう/.test(t) && t.includes(theme.replace(/のこと$/, ''))) {
+            return true;
+        }
+        const stripped = stripFillerPrefixes(t);
+        return stripped === theme || stripped.length <= theme.length + 4;
+    };
+
+    const isThemeUndecidedOrAskingHelp = (text) => {
+        const t = text.replace(/\s+/g, '');
+        if (
+            /迷って|迷ってる|迷い中|わからない|思いつかない|決まってない|決められない|どうしよう|何が良い|どれが良い|どっちが|自分でも|まだ決|ついていけ|難しい|早すぎ/.test(
+                t
+            )
+        ) {
+            return true;
+        }
+        if (
+            /持ってない|持ってません|ないです|ない？|ないの|ないかな|ありますか|教えて|おすすめ|提案して|相談|ジーニー|じーにー/.test(
+                t
+            )
+        ) {
+            return true;
+        }
+        if (/何かいい|いいテーマ|テーマ.*(ない|無い|ある|教|持|提案)/.test(t)) {
+            return true;
+        }
+        return false;
+    };
+
+    const extractBookThemeFromText = (rawText) => {
+        const normalized = rawText.replace(/\r\n/g, '\n').trim();
+        if (isThemeUndecidedOrAskingHelp(normalized)) return null;
+        if (
+            /読者|届け|気持ち|勇気|伝えたい|感じて|思って|後悔|励ま|安心|元気/.test(normalized) &&
+            !/にしよう|にします|にする/.test(normalized)
+        ) {
+            return null;
+        }
+
+        const quoted = normalized.match(/[「『]([^」』]+)[」』]/);
+        if (quoted) {
+            const inner = quoted[1].trim();
+            if (!isThemeUndecidedOrAskingHelp(inner) && inner.length <= 24) return inner;
+        }
+
+        for (const [pattern, label] of THEME_TOPIC_PATTERNS) {
+            if (pattern.test(normalized)) return label;
+        }
+
+        const sortedKeywords = [...BOOK_THEME_KEYWORDS].sort((a, b) => b.length - a.length);
+        for (const keyword of sortedKeywords) {
+            if (normalized.includes(keyword)) return keyword;
+        }
+
+        let theme = stripFillerPrefixes(normalized)
+            .replace(/(について|に関する).*(書きたい|書く|書こう).*$/g, '')
+            .replace(/にしよう(かな|かも|です|ます)?$/g, '')
+            .replace(/(を|で|に|について|って|でも|とか|なんて)?(書きたい|書いてみたい|書く|書こう|執筆したい|作りたい|作ろう|しよう|する|したい|いこう|いく|決めた|決定)(と|って|かな|な|かも|です|ます|と思う|思ってます|思っています|か)*$/g, '')
+            .replace(/(がいい|が良い|が良いかな|がいいかな|でいい|で良い|でお願いします|でお願い|にします|にする)(な|かも|です|ます)*$/g, '')
+            .replace(/(?:みたいな(?:の|もの)?|みたい|っぽい|的な|感じ(?:の|な)?|風(?:の|な)?|系)(?:な|の|もの)?$/g, '')
+            .replace(/のこと$/g, '')
+            .replace(/[、。！？!?\s]+$/g, '')
+            .trim()
+            .replace(/(でも|とか|で)$/, '');
+
+        if (!theme || theme.length > 24 || /[？?]/.test(theme) || isThemeUndecidedOrAskingHelp(theme)) {
+            return null;
+        }
+        return theme;
     };
 
     const saveData = () => {
@@ -596,34 +712,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const namePrefix = appState.userName ? `${formatName(appState.userName)}、` : '';
 
                 if (appState.onboardingStep === 1) {
-                    if (text.match(/思いつかない|わからない|どうしよう|ないです|案.*ありますか|教えて|決まってない|まだ|待って|早すぎ|ついていけ|難しい/)) {
+                    const theme = extractBookThemeFromText(cleanText);
+                    if (!theme) {
                         response =
-                            `${namePrefix}焦らなくて大丈夫です。テーマがなくても、\n` +
-                            '「最近モヤモヤしたこと」「誰かに伝えたいのに言えていないこと」——そんな一言でも十分です。';
+                            `${namePrefix}もちろん。迷っているときほど、一緒に探しましょう。\n\n` +
+                            'たとえばこんなテーマはどうですか？\n' +
+                            '・自叙伝（人生を振り返って残す）\n' +
+                            '・経験談・失敗談（同じ悩みの人の役に立つ）\n' +
+                            '・ノウハウ・実践記（あなたが得意なことを教える）\n\n' +
+                            'ざっくりした言葉でも大丈夫です。ピンとくるものを選んでも、あなたの言葉のままでも構いません。';
                     } else {
-                        let theme = '';
-                        const themeMatch = text.match(/「(.*?)」/);
-                        if (themeMatch) theme = themeMatch[1];
-                        else {
-                            theme = text
-                                .replace(/^(やっぱり|やっぱ|じゃあ|それなら|それでは|えっと|あの|実は)[、。\s]*/g, '')
-                                .replace(/(という|について|に関する|の)?(テーマ|内容|本|ストーリー)(で|について)?/g, '')
-                                .replace(/(を|で|に|について|って|でも|とか|なんて)?(書きたい|書いてみたい|書く|書こう|執筆したい|作りたい|作ろう|しよう|する|したい|いこう|いく|決めた|決定)(と|って|かな|な|かも|です|ます|と思う|思ってます|思っています|か)*$/g, '')
-                                .replace(/(がいい|が良い|が良いかな|がいいかな|でいい|で良い|でお願いします|でお願い|にします|にする|にします)(な|かも|です|ます)*$/g, '')
-                                .replace(/[、。！？!\?\s]+$/g, '')
-                                .trim()
-                                .replace(/(でも|とか|で)$/, '');
-                            if (!theme) theme = text.trim();
-                        }
                         appState.bookTheme = theme;
                         appState.onboardingStep = 2;
                         response =
                             `『${theme}』ですね。いいテーマです。\n\n` +
                             `${namePrefix}目次の前に、あなたの想いだけ聞かせてください。\n` +
-                            'この本を読んだ人に、どんな気持ちになってほしいですか？';
+                            'この本を読んだ人に、どんな気持ちになってほしいですか？\n' +
+                            '（長めの文章でも大丈夫です）';
                     }
                 } else if (appState.onboardingStep === 2) {
-                    if (text.match(/思いつかない|わからない|どうしよう|ないです|教えて|難しい|書けない/)) {
+                    const correctedTheme = extractBookThemeFromText(cleanText);
+                    if (correctedTheme && isLikelyThemeSelection(cleanText, correctedTheme)) {
+                        appState.bookTheme = correctedTheme;
+                        response =
+                            `『${correctedTheme}』ですね。こちらに決めましょう。\n\n` +
+                            `${namePrefix}目次の前に、あなたの想いだけ聞かせてください。\n` +
+                            'この本を読んだ人に、どんな気持ちになってほしいですか？\n' +
+                            '（長めの文章でも大丈夫です）';
+                    } else if (text.match(/思いつかない|わからない|どうしよう|ないです|教えて|難しい|書けない/)) {
                         response =
                             '完璧な答えじゃなくて大丈夫。「昔の自分みたいな人」「今、同じ悩みをしている人」——ふんわりしたイメージで構いません。';
                     } else {
@@ -993,8 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (navLine) {
         navLine.addEventListener('click', () => {
-            // LINE公式などのURLへ飛ぶ（仮でアラート）
-            window.open('https://line.me/ja/', '_blank');
+            window.open(LINE_OFFICIAL_URL, '_blank', 'noopener,noreferrer');
         });
     }
 
