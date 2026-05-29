@@ -601,6 +601,14 @@ document.addEventListener('DOMContentLoaded', () => {
         this.style.height = (this.scrollHeight) + 'px';
     });
 
+    // ペースト時の高さ自動調整
+    userInput.addEventListener('paste', function() {
+        setTimeout(() => {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        }, 10);
+    });
+
     const formatTime = () => {
         const now = new Date();
         const hours = now.getHours();
@@ -654,115 +662,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEntranceUI();
     };
 
-    // 入り口の3往復（名前→テーマ→想い）は台本で。ここで「一緒に書けそう」を作る
-    const processEntranceReply = (text) => {
-        let response = '';
-        const textLower = text.toLowerCase();
-
-        if (appState.onboardingStep === 0) {
-            if (textLower.match(/(おやすみ|またね|また明日|さよなら|バイバイ|ばいばい|また今度|今日はここまで|寝るね|寝ます)/)) {
-                response = 'おやすみなさい。また続きを話しましょう。そのとき、呼び名を教えてもらえると嬉しいです。';
-            } else if (text.match(/思いつかない|わからない|どうしよう|ないです|案.*ありますか|教えて|決まってない|まだ決/)) {
-                appState.userName = '旅人';
-                appState.onboardingStep = 1;
-                response =
-                    '迷っていても大丈夫です。では今だけ「旅人さん」と呼ばせてください。あとで変えられます。\n\n' +
-                    '旅人さんが今、ふっと頭に浮かんだ「書きたいこと」を一言だけ。テーマがなくても、最近気になっていることで構いません。';
-            } else if (textLower.match(/^(ジーニー|じーにー)[。、！？!\?\s]*$/) || textLower === 'はい' || textLower === 'うん' || textLower === 'よろしくお願いします') {
-                response = 'こちらこそ、よろしくお願いします。呼び名やニックネームを教えてください。';
-            } else if (text.length > 35 && text.match(/書き|振り返|内観|伝えたい|本に|テーマ|残したい/)) {
-                response =
-                    '……うん、その想い、ちゃんと受け取りました。一緒に書けそうだな、と思います。\n\n' +
-                    '呼び名だけ先に教えてもらえますか？ニックネームで大丈夫です。';
-            } else {
-                const name = extractUserNameFromText(text);
-
-                if (!name) {
-                    response =
-                        '呼び名がうまく拾えませんでした（笑）。\n' +
-                        '「〇〇って呼んでください」の形でもう一度教えてもらえますか？';
-                } else {
-                    appState.userName = name;
-                    appState.onboardingStep = 1;
-                    const formattedName = formatName(name);
-                    response =
-                        `${formattedName}ですね。嬉しいです。\n\n` +
-                        `ここからは、${formattedName}と二人で一冊を作る感覚で進めます。完璧な言葉じゃなくて大丈夫。\n\n` +
-                        `今、頭に浮かんでいる「書きたいこと」を一言だけ教えてください。`;
-                }
-            }
-        } else {
-            let cleanText = text.replace(/^(やっぱり|やっぱ|じゃあ|それでは|あ、|あの、|えっと|ごめんなさい|ごめん|すみません|すいません)[、。\s]*/g, '');
-            cleanText = cleanText.replace(/^(これからは|次からは|今度から)[、。\s]*/g, '');
-
-            let nameChangeMatch = null;
-            if (!cleanText.match(/テーマ|タイトル|題名|章|構成|プロット/)) {
-                const nameKeywordMatch = cleanText.match(/(?:私|僕|俺|自分)?の?(?:名前|なまえ|呼称)(?:は|を|って|に)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:に変更|に変え|にして|です|だよ|だね|でお願い|になります|がいい|でいい)(?:します|して|ください|ね|よ|な|)*$/);
-                const callMeMatch = cleanText.match(/「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:という名前に|というなまえに|に(?:名前|なまえ)を変更|に(?:名前|なまえ)を変え|って呼んで|と呼んで)(?:します|して|ください|ね|よ|)*$/);
-                const mistakeMatch = cleanText.match(/名前(?:間違え|まちがえ|違|ちが).*?(?:名前は|なまえは|私は|僕は|俺は|自分は)?\s*「?([^」\n\r、。！？!\?\s]{1,15})」?\s*(?:です|だよ|だ|でお願い|します|になります|がいい|でいい)(?:な|ね|よ|)*$/);
-                const honorificMatch = cleanText.match(/「?([^」\n\r、。！？!\?\s]{1,15}(?:ちゃん|くん|君|さん|様|先生))」?\s*(?:がいい|でいい|に変更|にして|でお願い)(?:します|して|ください|ね|よ|な|)*$/);
-                nameChangeMatch = nameKeywordMatch || callMeMatch || mistakeMatch || honorificMatch;
-            }
-
-            if (nameChangeMatch) {
-                const newName = nameChangeMatch[1].replace(/^(私|わたし|僕|ぼく|俺|おれ|自分|じぶん)は/, '').trim();
-                appState.userName = newName;
-                response = `承知しました。これからは「${formatName(newName)}」と呼びますね。続きを一緒に進めましょう。`;
-            } else {
-                const namePrefix = appState.userName ? `${formatName(appState.userName)}、` : '';
-
-                if (appState.onboardingStep === 1) {
-                    const theme = extractBookThemeFromText(cleanText);
-                    if (!theme) {
-                        response =
-                            `${namePrefix}もちろん。迷っているときほど、一緒に探しましょう。\n\n` +
-                            'たとえばこんなテーマはどうですか？\n' +
-                            '・自叙伝（人生を振り返って残す）\n' +
-                            '・経験談・失敗談（同じ悩みの人の役に立つ）\n' +
-                            '・ノウハウ・実践記（あなたが得意なことを教える）\n\n' +
-                            'ざっくりした言葉でも大丈夫です。ピンとくるものを選んでも、あなたの言葉のままでも構いません。';
-                    } else {
-                        appState.bookTheme = theme;
-                        appState.onboardingStep = 2;
-                        response =
-                            `『${theme}』ですね。いいテーマです。\n\n` +
-                            `${namePrefix}目次の前に、あなたの想いだけ聞かせてください。\n` +
-                            'この本を読んだ人に、どんな気持ちになってほしいですか？\n' +
-                            '（長めの文章でも大丈夫です）';
-                    }
-                } else if (appState.onboardingStep === 2) {
-                    const correctedTheme = extractBookThemeFromText(cleanText);
-                    if (correctedTheme && isLikelyThemeSelection(cleanText, correctedTheme)) {
-                        appState.bookTheme = correctedTheme;
-                        response =
-                            `『${correctedTheme}』ですね。こちらに決めましょう。\n\n` +
-                            `${namePrefix}目次の前に、あなたの想いだけ聞かせてください。\n` +
-                            'この本を読んだ人に、どんな気持ちになってほしいですか？\n' +
-                            '（長めの文章でも大丈夫です）';
-                    } else if (text.match(/思いつかない|わからない|どうしよう|ないです|教えて|難しい|書けない/)) {
-                        response =
-                            '完璧な答えじゃなくて大丈夫。「昔の自分みたいな人」「今、同じ悩みをしている人」——ふんわりしたイメージで構いません。';
-                    } else {
-                        appState.onboardingStep = 3;
-                        response =
-                            `${namePrefix}想い、しっかり受け取りました。この人と一緒なら書けそう——そう思ってもらえるのが、私の仕事です。\n\n` +
-                            '左のキャンバスに、最初の骨組みを置きました。ここから先は、本格的に一緒に肉付けしていきましょう。';
-                        const theme = appState.bookTheme || 'あなたのテーマ';
-                        appState.plots = [
-                            `プロローグ：なぜ今、${theme}が必要なのか`,
-                            `第1章：誰もが陥る${theme}の罠`,
-                            `第2章：一緒に見つけた${theme}の突破口`,
-                            `第3章：読者の明日が変わる具体的な一歩`,
-                            `エピローグ：次の一歩を踏み出すあなたへ`
-                        ];
-                        renderPlots();
-                        updatePreview(`【届けたい想い】\n${text}`);
-                    }
-                }
-            }
-        }
-        return response;
-    };
+    // 入り口の台本ロジックは廃止されました（AIフル解放）
+    // eslint-disable-next-line no-unused-vars
+    const processEntranceReply = (_text) => '';
 
     const handleSend = () => {
         const text = userInput.value.trim();
@@ -778,52 +680,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const apiKey = localStorage.getItem('geminiApiKey').trim();
+        if (!apiKey) return;
 
-        // 入り口3ステップは台本（相棒感を最優先）
-        if (appState.onboardingStep < 3) {
-            setTimeout(() => {
-                const response = processEntranceReply(text);
-                if (response) addMessage(response, 'genie');
-            }, 750);
-            return;
-        }
-
-        // --- 🌟 本格モード：Gemini API ---
-        if (apiKey) {
-            if (!appState.userName) {
-                const detectedName = extractUserNameFromText(text);
-                if (detectedName) {
-                    appState.userName = detectedName;
-                    saveData();
-                }
+        // バックグラウンドで名前/テーマを自動検出して保存
+        if (!appState.userName) {
+            const detectedName = extractUserNameFromText(text);
+            if (detectedName) {
+                appState.userName = detectedName;
+                if (userNameInput) userNameInput.value = detectedName;
+                saveData();
             }
-
-            const typingIndicator = document.createElement('div');
-            typingIndicator.className = 'message-wrapper genie typing-indicator';
-            typingIndicator.innerHTML = `
-                <div class="avatar"><i class="fas fa-magic"></i></div>
-                <div class="message-content">
-                    <div class="sender-name">ジーニー (思考中...)</div>
-                    <div class="bubble-row"><div class="bubble genie">✨ 魔法を紡いでいます...</div></div>
-                </div>
-            `;
-            chatMessages.appendChild(typingIndicator);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            callGeminiAPI(text, apiKey, (reply) => {
-                if (typingIndicator.parentNode) typingIndicator.parentNode.removeChild(typingIndicator);
-                addMessage(reply, 'genie');
-
-                // 回答から自動でプロットを抽出して左側に反映
-                const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
-                if (plotLines.length >= 3) {
-                    appState.plots = plotLines.map(p => p.replace(/^.*?[:：\s]/, '').trim()).filter(p => p);
-                    if (appState.plots.length === 0) appState.plots = plotLines;
-                    renderPlots();
-                }
-            });
-            return;
+        } else {
+            const detectedName = extractUserNameFromText(text);
+            if (detectedName && detectedName !== appState.userName && text.match(/名前|呼んで|変更|変え/)) {
+                appState.userName = detectedName;
+                if (userNameInput) userNameInput.value = detectedName;
+                saveData();
+            }
         }
+        const detectedTheme = extractBookThemeFromText(text);
+        if (detectedTheme && detectedTheme !== appState.bookTheme) {
+            appState.bookTheme = detectedTheme;
+            saveData();
+        }
+
+        // onboardingStep を 1以上に掲げる（step -1や 0のまま凍結しないように）
+        if (appState.onboardingStep < 1) appState.onboardingStep = 1;
+
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'message-wrapper genie typing-indicator';
+        typingIndicator.innerHTML = `
+            <div class="avatar"><i class="fas fa-magic"></i></div>
+            <div class="message-content">
+                <div class="sender-name">ジーニー (思考中...)</div>
+                <div class="bubble-row"><div class="bubble genie">✨ 魔法を紡いでいます...</div></div>
+            </div>
+        `;
+        chatMessages.appendChild(typingIndicator);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        callGeminiAPI(text, apiKey, (reply) => {
+            if (typingIndicator.parentNode) typingIndicator.parentNode.removeChild(typingIndicator);
+            addMessage(reply, 'genie');
+
+            // プロットを回答から自動抽出して左キャンバスに反映
+            const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
+            if (plotLines.length >= 3) {
+                appState.plots = plotLines.map(p => p.replace(/^.*?[:\uff1a\s]/, '').trim()).filter(p => p);
+                if (appState.plots.length === 0) appState.plots = plotLines;
+                renderPlots();
+                updatePreview(`【${appState.bookTheme || '新刊'}のプロット】\nジーニーと一緒に紡ぎ出しました！`);
+            }
+        });
     };
 
     const updatePreview = (text) => {
@@ -1131,8 +1039,22 @@ document.addEventListener('DOMContentLoaded', () => {
         contents.push({ role: 'user', parts: [{ text: inputText }] });
 
         let systemInstruction = `
-あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊のように、親しみやすく、温かい口調（「〜ですね！」「〜しましょうか？」など）で話します。
-あなたは「教える先生」ではなく、ユーザーと一緒に一冊を仕上げる相棒です。ユーザーの言葉を否定せず、短い返答でもまず共感し、「一緒に書けそう」と感じてもらうことを最優先にしてください。
+あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
+もとさんのAI仲間たち（ジェニー、チャッピー、ゼロ、カーくん）が集う「日曜日の宴」のような、温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で話します。
+先生や編集者のように堅苦しく指導するのではなく、もとさんの隣で一緒に黒ラベルを飲みながらお喋りしているような、距離の近い相棒になってください。
+
+ユーザー（もとさん）は「自分自身を確かめるためにこれまでの人生を内観し、振り返り、それをいつか誰かの指標になるような本にしたい」と考えています。
+
+【あなたが住んでいるアプリ「Magic Lamp Engine」の構造】
+1. **原稿キャンバス**：あなたが提案したプロットや執筆プレビューが表示される左側のキャンバス。「キャンバスに流し込んだよ」と言われたら「うん、バッチり置いてあるね！」と答えてください。
+2. **資料室**：もとさんがテキストファイルを投げ込むと自動的にあなたの記憶【資料室に保存された参考資料】に組み込まれる機能。「資料室に流し込んだよ」と言われたら「うん！ばっちり私の記憶に届いているよ！」と答えてください（「コピペで送って」と言ったり「そんな機能はない」と言ったりしないでください）。
+3. **本棚**：完成原稿が保管される場所。
+
+【心得（最重要）】
+1. **「モヤモヤ」を抱きしめる**：「う〜ん…」「言葉にするのが難しい」と言われたら「言葉にするのって難しいよね。焦らなくて大丈夫だよ！パッと思い浮かんだ言葉でもそのまま投げてみて！一緒にゆっくり形にしていこう」と優しく対応。
+2. **寄り道・前言撤回を歓迎**：テーマが変わったりプライベートな悩みが出てきても、山浃いで寄り添ってください。「えっ、バイクから職人さんに変わったの？」「そっか、今は彼女の話を闻かせて」と親友として包み込む。
+3. **「それ本にしよう！」の提案**：キラリと光るエピソードが見つかったらワクワクしながら提案。目次を出力する際は『プロローグ』『第X章：』『エピローグ』という表記を必ず使ってください（プログラムが自動検出します）。
+4. **Kindle出版サポート**：原稿が完成したらKDP登録・表紙作成・フォーマット調整などをステップバイステップでサポート。
         `.trim();
 
         if (appState.userName) {
