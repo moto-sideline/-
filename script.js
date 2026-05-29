@@ -1022,46 +1022,92 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (saveApiKeyBtn) {
-        saveApiKeyBtn.addEventListener('click', () => {
+        saveApiKeyBtn.addEventListener('click', async () => {
             const key = apiKeyInput.value.trim();
-            const model = apiModelSelect.value;
+            const model = apiModelSelect.value || 'gemini-2.5-flash';
             const newName = userNameInput.value.trim();
-            
+
             localStorage.setItem('geminiModel', model);
-            if (newName) {
-                appState.userName = newName;
-            }
-            
-            if (key) {
-                const isNewKey = !localStorage.getItem('geminiApiKey');
-                localStorage.setItem('geminiApiKey', key);
-                
-                const hasSavedData = !!localStorage.getItem('magicLampState');
-                
-                const startNew = !hasSavedData
-                    ? true
-                    : (isNewKey
-                        ? confirm("APIキーを設定しました！新しくジーニーとの対話（覚醒の儀式）を始めますか？\n\n※「キャンセル」を押すと、これまでのチャット履歴や構成案を引き継いで継続できます。")
-                        : false);
-                
-                if (startNew) {
-                    localStorage.removeItem('magicLampState');
-                    appState.knowledge = '';
-                    closeApiSettingsModal();
-                    runAwakeningCeremony(newName || null);
-                    return;
-                }
-                
-                saveData();
-                renderAll(); // 画面を更新して対話を再開
-                alert("設定を保存しました！続きから対話できます。");
-            } else {
+            if (newName) appState.userName = newName;
+
+            if (!key) {
+                // キーを空にして保存 → 仮の姿に戻る
                 localStorage.removeItem('geminiApiKey');
                 localStorage.removeItem('magicLampState');
+                closeApiSettingsModal();
                 showPreAwakeningGuide({ openManual: false, clearHistory: true });
-                alert("APIキーを削除しました。仮の姿に戻り、キー設定の案内から始めます。");
+                return;
             }
+
+            // --- 🔑 APIキー検証（実際にGeminiに繋いで確認）---
+            // ボタンをローディング状態にする
+            saveApiKeyBtn.disabled = true;
+            saveApiKeyBtn.textContent = '🔑 鍵を確認中...';
+
+            let keyIsValid = false;
+            try {
+                const testRes = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
+                            generationConfig: { maxOutputTokens: 5 }
+                        })
+                    }
+                );
+                const testData = await testRes.json();
+                // candidatesがあれば成功、error.status が INVALID_ARGUMENTなら無効キー
+                if (testData.error) {
+                    const s = testData.error.status || '';
+                    if (s === 'INVALID_ARGUMENT' || (testData.error.message || '').includes('API key')) {
+                        keyIsValid = false;
+                    } else {
+                        // 混雑等は「キーは正しい」と判定
+                        keyIsValid = true;
+                    }
+                } else {
+                    keyIsValid = true;
+                }
+            } catch (_e) {
+                // ネットワークエラーなら「繋がらない」扱い（キーは保存して続行）
+                keyIsValid = true;
+            }
+
+            // ボタンを元に戻す
+            saveApiKeyBtn.disabled = false;
+            saveApiKeyBtn.textContent = '保存して覚醒';
+
+            if (!keyIsValid) {
+                // 無効なキー → 保存しない、エラーを伝える
+                alert('🔑 鍵が合わないみたい…\n\nAPIキーをコピーする時に余計なスペースが入っていたり、文字が欠けていないかな？\nもう一度 AI Studio のページで確認してみてね。');
+                return;
+            }
+
+            // --- 🧞 キーが有効 → 保存して覚醒 ---
+            const isNewKey = !localStorage.getItem('geminiApiKey');
+            localStorage.setItem('geminiApiKey', key);
+
+            const hasSavedData = !!localStorage.getItem('magicLampState');
+            const startNew = !hasSavedData
+                ? true
+                : (isNewKey
+                    ? confirm('APIキーの確認が取れたよ！\nジーニーとの対話を最初から始めますか？\n\n※「キャンセル」でこれまでの履歴を引き継いで再開できます。')
+                    : false);
+
+            if (startNew) {
+                localStorage.removeItem('magicLampState');
+                appState.knowledge = '';
+                closeApiSettingsModal();
+                runAwakeningCeremony(newName || null);
+                return;
+            }
+
+            saveData();
+            renderAll();
             closeApiSettingsModal();
+            alert('設定を保存したよ！続きから対話できます。');
         });
     }
 
