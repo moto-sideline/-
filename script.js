@@ -359,9 +359,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (saved) {
                 appState = JSON.parse(saved);
                 normalizeAppState();
+                renderAll();
+                
+                // 既存の履歴があれば削除せず、APIキーの設定を促す案内だけを画面に追加表示
+                setTimeout(() => {
+                    renderMessage('ジーニーの覚醒（APIキー設定）が必要です。【⚙️設定】からAPIキーを保存してください。キーを設定すると対話を再開できます。🧞‍♂️✨', 'genie', formatTime());
+                }, 500);
+            } else {
+                showPreAwakeningGuide({ openManual: true, clearHistory: true });
             }
-            showPreAwakeningGuide({ openManual: true, clearHistory: true });
             applySavedTheme();
+            updateEntranceUI();
             return;
         }
 
@@ -851,6 +859,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- 新機能：バックアップと復元 ---
+    const exportBackup = () => {
+        const backupData = {
+            appState: appState,
+            geminiApiKey: localStorage.getItem('geminiApiKey') || '',
+            geminiModel: localStorage.getItem('geminiModel') || 'gemini-2.5-flash',
+            theme: localStorage.getItem('theme') || 'light'
+        };
+        const date = new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = `magic_lamp_backup_${date}.json`;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const importBackup = (file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported && imported.appState) {
+                    appState = imported.appState;
+                    normalizeAppState();
+                    
+                    if (imported.geminiApiKey) {
+                        localStorage.setItem('geminiApiKey', imported.geminiApiKey);
+                    }
+                    if (imported.geminiModel) {
+                        localStorage.setItem('geminiModel', imported.geminiModel);
+                    }
+                    if (imported.theme) {
+                        localStorage.setItem('theme', imported.theme);
+                    }
+                    
+                    saveData();
+                    renderAll();
+                    applySavedTheme();
+                    updateEntranceUI();
+                    closeApiSettingsModal();
+                    
+                    alert("バックアップデータを正常に復元しました！");
+                } else {
+                    alert("無効なバックアップファイルです。ファイルの形式が正しいか確認してください。");
+                }
+            } catch (err) {
+                console.error("Import Error:", err);
+                alert("バックアップファイルの読み込みに失敗しました。ファイルが壊れている可能性があります。");
+            }
+        };
+        reader.readAsText(file);
+    };
+
     // --- Listeners ---
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -937,6 +1001,26 @@ document.addEventListener('DOMContentLoaded', () => {
         resetProjectBtn.addEventListener('click', resetProject);
     }
 
+    // --- バックアップと復元のイベントリスナー ---
+    const exportBackupBtn = document.getElementById('exportBackupBtn');
+    const importBackupBtn = document.getElementById('importBackupBtn');
+    const backupFileInput = document.getElementById('backupFileInput');
+
+    if (exportBackupBtn) {
+        exportBackupBtn.addEventListener('click', exportBackup);
+    }
+
+    if (importBackupBtn && backupFileInput) {
+        importBackupBtn.addEventListener('click', () => backupFileInput.click());
+        backupFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importBackup(file);
+                backupFileInput.value = ''; // クリアして同じファイルでも再度選べるようにする
+            }
+        });
+    }
+
     if (saveApiKeyBtn) {
         saveApiKeyBtn.addEventListener('click', () => {
             const key = apiKeyInput.value.trim();
@@ -952,7 +1036,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isNewKey = !localStorage.getItem('geminiApiKey');
                 localStorage.setItem('geminiApiKey', key);
                 
-                const startNew = isNewKey || confirm("APIキーを設定しました！新しくジーニーとの対話（覚醒の儀式）を始めますか？\n（現在のチャット履歴やプロットはリセットされます）");
+                const hasSavedData = !!localStorage.getItem('magicLampState');
+                
+                const startNew = !hasSavedData
+                    ? true
+                    : (isNewKey
+                        ? confirm("APIキーを設定しました！新しくジーニーとの対話（覚醒の儀式）を始めますか？\n\n※「キャンセル」を押すと、これまでのチャット履歴や構成案を引き継いで継続できます。")
+                        : false);
                 
                 if (startNew) {
                     localStorage.removeItem('magicLampState');
@@ -961,8 +1051,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     runAwakeningCeremony(newName || null);
                     return;
                 }
+                
                 saveData();
-                alert("設定を保存しました！");
+                renderAll(); // 画面を更新して対話を再開
+                alert("設定を保存しました！続きから対話できます。");
             } else {
                 localStorage.removeItem('geminiApiKey');
                 localStorage.removeItem('magicLampState');
@@ -1024,7 +1116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Gemini API Call Logic ---
     const callGeminiAPI = async (inputText, apiKey, callback) => {
         // 現在の履歴からGemini用の会話フォーマットを構築
-        // ※システムインストラクションを反映しやすくするため、直近のやり取りを抽出
         const historyLength = Math.min(appState.chatHistory.length, 20); // 最大20件
         const recentHistory = appState.chatHistory.slice(-historyLength);
         
@@ -1083,32 +1174,92 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        const model = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        const primaryModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
+        // ヘルパー関数: API送信処理（エラー時に自動フォールバックを試みる）
+        const attemptRequest = async (currentModel, isRetry = false) => {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
 
-            const data = await response.json();
-            
-            if (data.error) {
-                console.error("API Error:", data.error);
-                callback(`【APIエラー】\n${data.error.message}\n設定画面からAPIキーが正しいか確認してください。`);
-                return;
+                const data = await response.json();
+                
+                if (data.error) {
+                    const errMsg = data.error.message || "";
+                    const errStatus = data.error.status || "";
+                    console.error(`API Error on model ${currentModel}:`, data.error);
+
+                    // 1. APIキー無効エラーのハンドリング
+                    if (errMsg.includes("API key") || errMsg.includes("Key not valid") || errStatus === "INVALID_ARGUMENT") {
+                        return {
+                            success: false,
+                            msg: "🔑 鍵（APIキー）がうまく合わないみたい。\nコピーする時に余計なスペースが入っちゃったりしていないかな？\n【⚙️設定】からもう一度確認してみてね！"
+                        };
+                    }
+
+                    // 2. 混雑エラー・上限エラーのハンドリング
+                    const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
+                    
+                    if (isCongested) {
+                        if (!isRetry) {
+                            // 自動で軽量・混雑に強いモデルへ切り替えて再試行
+                            let fallbackModel = "";
+                            if (currentModel === "gemini-2.5-pro") {
+                                fallbackModel = "gemini-2.5-flash";
+                            } else if (currentModel === "gemini-2.5-flash") {
+                                fallbackModel = "gemini-2.5-flash-lite";
+                            } else if (currentModel === "gemini-2.0-flash") {
+                                fallbackModel = "gemini-2.0-flash-lite";
+                            }
+
+                            if (fallbackModel) {
+                                console.log(`[Genie] サーバー混雑のため、${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
+                                return await attemptRequest(fallbackModel, true);
+                            }
+                        }
+
+                        // 再試行後、またはフォールバック先がない場合
+                        return {
+                            success: false,
+                            msg: "🧞‍♂️ ごめんね、いまちょっと魔法の世界（サーバー）がすごく混み合っているみたい。\n少しだけ時間をおいてもう一度送るか、右下の【⚙️設定】から「使用するAIモデル」を「Gemini 2.5 Flash-Lite（混雑時おすすめ）」に変えて試してみてね！"
+                        };
+                    }
+
+                    // その他のエラー
+                    return {
+                        success: false,
+                        msg: `🧞‍♂️ ごめんね、うまく魔法が紡げなかったよ。\n（ランプの調子が少し悪いのかも。エラー内容: ${errMsg || "一時的な接続エラー"})\nもう一回だけ話しかけてもらえるかな？`
+                    };
+                }
+
+                if (data.candidates && data.candidates.length > 0) {
+                    return {
+                        success: true,
+                        reply: data.candidates[0].content.parts[0].text
+                    };
+                } else {
+                    return {
+                        success: false,
+                        msg: "🧞‍♂️ ごめんね、うまく言葉が出てこなかったみたい。もう一回だけ話しかけてみてね！"
+                    };
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                return {
+                    success: false,
+                    msg: "📶 おっと、魔法のランプの電波（インターネット）がうまく届いていないみたい。\n接続状況を確認して、もう一度試してみてね！"
+                };
             }
+        };
 
-            if (data.candidates && data.candidates.length > 0) {
-                const reply = data.candidates[0].content.parts[0].text;
-                callback(reply);
-            } else {
-                callback("ごめんなさい、うまく魔法が紡げませんでした。もう一度お願いできますか？");
-            }
-        } catch (error) {
-            console.error("Fetch Error:", error);
-            callback("ネットワークエラーが発生しました。インターネット接続を確認してください。");
+        const result = await attemptRequest(primaryModel);
+        if (result.success) {
+            callback(result.reply);
+        } else {
+            callback(result.msg);
         }
     };
 

@@ -218,13 +218,31 @@
                     <option value="gemini-2.5-pro">Gemini 2.5 Pro (超高機能・制限強め)</option>
                 </select>
 
-                <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                <div style="border-top: 1px solid var(--line-middle-border); padding-top: 15px; margin-top: 15px;">
                     <label for="userNameInput" style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">あなたの呼び名 (ニックネーム)</label>
                     <input type="text" id="userNameInput" placeholder="もとさん" class="api-key-input" style="background: #fff;">
                     <p class="modal-hint" style="margin-top: 5px;">ジーニーがあなたを呼ぶ時の名前です。</p>
                 </div>
 
-                <div class="settings-reset-block">
+                <div style="border-top: 1px solid var(--line-middle-border); padding-top: 15px; margin-top: 15px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; margin-bottom: 5px;">
+                        <i class="fas fa-save"></i> 対話データのバックアップと復元
+                    </label>
+                    <p class="modal-hint" style="margin-bottom: 10px; line-height: 1.4;">
+                        PCの再起動や別PC（工房PCなど）での作業時に、チャット履歴・プロットを丸ごと保存して再開できます。
+                    </p>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" id="exportBackupBtn" class="secondary-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-download"></i> バックアップ保存
+                        </button>
+                        <button type="button" id="importBackupBtn" class="secondary-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-upload"></i> バックアップ復元
+                        </button>
+                    </div>
+                    <input type="file" id="backupFileInput" accept=".json" style="display: none;">
+                </div>
+
+                <div class="settings-reset-block" style="border-top: 1px solid var(--line-middle-border);">
                     <p class="modal-hint">チャット・プロット・資料を消して最初からやり直す場合</p>
                     <button type="button" id="resetProjectBtn" class="danger-btn">プロジェクトをリセット</button>
                 </div>
