@@ -820,30 +820,52 @@ document.addEventListener('DOMContentLoaded', () => {
         // onboardingStep を 1以上に掲げる（step -1や 0のまま凍結しないように）
         if (appState.onboardingStep < 1) appState.onboardingStep = 1;
 
+        // プロット作成や章立てに関する文脈であるかを判定
+        const isPlotting = /プロット|章|構成|目次|組み立て|プロローグ|エピローグ|見出し|設計|アウトライン/.test(text);
+
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message-wrapper genie typing-indicator';
+        
+        let senderName, bubbleText, avatarIcon;
+        if (isPlotting) {
+            senderName = 'ジーニー (魔法を紡ぎ中...)';
+            bubbleText = '✨ 魔法を紡いでいます...';
+            avatarIcon = 'fa-magic';
+        } else {
+            senderName = 'ジーニー (思案中...)';
+            bubbleText = '✨ 思考中...';
+            avatarIcon = 'fa-brain';
+        }
+
         typingIndicator.innerHTML = `
-            <div class="avatar"><i class="fas fa-magic"></i></div>
+            <div class="avatar"><i class="fas ${avatarIcon}"></i></div>
             <div class="message-content">
-                <div class="sender-name">ジーニー (思考中...)</div>
-                <div class="bubble-row"><div class="bubble genie">✨ 魔法を紡いでいます...</div></div>
+                <div class="sender-name">${senderName}</div>
+                <div class="bubble-row"><div class="bubble genie">${bubbleText}</div></div>
             </div>
         `;
         chatMessages.appendChild(typingIndicator);
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
+        const startTime = Date.now();
         callGeminiAPI(text, apiKey, (reply) => {
-            if (typingIndicator.parentNode) typingIndicator.parentNode.removeChild(typingIndicator);
-            addMessage(reply, 'genie');
+            const elapsed = Date.now() - startTime;
+            const minDelay = 2500; // 人間らしく考えを深めるための最小ディレイ（2.5秒）
+            const remaining = Math.max(0, minDelay - elapsed);
 
-            // プロットを回答から自動抽出して左キャンバスに反映
-            const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
-            if (plotLines.length >= 3) {
-                appState.plots = plotLines.map(p => p.replace(/^.*?[:\uff1a\s]/, '').trim()).filter(p => p);
-                if (appState.plots.length === 0) appState.plots = plotLines;
-                renderPlots();
-                updatePreview(`【${appState.bookTheme || '新刊'}のプロット】\nジーニーと一緒に紡ぎ出しました！`);
-            }
+            setTimeout(() => {
+                if (typingIndicator.parentNode) typingIndicator.parentNode.removeChild(typingIndicator);
+                addMessage(reply, 'genie');
+
+                // プロットを回答から自動抽出して左キャンバスに反映
+                const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
+                if (plotLines.length >= 3) {
+                    appState.plots = plotLines.map(p => p.replace(/^.*?[:\uff1a\s]/, '').trim()).filter(p => p);
+                    if (appState.plots.length === 0) appState.plots = plotLines;
+                    renderPlots();
+                    updatePreview(`【${appState.bookTheme || '新刊'}のプロット】\nジーニーと一緒に紡ぎ出しました！`);
+                }
+            }, remaining);
         });
     };
 
@@ -1021,12 +1043,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Listeners ---
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    });
+
 
     sendBtn.addEventListener('click', handleSend);
 
