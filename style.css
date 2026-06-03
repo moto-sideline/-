@@ -909,3 +909,109 @@ body.dark-theme .modal-hint {
     -moz-user-select: text !important;
     -ms-user-select: text !important;
 }
+
+/* --- PWA Mobile Installation Styles --- */
+.pwa-install-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background-color: #e3f2fd; /* Light blue */
+    border-bottom: 1px solid #bbdefb;
+    color: #0d47a1;
+    z-index: 10;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.pwa-install-banner.hidden {
+    display: none !important;
+}
+
+.pwa-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.pwa-banner-content .banner-icon {
+    font-size: 1.2rem;
+    color: #1976d2;
+}
+
+.pwa-banner-content .banner-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.pwa-banner-btn {
+    background-color: #1976d2;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+
+.pwa-banner-btn:hover {
+    background-color: #1565c0;
+}
+
+.pwa-banner-close {
+    background: none;
+    border: none;
+    color: #1976d2;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.pwa-banner-close:hover {
+    opacity: 1;
+}
+
+/* Modal specific instructions styling */
+.pwa-instructions {
+    padding: 5px 0;
+}
+
+.pwa-instructions.hidden {
+    display: none !important;
+}
+
+.pwa-desc {
+    font-size: 0.95rem;
+    color: #333;
+}
+
+/* Dark theme overrides for PWA components */
+body.dark-theme .pwa-install-banner {
+    background-color: #1a2730;
+    border-bottom-color: #2c3e4c;
+    color: #8ab4f8;
+}
+
+body.dark-theme .pwa-banner-content .banner-icon,
+body.dark-theme .pwa-banner-close {
+    color: #8ab4f8;
+}
+
+body.dark-theme .pwa-banner-btn {
+    background-color: #3860b2;
+}
+
+body.dark-theme .pwa-banner-btn:hover {
+    background-color: #4f77c9;
+}
+
+body.dark-theme .pwa-desc {
+    color: var(--text-main);
+}

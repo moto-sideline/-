@@ -15,6 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const apiKeyInput = document.getElementById('apiKeyInput');
     const apiModelSelect = document.getElementById('apiModelSelect');
     const userNameInput = document.getElementById('userNameInput');
+
+    // PWA Install Selectors & Variables
+    const pwaInstallBanner = document.getElementById('pwaInstallBanner');
+    const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+    const pwaCloseBannerBtn = document.getElementById('pwaCloseBannerBtn');
+    const pwaInstallModal = document.getElementById('pwaInstallModal');
+    const closePwaInstallBtn = document.getElementById('closePwaInstallBtn');
+    const closePwaInstallFooterBtn = document.getElementById('closePwaInstallFooterBtn');
+    const pwaIosInstructions = document.getElementById('pwaIosInstructions');
+    const pwaAndroidInstructions = document.getElementById('pwaAndroidInstructions');
+    const settingsPwaInstallBtn = document.getElementById('settingsPwaInstallBtn');
+    const manualPwaInstallBtn = document.getElementById('manualPwaInstallBtn');
+
+    let deferredPrompt = null;
     
     // Left Nav Icons & Modals
     const navManual = document.getElementById('navManual');
@@ -449,11 +463,101 @@ document.addEventListener('DOMContentLoaded', () => {
         updateToggleCanvasIcon();
     };
 
+    // --- PWA Installation Logic ---
+    const isStandalone = () => {
+        return (window.navigator.standalone || 
+                window.matchMedia('(display-mode: standalone)').matches);
+    };
+
+    const getMobileOS = () => {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) {
+            return 'iOS';
+        }
+        if (/android/i.test(ua)) {
+            return 'Android';
+        }
+        return 'unknown';
+    };
+
+    const showPwaInstallBanner = () => {
+        if (pwaInstallBanner && !isStandalone()) {
+            pwaInstallBanner.classList.remove('hidden');
+        }
+    };
+
+    const hidePwaInstallBanner = () => {
+        if (pwaInstallBanner) {
+            pwaInstallBanner.classList.add('hidden');
+        }
+    };
+
+    const openPwaInstallModal = () => {
+        closeAllPanels();
+        
+        if (pwaIosInstructions) pwaIosInstructions.classList.add('hidden');
+        if (pwaAndroidInstructions) pwaAndroidInstructions.classList.add('hidden');
+        
+        const os = getMobileOS();
+        if (os === 'iOS') {
+            if (pwaIosInstructions) pwaIosInstructions.classList.remove('hidden');
+        } else {
+            if (pwaAndroidInstructions) pwaAndroidInstructions.classList.remove('hidden');
+        }
+        
+        if (pwaInstallModal) pwaInstallModal.classList.remove('hidden');
+    };
+
+    const closePwaInstallModal = () => {
+        if (pwaInstallModal) pwaInstallModal.classList.add('hidden');
+        focusChat();
+    };
+
+    const triggerPwaInstallation = () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                } else {
+                    console.log('User dismissed the install prompt');
+                }
+                deferredPrompt = null;
+                hidePwaInstallBanner();
+            });
+        } else {
+            openPwaInstallModal();
+        }
+    };
+
+    const initPwaInstallation = () => {
+        if (isStandalone()) {
+            if (pwaInstallBanner) pwaInstallBanner.classList.add('hidden');
+            const pwaSettingsBlock = document.getElementById('pwaSettingsBlock');
+            if (pwaSettingsBlock) pwaSettingsBlock.style.display = 'none';
+            if (manualPwaInstallBtn) manualPwaInstallBtn.classList.add('hidden');
+            return;
+        }
+
+        const isMobile = getMobileOS() !== 'unknown' || window.innerWidth <= 750;
+        if (isMobile && manualPwaInstallBtn) {
+            manualPwaInstallBtn.classList.remove('hidden');
+        }
+
+        if (!localStorage.getItem('pwaBannerDismissed')) {
+            const os = getMobileOS();
+            if (os === 'iOS') {
+                showPwaInstallBanner();
+            }
+        }
+    };
+
     const closeAllPanels = () => {
         if (apiSettingsModal) apiSettingsModal.classList.add('hidden');
         if (manualModal) manualModal.classList.add('hidden');
         if (archiveModal) archiveModal.classList.add('hidden');
         if (bookshelfModal) bookshelfModal.classList.add('hidden');
+        if (pwaInstallModal) pwaInstallModal.classList.add('hidden');
     };
 
     const openManualModal = () => {
@@ -1117,7 +1221,8 @@ document.addEventListener('DOMContentLoaded', () => {
         [apiSettingsModal, closeApiSettingsModal],
         [manualModal, closeManualModal],
         [archiveModal, closeArchiveModal],
-        [bookshelfModal, closeBookshelfModal]
+        [bookshelfModal, closeBookshelfModal],
+        [pwaInstallModal, closePwaInstallModal]
     ].forEach(([modal, closeFn]) => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
@@ -1133,6 +1238,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeArchiveFooterBtn) closeArchiveFooterBtn.addEventListener('click', closeArchiveModal);
     if (closeBookshelfBtn) closeBookshelfBtn.addEventListener('click', closeBookshelfModal);
     if (closeBookshelfFooterBtn) closeBookshelfFooterBtn.addEventListener('click', closeBookshelfModal);
+
+    // PWA Install Event Listeners
+    if (pwaCloseBannerBtn) {
+        pwaCloseBannerBtn.addEventListener('click', () => {
+            hidePwaInstallBanner();
+            localStorage.setItem('pwaBannerDismissed', 'true');
+        });
+    }
+
+    if (pwaInstallBtn) {
+        pwaInstallBtn.addEventListener('click', triggerPwaInstallation);
+    }
+
+    if (closePwaInstallBtn) {
+        closePwaInstallBtn.addEventListener('click', closePwaInstallModal);
+    }
+
+    if (closePwaInstallFooterBtn) {
+        closePwaInstallFooterBtn.addEventListener('click', closePwaInstallModal);
+    }
+
+    if (settingsPwaInstallBtn) {
+        settingsPwaInstallBtn.addEventListener('click', triggerPwaInstallation);
+    }
+
+    if (manualPwaInstallBtn) {
+        manualPwaInstallBtn.addEventListener('click', triggerPwaInstallation);
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (!localStorage.getItem('pwaBannerDismissed')) {
+            showPwaInstallBanner();
+        }
+    });
 
     // --- Navigation Icons Logic ---
     if (navManual) navManual.addEventListener('click', openManualModal);
@@ -1312,4 +1453,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load Initial Data
     loadData();
+    initPwaInstallation();
 });
