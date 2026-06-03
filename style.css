@@ -466,6 +466,9 @@ textarea:focus { outline: none; }
 @media (max-width: 750px) {
     .app-container {
         flex-direction: column-reverse;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
     }
 
     .line-nav {
@@ -493,6 +496,10 @@ textarea:focus { outline: none; }
         flex: 1;
         min-width: 0;
         width: 100vw;
+        height: calc(100vh - 55px);
+        height: calc(100dvh - 55px);
+        min-height: 0;
+        overflow: hidden;
         z-index: 100;
     }
 
