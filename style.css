@@ -32,6 +32,7 @@ body {
     background-color: var(--line-chat-bg);
     color: var(--text-main);
     height: 100vh;
+    height: 100dvh;
     display: flex;
     overflow: hidden;
 }
@@ -462,22 +463,28 @@ textarea:focus { outline: none; }
     padding-left: 10px;
 }
 
-/* Responsive: 狭い画面はチャット優先。ナビを画面下部へ移動、文字サイズも最適化 */
+/* Responsive: 狭い画面はチャット優先。ナビを画面下部に固定、文字サイズも最適化 */
 @media (max-width: 750px) {
     .app-container {
-        flex-direction: column-reverse;
+        position: relative;
+        width: 100vw;
         height: 100vh;
         height: 100dvh;
         overflow: hidden;
     }
 
     .line-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
         width: 100%;
         height: 55px;
         flex-direction: row;
         justify-content: space-between;
         padding: 0 5px;
-        flex-shrink: 0;
+        z-index: 300;
+        background-color: var(--line-nav-bg);
     }
 
     .nav-top, .nav-bottom {
@@ -496,8 +503,9 @@ textarea:focus { outline: none; }
         flex: 1;
         min-width: 0;
         width: 100vw;
-        height: calc(100vh - 55px);
-        height: calc(100dvh - 55px);
+        height: 100vh;
+        height: 100dvh;
+        padding-bottom: 55px;
         min-height: 0;
         overflow: hidden;
         z-index: 100;
