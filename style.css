@@ -19,6 +19,7 @@
     --accent-gold: #d4af37;
     
     --transition: all 0.3s ease;
+    --page-bg: #fafafa; /* Light page background */
 }
 
 * {
@@ -899,8 +900,8 @@ body.dark-theme .drop-zone {
 }
 
 body.dark-theme .chat-header {
-    background-color: #202c33;
-    border-bottom-color: #2c2c2c;
+    background-color: transparent;
+    border-bottom-color: var(--line-middle-border);
 }
 
 body.dark-theme .header-icon,
