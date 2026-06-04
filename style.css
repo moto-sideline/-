@@ -248,7 +248,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    border-bottom: 1px solid var(--line-middle-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .chat-header-left {
@@ -260,23 +260,24 @@ body {
 .chat-avatar {
     width: 36px;
     height: 36px;
-    background-color: #eee;
+    background-color: rgba(255, 255, 255, 0.25);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #666;
+    color: #fff;
     font-size: 1.2rem;
 }
 
 .chat-title h2 {
     font-size: 1.1rem;
-    color: #333;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .chat-subtitle {
     font-size: 0.75rem;
-    color: #888;
+    color: rgba(255, 255, 255, 0.75);
 }
 
 .chat-header-right {
@@ -288,13 +289,13 @@ body {
     background: none;
     border: none;
     font-size: 1.2rem;
-    color: #666;
+    color: rgba(255, 255, 255, 0.85);
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .header-icon:hover {
-    color: #333;
+    color: #fff;
 }
 
 .toggle-btn {
@@ -863,7 +864,6 @@ body.dark-theme {
 body.dark-theme .middle-header h2,
 body.dark-theme .manuscript-card h4,
 body.dark-theme .chapter-title,
-body.dark-theme .chat-title h2,
 body.dark-theme textarea {
     color: var(--text-main);
 }
@@ -901,16 +901,21 @@ body.dark-theme .drop-zone {
 
 body.dark-theme .chat-header {
     background-color: transparent;
-    border-bottom-color: var(--line-middle-border);
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+body.dark-theme .chat-avatar {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #fff;
 }
 
 body.dark-theme .header-icon,
 body.dark-theme .chat-subtitle {
-    color: var(--text-dim);
+    color: rgba(255, 255, 255, 0.75);
 }
 
 body.dark-theme .header-icon:hover {
-    color: var(--text-main);
+    color: #fff;
 }
 
 body.dark-theme .message-wrapper .avatar {
