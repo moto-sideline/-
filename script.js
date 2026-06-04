@@ -749,7 +749,6 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         } else {
             innerHTML = `
-                <div class="avatar"><i class="fas fa-bolt"></i></div>
                 <div class="message-content">
                     <div class="sender-name">ジーニー</div>
                     <div class="bubble-row">
@@ -838,7 +837,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         typingIndicator.innerHTML = `
-            <div class="avatar"><i class="fas ${avatarIcon}"></i></div>
             <div class="message-content">
                 <div class="sender-name">${senderName}</div>
                 <div class="bubble-row"><div class="bubble genie">${bubbleText}</div></div>
