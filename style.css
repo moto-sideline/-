@@ -561,27 +561,27 @@ textarea:focus { outline: none; }
         max-width: 85%;
     }
 
-    /* 文字サイズの調整（スマートフォン閲覧用） */
+    /* 文字サイズの調整（スマートフォン閲覧用・じじばばモード） */
     .bubble {
-        font-size: 1.05rem;
-        line-height: 1.6;
+        font-size: 1.15rem;
+        line-height: 1.65;
     }
     textarea {
-        font-size: 1.05rem;
+        font-size: 1.15rem;
         line-height: 1.5;
     }
     .preview-text {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         line-height: 1.6;
     }
     .chapter-title {
-        font-size: 1.0rem;
+        font-size: 1.05rem;
     }
     .chat-title h2 {
-        font-size: 1.2rem;
+        font-size: 1.25rem;
     }
     .middle-header h2 {
-        font-size: 1.2rem;
+        font-size: 1.25rem;
     }
 }
 
