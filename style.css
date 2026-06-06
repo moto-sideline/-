@@ -461,8 +461,29 @@ textarea {
 textarea:focus { outline: none; }
 
 .input-actions {
-    padding-bottom: 5px;
-    padding-left: 10px;
+    padding: 4px 0 4px 10px;
+    display: flex;
+    align-items: center;
+}
+
+#sendBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+#sendBtn:hover, #sendBtn:active {
+    background: rgba(88, 166, 255, 0.15);
+}
+
+#sendBtn i {
+    font-size: 1.3rem;
 }
 
 /* Responsive: 狭い画面はチャット優先。ナビを画面下部に固定、文字サイズも最適化 */
@@ -533,6 +554,11 @@ textarea:focus { outline: none; }
         pointer-events: auto;
         z-index: 200;
         box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    }
+
+    /* 吹き出し幅をPC(70%)より広く（約2/3を活用） */
+    .message-content {
+        max-width: 80%;
     }
 
     /* 文字サイズの調整（スマートフォン閲覧用） */
