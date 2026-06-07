@@ -558,7 +558,7 @@ textarea:focus { outline: none; }
 
     /* 吹き出し幅をPC(70%)より広く */
     .message-content {
-        max-width: 85%;
+        max-width: 90%;
     }
 
     /* 文字サイズの調整（スマートフォン閲覧用・じじばばモード） */
