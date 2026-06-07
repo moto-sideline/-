@@ -1466,6 +1466,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Keyboard Viewport Adjustments for Mobile ---
+    const scrollToBottom = () => {
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    };
+
+    // スマホのキーボード開閉で表示領域（VisualViewport）が変化した時の調整
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', () => {
+            const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.85;
+            if (isKeyboardOpen) {
+                // キーボードのせり上がりアニメーション（約100ms〜300ms）に合わせて段階的にスクロール
+                setTimeout(scrollToBottom, 50);
+                setTimeout(scrollToBottom, 150);
+                setTimeout(scrollToBottom, 300);
+            }
+        });
+    }
+
+    // 入力欄にタッチ/フォーカスした時もスクロールを追随
+    if (userInput) {
+        userInput.addEventListener('focus', () => {
+            setTimeout(scrollToBottom, 100);
+            setTimeout(scrollToBottom, 250);
+        });
+    }
+
     // Load Initial Data
     loadData();
     initPwaInstallation();
