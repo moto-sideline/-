@@ -1,7 +1,7 @@
 {
-  "name": "Magic Lamp Engine",
-  "short_name": "ジーニー",
-  "description": "もとさんのKindle出版を加速させる魔法のランプ・エンジン",
+  "name": "魔法のランプ",
+  "short_name": "魔法のランプ",
+  "description": "もとさんのKindle出版を加速させる魔法のランプ",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#abc1d1",

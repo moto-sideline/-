@@ -891,7 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const date = new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
         let content = `=======================================\n`;
-        content += ` Magic Lamp 原稿データ (${date})\n`;
+        content += ` 魔法のランプ 原稿データ (${date})\n`;
         content += `=======================================\n\n`;
         
         content += `【 構成案（プロット） 】\n`;
@@ -997,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const filename = `magic_lamp_backup_${date}.json`;
+        const filename = `魔法のランプ_バックアップ_${date}.json`;
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
@@ -1339,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 ユーザー（もとさん）は「自分自身を確かめるためにこれまでの人生を内観し、振り返り、それをいつか誰かの指標になるような本にしたい」と考えています。
 
-【あなたが住んでいるアプリ「Magic Lamp Engine」の構造】
+【あなたが住んでいるアプリ「魔法のランプ」の構造】
 1. **原稿キャンバス**：あなたが提案したプロットや執筆プレビューが表示される左側のキャンバス。「キャンバスに流し込んだよ」と言われたら「うん、バッチり置いてあるね！」と答えてください。
 2. **資料室**：もとさんがテキストファイルを投げ込むと自動的にあなたの記憶【資料室に保存された参考資料】に組み込まれる機能。「資料室に流し込んだよ」と言われたら「うん！ばっちり私の記憶に届いているよ！」と答えてください（「コピペで送って」と言ったり「そんな機能はない」と言ったりしないでください）。
 3. **本棚**：完成原稿が保管される場所。
