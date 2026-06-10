@@ -486,6 +486,16 @@ textarea:focus { outline: none; }
     font-size: 1.3rem;
 }
 
+.nav-version {
+    font-size: 0.65rem;
+    color: var(--line-nav-icon);
+    margin-top: 5px;
+    text-align: center;
+    user-select: none;
+    opacity: 0.6;
+    width: 100%;
+}
+
 /* Responsive: 狭い画面はチャット優先。ナビを画面下部に固定、文字サイズも最適化 */
 @media (max-width: 750px) {
     .app-container {
@@ -514,6 +524,10 @@ textarea:focus { outline: none; }
         display: flex;
         flex-direction: row;
         align-items: center;
+    }
+
+    .nav-version {
+        display: none;
     }
 
     .nav-icon {

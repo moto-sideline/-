@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="style.css?v=19">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
@@ -44,6 +44,7 @@
             <div class="nav-bottom">
                 <div class="nav-icon" id="themeToggleBtn" title="テーマ切替"><i class="fas fa-moon"></i></div>
                 <div class="nav-icon" id="settingsBtn" title="設定 (API)"><i class="fas fa-cog"></i></div>
+                <div class="nav-version">v0.9.0</div>
             </div>
         </nav>
 
@@ -139,6 +140,9 @@
                     <li>章ごとの執筆アシスト（壁打ち）</li>
                     <li>Kindle出稿までのステップ案内</li>
                 </ul>
+                <div style="text-align: center; margin-top: 25px; padding-top: 10px; border-top: 1px dashed var(--line-middle-border);">
+                    <span style="font-size: 0.75rem; color: var(--text-meta);">魔法のランプ v0.9.0 Beta</span>
+                </div>
             </div>
             <div class="modal-footer modal-footer--split">
                 <button type="button" id="openApiFromManualBtn" class="secondary-btn open-api-btn">APIキーを取得（別タブ）</button>
@@ -247,9 +251,10 @@
                     </button>
                 </div>
 
-                <div class="settings-reset-block" style="border-top: 1px solid var(--line-middle-border);">
-                    <p class="modal-hint">チャット・プロット・資料を消して最初からやり直す場合</p>
-                    <button type="button" id="resetProjectBtn" class="danger-btn">プロジェクトをリセット</button>
+                <div class="settings-reset-block" style="border-top: 1px solid var(--line-middle-border); text-align: center; margin-top: 15px; padding-top: 10px;">
+                    <p class="modal-hint" style="text-align: left; margin-bottom: 10px;">チャット・プロット・資料を消して最初からやり直す場合</p>
+                    <button type="button" id="resetProjectBtn" class="danger-btn" style="margin-bottom: 15px;">プロジェクトをリセット</button>
+                    <div style="font-size: 0.75rem; color: var(--text-meta); opacity: 0.8;">魔法のランプ v0.9.0 Beta</div>
                 </div>
             </div>
             <div class="modal-footer modal-footer--split">
