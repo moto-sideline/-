@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navRecord = document.getElementById('navRecord');
     const navArchive = document.getElementById('navArchive');
     const navBookshelf = document.getElementById('navBookshelf');
+    const navSync = document.getElementById('navSync');
     const navLine = document.getElementById('navLine');
     const manualModal = document.getElementById('manualModal');
     const closeManualBtn = document.getElementById('closeManualBtn');
@@ -53,6 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeApiSettingsFooterBtn = document.getElementById('closeApiSettingsFooterBtn');
     const resetProjectBtn = document.getElementById('resetProjectBtn');
     const openApiFromSettingsBtn = document.getElementById('openApiFromSettingsBtn');
+
+    // Sync Modal Selectors
+    const syncModal = document.getElementById('syncModal');
+    const closeSyncBtn = document.getElementById('closeSyncBtn');
+    const closeSyncFooterBtn = document.getElementById('closeSyncFooterBtn');
+    const openSyncManualBtn = document.getElementById('openSyncManualBtn');
+    const gdriveClientIdInput = document.getElementById('gdriveClientIdInput');
+    const gdriveLoginBtn = document.getElementById('gdriveLoginBtn');
+    const gdriveStatusText = document.getElementById('gdriveStatusText');
 
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
     const LINE_OFFICIAL_URL = 'https://lin.ee/wbrbxXKu'; // サイドライン出版 公式LINE
@@ -363,8 +373,196 @@ document.addEventListener('DOMContentLoaded', () => {
         return theme;
     };
 
-    const saveData = () => {
+    // --- Google Drive Sync Logic ---
+    let tokenClient;
+    let gapiInited = false;
+    let gisInited = false;
+    let driveAccessToken = localStorage.getItem('gdriveAccessToken');
+    let gdriveClientId = localStorage.getItem('gdriveClientId') || '';
+
+    // Initialize inputs
+    if (gdriveClientIdInput) gdriveClientIdInput.value = gdriveClientId;
+    
+    // Listen for Client ID changes
+    if (gdriveClientIdInput) {
+        gdriveClientIdInput.addEventListener('input', (e) => {
+            gdriveClientId = e.target.value.trim();
+            localStorage.setItem('gdriveClientId', gdriveClientId);
+            checkGdriveReady();
+        });
+    }
+
+    const checkGdriveReady = () => {
+        if (gdriveClientId && gapiInited && gisInited) {
+            if (gdriveLoginBtn) gdriveLoginBtn.disabled = false;
+            if (driveAccessToken) {
+                gapi.client.setToken({access_token: driveAccessToken});
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期待機中...';
+            } else {
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：未設定（ログイン待ち）';
+            }
+        } else {
+            if (gdriveLoginBtn) gdriveLoginBtn.disabled = true;
+            if (!gdriveClientId && gdriveStatusText) {
+                gdriveStatusText.textContent = '現在：未設定（クライアントIDを入力してください）';
+            }
+        }
+    };
+
+    window.gapiLoadOkay = () => {
+        gapi.load('client', initializeGapiClient);
+    };
+
+    const initializeGapiClient = async () => {
+        try {
+            await gapi.client.init({
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+            });
+            gapiInited = true;
+            checkGdriveReady();
+            if (driveAccessToken) syncFromDrive(); // initial load from drive
+        } catch (e) {
+            console.error('gapi error:', e);
+        }
+    };
+
+    window.gisLoadOkay = () => {
+        gisInited = true;
+        initTokenClient();
+        checkGdriveReady();
+    };
+
+    const initTokenClient = () => {
+        if (!gdriveClientId || !window.google) return;
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: gdriveClientId,
+            scope: 'https://www.googleapis.com/auth/drive.appdata',
+            callback: (tokenResponse) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                    driveAccessToken = tokenResponse.access_token;
+                    localStorage.setItem('gdriveAccessToken', driveAccessToken);
+                    if (gdriveStatusText) gdriveStatusText.textContent = '現在：ログイン済み（同期中）';
+                    syncToDrive(true); 
+                }
+            }
+        });
+    }
+
+    if (gdriveLoginBtn) {
+        gdriveLoginBtn.addEventListener('click', () => {
+            if (!tokenClient) initTokenClient();
+            if (tokenClient) {
+                if (gapi.client.getToken() === null || !driveAccessToken) {
+                    tokenClient.requestAccessToken({prompt: 'consent'});
+                } else {
+                    tokenClient.requestAccessToken({prompt: ''});
+                }
+            }
+        });
+    }
+    
+    // Poll to check if window.google and window.gapi are loaded since we didn't use onload
+    const checkGoogleApis = setInterval(() => {
+        if (window.gapi && !gapiInited) window.gapiLoadOkay();
+        if (window.google && !gisInited) window.gisLoadOkay();
+        if (gapiInited && gisInited) clearInterval(checkGoogleApis);
+    }, 500);
+
+    const getSyncFileId = async () => {
+        try {
+            const response = await gapi.client.drive.files.list({
+                spaces: 'appDataFolder',
+                fields: 'files(id, name)',
+                pageSize: 10
+            });
+            const files = response.result.files;
+            const match = files.find(f => f.name === 'magic_lamp_sync.json');
+            return match ? match.id : null;
+        } catch (e) {
+            console.error('List error', e);
+            if (e.status === 401) { 
+               driveAccessToken = null;
+               localStorage.removeItem('gdriveAccessToken');
+               if (gdriveStatusText) gdriveStatusText.textContent = '現在：未設定（要再ログイン）';
+            }
+            return null;
+        }
+    };
+
+    const syncFromDrive = async () => {
+        if (!driveAccessToken || !gapiInited) return;
+        try {
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期中（Drive → Local）...';
+            const fileId = await getSyncFileId();
+            if (fileId) {
+                const response = await gapi.client.drive.files.get({
+                    fileId: fileId,
+                    alt: 'media'
+                });
+                const driveDataStr = response.body;
+                if (driveDataStr) {
+                    const driveState = JSON.parse(driveDataStr);
+                    if (driveState && driveState.chatHistory && driveState.chatHistory.length > 0) {
+                        const localLength = appState && appState.chatHistory ? appState.chatHistory.length : 0;
+                        if (driveState.chatHistory.length > localLength || (driveState.chatHistory.length === localLength && driveState.chatHistory.length > 0)) {
+                            appState = driveState;
+                            normalizeAppState();
+                            saveData(false); // triggerSync=false
+                            renderAll();
+                        }
+                    }
+                }
+            }
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（同期待機中）';
+        } catch(e) {
+            console.error('Sync from drive error:', e);
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー';
+        }
+    };
+
+    const syncToDrive = async (force = false) => {
+        if (!driveAccessToken || !gapiInited) return;
+        try {
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期中（Local → Drive）...';
+            const fileContent = JSON.stringify(appState);
+            const fileId = await getSyncFileId();
+            
+            const metadata = {
+                name: 'magic_lamp_sync.json',
+                parents: ['appDataFolder']
+            };
+            
+            const file = new Blob([fileContent], {type: 'application/json'});
+            const form = new FormData();
+            
+            if (!fileId) {
+                form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+                form.append('file', file);
+                
+                await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST',
+                    headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken}),
+                    body: form
+                });
+            } else {
+                await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                    method: 'PATCH',
+                    headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken, 'Content-Type': 'application/json'}),
+                    body: fileContent
+                });
+            }
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（同期待機中）';
+        } catch(e) {
+            console.error('Sync to drive error:', e);
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー';
+        }
+    };
+
+    const saveData = (triggerSync = true) => {
         localStorage.setItem('magicLampState', JSON.stringify(appState));
+        if (triggerSync) {
+            syncToDrive();
+        }
     };
 
     const loadData = () => {
@@ -679,6 +877,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const closeBookshelfModal = () => {
         bookshelfModal.classList.add('hidden');
+        focusChat();
+    };
+
+    const openSyncModal = () => {
+        closeAllPanels();
+        syncModal.classList.remove('hidden');
+        setNavActive('navSync');
+    };
+
+    const closeSyncModal = () => {
+        syncModal.classList.add('hidden');
         focusChat();
     };
 
@@ -1301,7 +1510,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (navBookshelf) navBookshelf.addEventListener('click', openBookshelfModal);
 
+    if (navSync) navSync.addEventListener('click', openSyncModal);
+
     if (quickArchiveBtn) quickArchiveBtn.addEventListener('click', openArchiveModal);
+
+    // Sync modal handlers
+    if (closeSyncBtn) closeSyncBtn.addEventListener('click', closeSyncModal);
+    if (closeSyncFooterBtn) closeSyncFooterBtn.addEventListener('click', closeSyncModal);
+    if (openSyncManualBtn) openSyncManualBtn.addEventListener('click', () => {
+        window.open('memo/google_drive_sync_manual.md', '_blank', 'noopener,noreferrer');
+    });
 
     window.addEventListener('resize', () => {
         if (window.innerWidth <= 750) {

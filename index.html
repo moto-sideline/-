@@ -16,6 +16,10 @@
     <link rel="stylesheet" href="style.css?v=19">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Google API & Identity Services for Drive Sync -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -39,6 +43,7 @@
                 <div class="nav-icon" id="navRecord" title="原稿キャンバス"><i class="fas fa-feather-alt"></i></div>
                 <div class="nav-icon" id="navArchive" title="資料室"><i class="fas fa-folder-open"></i></div>
                 <div class="nav-icon" id="navBookshelf" title="本棚（出来上がった作品）"><i class="fas fa-book"></i></div>
+                <div class="nav-icon" id="navSync" title="Google Drive 自動同期"><i class="fab fa-google-drive"></i></div>
                 <div class="nav-icon" id="navLine" title="サイドライン出版 公式LINE"><i class="fab fa-line"></i></div>
             </div>
             <div class="nav-bottom">
@@ -294,6 +299,45 @@
             </div>
             <div class="modal-footer">
                 <button type="button" id="closePwaInstallFooterBtn" class="secondary-btn" style="width: 100%;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Drive 自動同期モーダル -->
+    <div id="syncModal" class="modal-overlay hidden">
+        <div class="modal-content modal-content--wide">
+            <div class="modal-header">
+                <h3><i class="fab fa-google-drive"></i> Google Drive 自動同期</h3>
+                <span class="close-modal" id="closeSyncBtn">&times;</span>
+            </div>
+            <div class="modal-body modal-scroll-body">
+                <p class="modal-hint" style="margin-bottom: 15px;">
+                    PCとスマホの間でデータを自動的に同期させるための設定です。<br>
+                    ※ハードユーザー向けの高度な設定になります。
+                </p>
+                
+                <div style="background: #f8f9fa; border: 1px solid var(--line-middle-border); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main);">1. クライアントIDの入力</h4>
+                    <p class="modal-hint" style="margin-bottom: 10px;">マニュアルに沿って取得した「クライアントID」を入力してください。</p>
+                    <input type="text" id="gdriveClientIdInput" placeholder="xxxxxxxxxxxx-xxxxxxxxxxx.apps.googleusercontent.com" class="api-key-input" style="background: #fff; margin-bottom: 10px;">
+                    <button type="button" id="openSyncManualBtn" class="secondary-btn" style="font-size: 0.8rem; padding: 5px 10px;">
+                        <i class="fas fa-book-open"></i> 設定マニュアルを開く
+                    </button>
+                </div>
+
+                <div style="background: #f8f9fa; border: 1px solid var(--line-middle-border); border-radius: 8px; padding: 15px;">
+                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main);">2. Googleアカウントで認証</h4>
+                    <p class="modal-hint" style="margin-bottom: 10px;">クライアントIDを入力後、以下のボタンから同期を許可してください。</p>
+                    <button type="button" id="gdriveLoginBtn" class="primary-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" disabled>
+                        <i class="fab fa-google"></i> Googleでログインして同期開始
+                    </button>
+                    <p id="gdriveStatusText" class="modal-hint" style="margin-top: 10px; text-align: center; color: var(--text-meta);">
+                        現在：未設定
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeSyncFooterBtn" class="secondary-btn">閉じる</button>
             </div>
         </div>
     </div>

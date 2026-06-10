@@ -82,6 +82,12 @@
 - [x] カーくんが実施した「魔法のランプ」への表記統一コミット（e13571c）をローカルにマージ
 - [x] 変更が反映されるよう、`style.css` のキャッシュパラメータと `sw.js` のキャッシュ名を `magic-lamp-v17` に更新
 
+## ✅ 2026-06-10 Google Drive 自動同期機能の実装 — アンジー
+- [x] ハードユーザー向けに、Google Drive APIを利用したPC・スマホ間の自動同期機能を実装
+- [x] `memo/google_drive_sync_manual.md` を作成し、Google Cloudでの設定とクライアントID取得手順を解説
+- [x] `index.html` のナビゲーションに「Google Drive 自動同期」アイコンを追加し、設定モーダルを実装
+- [x] `script.js` に Google Identity Services と Google Drive API の連携ロジックを追加し、データ更新時の自動保存と起動時の復元を実現
+
 ## 🏠 工房↔母屋（引き継ぎ）
 - **2026-05-21**：工房 `git pull`（`3d8606f`）。メモ `memo/2026-05-21_工房セッション_カーくん.txt`
 - **2026-05-29**：工房で API 対策完了 → push。母屋は `git pull` で同期。
