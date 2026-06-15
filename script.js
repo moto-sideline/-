@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('gdriveAccessToken', driveAccessToken);
                     lastSyncError = 'なし';
                     if (gdriveStatusText) gdriveStatusText.textContent = '現在：ログイン済み（同期中）';
-                    syncToDrive(true); 
+                    syncFromDrive(); // まずDriveから最新データを取得し、必要なら送信する
                 }
             }
         });
@@ -633,7 +633,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const saveData = (triggerSync = true) => {
-        appState.updatedAt = Date.now();
+        if (triggerSync) {
+            appState.updatedAt = Date.now(); // ローカルの操作時のみ日時を更新（Driveからの受信時は上書きしない）
+        }
         localStorage.setItem('magicLampState', JSON.stringify(appState));
         if (triggerSync) {
             syncToDrive();
