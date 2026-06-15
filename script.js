@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                localStorage.removeItem('gdriveAccessToken');
                if (gdriveStatusText) gdriveStatusText.textContent = '現在：未設定（要再ログイン）';
             }
-            return null;
+            throw e;
         }
     };
 
@@ -512,11 +512,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 }
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（同期待機中）';
+            } else {
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（クラウドにデータなし）';
             }
-            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（同期待機中）';
         } catch(e) {
             console.error('Sync from drive error:', e);
-            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー';
+            const errMsg = e.message || (e.result && e.result.error && e.result.error.message) || e.status || '通信失敗';
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー（詳細：' + errMsg + '）';
         }
     };
 
@@ -539,22 +542,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
                 form.append('file', file);
                 
-                await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                     method: 'POST',
                     headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken}),
                     body: form
                 });
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`POST failed: ${response.status} ${errText}`);
+                }
             } else {
-                await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
                     method: 'PATCH',
                     headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken, 'Content-Type': 'application/json'}),
                     body: fileContent
                 });
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`PATCH failed: ${response.status} ${errText}`);
+                }
             }
             if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（同期待機中）';
         } catch(e) {
             console.error('Sync to drive error:', e);
-            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー';
+            const errMsg = e.message || (e.result && e.result.error && e.result.error.message) || '通信失敗';
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー（詳細：' + errMsg + '）';
         }
     };
 
