@@ -671,6 +671,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             renderAll();
 
+            // バージョンアップ通知の判定
+            const currentVer = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '0.9.2';
+            const lastViewedVersion = localStorage.getItem('lastViewedVersion');
+            const hasVersionUpMsg = (!lastViewedVersion || lastViewedVersion !== currentVer);
+
             setTimeout(() => {
                 if (appState.onboardingStep === 0 && !appState.userName) {
                     renderMessage('こんにちは！また来てくれて嬉しいです。ところで、あなたの呼び名を教えてもらえますか？', 'genie', formatTime());
@@ -683,6 +688,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}、` : '';
                     renderMessage(`おかえりなさい！${nameStr}また一緒に魔法を紡げるのを楽しみにしていました。続きから始めましょうか？`, 'genie', formatTime());
                 }
+
+                // バージョンアップ通知を表示（chatHistoryには保存せず、一度きり優しく案内）
+                if (hasVersionUpMsg) {
+                    const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
+                    const versionUpMsgText = 
+                        `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                        `【今回のアップデート（v0.9.2）】\n` +
+                        `・Google Drive同期の不具合（ダウンロード時の日時上書きバグ、ログイン時のデータ上書きバグ）をきれいに修正しました！\n` +
+                        `これでPCとスマホの間で、よりスムーズに同期＆執筆データのやり取りができるようになったよ！\n\n` +
+                        `新しくなった私と一緒に、また魔法を紡いでいこうね！`;
+                    
+                    setTimeout(() => {
+                        renderMessage(versionUpMsgText, 'genie', formatTime());
+                        scrollToBottom();
+                    }, 1200);
+                }
+                localStorage.setItem('lastViewedVersion', currentVer);
             }, 500);
         } else {
             const presetName = appState.userName || null;
@@ -1789,9 +1811,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const appVersionLabel = document.getElementById('appVersionLabel');
-    if (appVersionLabel && typeof APP_VERSION !== 'undefined') {
-        appVersionLabel.textContent = `魔法のランプ ${APP_VERSION}（${APP_STAGE}）`;
+    if (typeof APP_VERSION !== 'undefined') {
+        const stageStr = typeof APP_STAGE !== 'undefined' ? APP_STAGE : 'Beta';
+        const fullVersionText = `魔法のランプ v${APP_VERSION} ${stageStr}`;
+        
+        // 1. サイドバー/ナビゲーションのバージョン表示を更新
+        const navVersion = document.getElementById('navVersion');
+        if (navVersion) {
+            navVersion.textContent = `v${APP_VERSION}`;
+        }
+        
+        // 2. その他のフルバージョン表示を更新
+        const appVersionLabel = document.getElementById('appVersionLabel');
+        if (appVersionLabel) {
+            appVersionLabel.textContent = `魔法のランプ ${APP_VERSION}（${stageStr}）`;
+        }
+        
+        document.querySelectorAll('.app-version-display').forEach(el => {
+            el.textContent = fullVersionText;
+        });
     }
 
     // Load Initial Data
