@@ -502,19 +502,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const driveDataStr = response.body;
                 if (driveDataStr) {
                     const driveState = JSON.parse(driveDataStr);
-                    if (driveState && driveState.chatHistory && driveState.chatHistory.length > 0) {
-                        const localLength = appState && appState.chatHistory ? appState.chatHistory.length : 0;
-                        if (driveState.chatHistory.length > localLength || (driveState.chatHistory.length === localLength && driveState.chatHistory.length > 0)) {
+                    if (driveState) {
+                        const driveTime = driveState.updatedAt || 0;
+                        const localTime = appState.updatedAt || 0;
+                        
+                        if (driveTime > localTime || localTime === 0) {
                             appState = driveState;
                             normalizeAppState();
-                            saveData(false); // triggerSync=false
+                            saveData(false); // save locally without triggering loop sync
                             renderAll();
+                            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（最新データを読込）';
+                        } else if (driveTime < localTime) {
+                            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（ローカルの最新データを送信中...）';
+                            await syncToDrive(true);
+                        } else {
+                            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（最新状態です）';
                         }
                     }
                 }
-                if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（同期待機中）';
             } else {
                 if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（クラウドにデータなし）';
+                if (appState && appState.chatHistory && appState.chatHistory.length > 0) {
+                    await syncToDrive(true);
+                }
             }
         } catch(e) {
             console.error('Sync from drive error:', e);
@@ -571,6 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const saveData = (triggerSync = true) => {
+        appState.updatedAt = Date.now();
         localStorage.setItem('magicLampState', JSON.stringify(appState));
         if (triggerSync) {
             syncToDrive();
