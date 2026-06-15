@@ -263,6 +263,19 @@
                 </div>
 
                 <p class="app-version-label" id="appVersionLabel"></p>
+                
+                <!-- 同期デバッグ用パネル -->
+                <div id="syncDebugPanel" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border: 1px solid var(--line-middle-border); border-radius: 6px; font-family: monospace; font-size: 0.75rem; text-align: left; color: var(--text-meta);">
+                    <div style="font-weight: bold; margin-bottom: 5px; color: var(--text-main); font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-bug"></i> 同期デバッグ情報
+                    </div>
+                    <div>GAPI 初期化: <span id="debugGapi" style="font-weight: bold;">...</span></div>
+                    <div>GIS 初期化: <span id="debugGis" style="font-weight: bold;">...</span></div>
+                    <div>クライアントID: <span id="debugClientId" style="font-weight: bold;">...</span></div>
+                    <div>トークン状態: <span id="debugToken" style="font-weight: bold;">...</span></div>
+                    <div>更新日時: <span id="debugUpdateTime" style="font-weight: bold;">...</span></div>
+                    <div style="margin-top: 5px; word-break: break-all; color: #d9534f;">エラー履歴: <span id="debugError" style="font-weight: bold;">なし</span></div>
+                </div>
             </div>
             <div class="modal-footer modal-footer--split">
                 <button type="button" id="closeApiSettingsFooterBtn" class="secondary-btn">閉じる</button>
