@@ -379,6 +379,54 @@ document.addEventListener('DOMContentLoaded', () => {
     let gisInited = false;
     let driveAccessToken = localStorage.getItem('gdriveAccessToken');
     let gdriveClientId = localStorage.getItem('gdriveClientId') || '';
+    let lastSyncError = 'なし';
+
+    const updateSyncDebugInfo = () => {
+        const debugGapi = document.getElementById('debugGapi');
+        const debugGis = document.getElementById('debugGis');
+        const debugClientId = document.getElementById('debugClientId');
+        const debugToken = document.getElementById('debugToken');
+        const debugUpdateTime = document.getElementById('debugUpdateTime');
+        const debugError = document.getElementById('debugError');
+
+        if (debugGapi) debugGapi.textContent = gapiInited ? 'OK' : '未初期化';
+        if (debugGis) debugGis.textContent = gisInited ? 'OK' : '未初期化';
+        
+        if (debugClientId) {
+            if (gdriveClientId) {
+                debugClientId.textContent = gdriveClientId.length > 25 
+                    ? gdriveClientId.substring(0, 15) + '...' + gdriveClientId.slice(-10) 
+                    : gdriveClientId;
+            } else {
+                debugClientId.textContent = '未設定';
+            }
+        }
+        
+        if (debugToken) {
+            if (driveAccessToken) {
+                debugToken.textContent = driveAccessToken.length > 15
+                    ? 'あり'
+                    : 'あり (トークン不良)';
+            } else {
+                debugToken.textContent = 'なし (未ログイン)';
+            }
+        }
+        
+        if (debugUpdateTime) {
+            if (appState && appState.updatedAt) {
+                debugUpdateTime.textContent = new Date(appState.updatedAt).toLocaleString('ja-JP');
+            } else {
+                debugUpdateTime.textContent = '記録なし';
+            }
+        }
+        if (debugError) {
+            debugError.textContent = lastSyncError;
+            debugError.style.color = lastSyncError === 'なし' ? 'var(--text-meta)' : '#d9534f';
+        }
+    };
+
+    // 1.5秒ごとにデバッグ情報を自動更新
+    setInterval(updateSyncDebugInfo, 1500);
 
     // Initialize inputs
     if (gdriveClientIdInput) gdriveClientIdInput.value = gdriveClientId;
@@ -441,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (tokenResponse && tokenResponse.access_token) {
                     driveAccessToken = tokenResponse.access_token;
                     localStorage.setItem('gdriveAccessToken', driveAccessToken);
+                    lastSyncError = 'なし';
                     if (gdriveStatusText) gdriveStatusText.textContent = '現在：ログイン済み（同期中）';
                     syncToDrive(true); 
                 }
@@ -480,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return match ? match.id : null;
         } catch (e) {
             console.error('List error', e);
+            lastSyncError = 'List error: ' + (e.message || e.status || '通信失敗');
             if (e.status === 401) { 
                driveAccessToken = null;
                localStorage.removeItem('gdriveAccessToken');
@@ -529,6 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) {
             console.error('Sync from drive error:', e);
             const errMsg = e.message || (e.result && e.result.error && e.result.error.message) || e.status || '通信失敗';
+            lastSyncError = 'Download error: ' + errMsg;
             if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー（詳細：' + errMsg + '）';
         }
     };
@@ -576,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) {
             console.error('Sync to drive error:', e);
             const errMsg = e.message || (e.result && e.result.error && e.result.error.message) || '通信失敗';
+            lastSyncError = 'Upload error: ' + errMsg;
             if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期エラー（詳細：' + errMsg + '）';
         }
     };
