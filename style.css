@@ -728,6 +728,16 @@ textarea:focus { outline: none; }
     justify-content: flex-end;
 }
 
+.app-version-label {
+    margin: 16px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-middle-border);
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-meta);
+    letter-spacing: 0.02em;
+}
+
 .secondary-btn {
     padding: 10px 16px;
     border: 1px solid #ccc;

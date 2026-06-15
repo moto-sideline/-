@@ -1712,6 +1712,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const appVersionLabel = document.getElementById('appVersionLabel');
+    if (appVersionLabel && typeof APP_VERSION !== 'undefined') {
+        appVersionLabel.textContent = `魔法のランプ ${APP_VERSION}（${APP_STAGE}）`;
+    }
+
     // Load Initial Data
     loadData();
     initPwaInstallation();
