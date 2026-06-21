@@ -49,11 +49,14 @@
 2. 画面上部の「**+ 認証情報を作成**」をクリックし、「**OAuth クライアント ID**」を選択します。
 3. **アプリケーションの種類** で「**ウェブ アプリケーション**」を選択します。
 4. 名前を「`Magic Lamp Web`」などと入力します。
-5. **「承認済みの JavaScript 生成元」** の「URI を追加」をクリックし、魔法のランプを公開しているURLを入力します。（末尾のスラッシュは不要です）
+5. **「承認済みの JavaScript 生成元」** の「URI を追加」をクリックし、魔法のランプを公開しているドメインを入力します。（末尾のスラッシュは不要です）
    - 例: `https://moto-sideline.github.io`
-   - ローカル（PCのフォルダ）から直接開いている場合は `http://localhost` などを入れるか、GitHub Pagesでの運用を推奨します。
-6. 「作成」ボタンをクリックします。
-7. 画面に **「クライアント ID」**（`xxxxxxxxxxxx-xxxxxxxxxxx.apps.googleusercontent.com` のような文字列）が表示されます。**これをコピーして保存してください。**
+6. **「承認済みのリダイレクト URI」** の「URI を追加」をクリックし、アプリのフルURLを入力します。
+   - 例: `https://moto-sideline.github.io/-/` (GitHub Pagesの場合)
+   - 例: `http://localhost:8000/` (ローカルサーバーで実行する場合)
+   - ※PWAや各種ブラウザから正常に認証を受け取るために、この「リダイレクトURI」が必須となりました。設定されていないと「redirect_uri_mismatch」エラーになります。
+7. 「作成」ボタンをクリックします。
+8. 画面に **「クライアント ID」**（`xxxxxxxxxxxx-xxxxxxxxxxx.apps.googleusercontent.com` のような文字列）が表示されます。**これをコピーして保存してください。**
 
 ---
 

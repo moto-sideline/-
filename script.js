@@ -374,23 +374,45 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Google Drive Sync Logic ---
-    let tokenClient;
     let gapiInited = false;
-    let gisInited = false;
     let driveAccessToken = localStorage.getItem('gdriveAccessToken');
     let gdriveClientId = localStorage.getItem('gdriveClientId') || '';
     let lastSyncError = 'なし';
 
+    // OAuth 2.0 Implicit Flow リダイレクト時のトークンパース処理
+    const parseOAuthResponse = () => {
+        const hash = window.location.hash;
+        if (hash) {
+            const params = new URLSearchParams(hash.substring(1));
+            const accessToken = params.get('access_token');
+            const error = params.get('error');
+            
+            if (accessToken) {
+                driveAccessToken = accessToken;
+                localStorage.setItem('gdriveAccessToken', driveAccessToken);
+                lastSyncError = 'なし';
+                // ハッシュをクリアしてURLをクリーンにする
+                window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：ログイン完了（同期中）';
+            } else if (error) {
+                console.error('OAuth redirect error:', error);
+                lastSyncError = 'OAuth認証エラー: ' + error;
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：認証エラー発生';
+            }
+        }
+    };
+
+    // 初期化時にハッシュトークンをパース
+    parseOAuthResponse();
+
     const updateSyncDebugInfo = () => {
         const debugGapi = document.getElementById('debugGapi');
-        const debugGis = document.getElementById('debugGis');
         const debugClientId = document.getElementById('debugClientId');
         const debugToken = document.getElementById('debugToken');
         const debugUpdateTime = document.getElementById('debugUpdateTime');
         const debugError = document.getElementById('debugError');
 
         if (debugGapi) debugGapi.textContent = gapiInited ? 'OK' : '未初期化';
-        if (debugGis) debugGis.textContent = gisInited ? 'OK' : '未初期化';
         
         if (debugClientId) {
             if (gdriveClientId) {
@@ -441,7 +463,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const checkGdriveReady = () => {
-        if (gdriveClientId && gapiInited && gisInited) {
+        if (window.location.protocol === 'file:') {
+            if (gdriveStatusText) {
+                gdriveStatusText.innerHTML = '現在：エラー（ローカルファイル <span style="color:#d9534f;font-weight:bold;">file://</span> からはGoogle同期は動作しません。GitHub Pages等でご利用ください）';
+            }
+            if (gdriveLoginBtn) gdriveLoginBtn.disabled = true;
+            return;
+        }
+
+        if (gdriveClientId && gapiInited) {
             if (gdriveLoginBtn) gdriveLoginBtn.disabled = false;
             if (driveAccessToken) {
                 gapi.client.setToken({access_token: driveAccessToken});
@@ -471,50 +501,51 @@ document.addEventListener('DOMContentLoaded', () => {
             if (driveAccessToken) syncFromDrive(); // initial load from drive
         } catch (e) {
             console.error('gapi error:', e);
+            lastSyncError = 'GAPI初期化エラー: ' + (e.message || JSON.stringify(e) || '通信失敗');
+            checkGdriveReady();
         }
     };
 
-    window.gisLoadOkay = () => {
-        gisInited = true;
-        initTokenClient();
-        checkGdriveReady();
-    };
-
-    const initTokenClient = () => {
-        if (!gdriveClientId || !window.google) return;
-        tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: gdriveClientId,
-            scope: 'https://www.googleapis.com/auth/drive.appdata',
-            callback: (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
-                    driveAccessToken = tokenResponse.access_token;
-                    localStorage.setItem('gdriveAccessToken', driveAccessToken);
-                    lastSyncError = 'なし';
-                    if (gdriveStatusText) gdriveStatusText.textContent = '現在：ログイン済み（同期中）';
-                    syncFromDrive(); // まずDriveから最新データを取得し、必要なら送信する
-                }
-            }
-        });
-    }
-
     if (gdriveLoginBtn) {
         gdriveLoginBtn.addEventListener('click', () => {
-            if (!tokenClient) initTokenClient();
-            if (tokenClient) {
-                if (gapi.client.getToken() === null || !driveAccessToken) {
-                    tokenClient.requestAccessToken({prompt: 'consent'});
-                } else {
-                    tokenClient.requestAccessToken({prompt: ''});
+            try {
+                if (!gdriveClientId) {
+                    alert('クライアントIDが入力されていません。');
+                    return;
                 }
+                
+                // リダイレクトURI（現在のアプリのURL）
+                const redirectUri = window.location.origin + window.location.pathname;
+                
+                // Google OAuth 2.0 認証エンドポイントURL（Implicit Flow）
+                const oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+                    `?client_id=${encodeURIComponent(gdriveClientId)}` +
+                    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+                    `&response_type=token` +
+                    `&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.appdata')}` +
+                    `&prompt=consent`;
+                
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：Google認証画面へリダイレクト中...';
+                
+                // 認証ページへリダイレクト
+                window.location.href = oauthUrl;
+            } catch (err) {
+                console.error('Redirect to OAuth error:', err);
+                const errMsg = 'ログイン処理中にエラーが発生しました: ' + (err.message || JSON.stringify(err));
+                alert(errMsg);
+                lastSyncError = errMsg;
             }
         });
     }
     
-    // Poll to check if window.google and window.gapi are loaded since we didn't use onload
+    // Poll to check if window.gapi is loaded since we didn't use onload
+    let gapiLoadCalled = false;
     const checkGoogleApis = setInterval(() => {
-        if (window.gapi && !gapiInited) window.gapiLoadOkay();
-        if (window.google && !gisInited) window.gisLoadOkay();
-        if (gapiInited && gisInited) clearInterval(checkGoogleApis);
+        if (window.gapi && !gapiInited && !gapiLoadCalled) {
+            gapiLoadCalled = true;
+            window.gapiLoadOkay();
+        }
+        if (gapiInited) clearInterval(checkGoogleApis);
     }, 500);
 
     const getSyncFileId = async () => {
