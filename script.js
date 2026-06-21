@@ -515,7 +515,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 // リダイレクトURI（現在のアプリのURL）
-                const redirectUri = window.location.origin + window.location.pathname;
+                let redirectUri = window.location.origin + window.location.pathname;
+                if (redirectUri.endsWith('index.html')) {
+                    redirectUri = redirectUri.substring(0, redirectUri.length - 'index.html'.length);
+                }
                 
                 // Google OAuth 2.0 認証エンドポイントURL（Implicit Flow）
                 const oauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
@@ -1649,7 +1652,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeSyncBtn) closeSyncBtn.addEventListener('click', closeSyncModal);
     if (closeSyncFooterBtn) closeSyncFooterBtn.addEventListener('click', closeSyncModal);
     if (openSyncManualBtn) openSyncManualBtn.addEventListener('click', () => {
-        window.open('memo/google_drive_sync_manual.md', '_blank', 'noopener,noreferrer');
+        // iOS PWA等でアプリ内が上書きされるのを防ぐため、GitHub上の外部URLで開く
+        window.open('https://github.com/moto-sideline/-/blob/main/memo/google_drive_sync_manual.md', '_blank', 'noopener,noreferrer');
     });
 
     window.addEventListener('resize', () => {
