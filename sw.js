@@ -1,4 +1,4 @@
-const CACHE_NAME = 'magic-lamp-v20';
+const CACHE_NAME = 'magic-lamp-v22';
 const urlsToCache = [
   './',
   './index.html',
@@ -27,7 +27,7 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 

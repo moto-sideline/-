@@ -1319,7 +1319,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetProject = () => {
         if (confirm("現在進行中の魔法（データ）をすべて消去して、新しい本を作り始めますか？\n（出力済みのファイルは消えません）")) {
             localStorage.removeItem('magicLampState');
-            location.reload();
+            // キャッシュをバイパスするためにタイムスタンプ付きでリロード
+            window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
         }
     };
 
