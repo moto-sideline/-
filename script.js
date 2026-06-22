@@ -590,7 +590,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         const driveTime = driveState.updatedAt || 0;
                         const localTime = appState.updatedAt || 0;
                         
-                        if (driveTime > localTime || localTime === 0) {
+                        const isLocalEmpty = !appState.chatHistory || appState.chatHistory.length <= 1;
+                        const isDriveHasData = driveState.chatHistory && driveState.chatHistory.length > 1;
+                        
+                        if (isLocalEmpty && isDriveHasData) {
+                            // ローカルが初期状態・空で、クラウドにデータがある場合は強制ダウンロード
+                            appState = driveState;
+                            normalizeAppState();
+                            saveData(false);
+                            renderAll();
+                            if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期完了（クラウドのデータを復元）';
+                        } else if (driveTime > localTime || localTime === 0) {
                             appState = driveState;
                             normalizeAppState();
                             saveData(false); // save locally without triggering loop sync
