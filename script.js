@@ -716,7 +716,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAll();
 
             // バージョンアップ通知の判定
-            const currentVer = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '0.9.2';
+            const currentVer = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '0.9.4';
             const lastViewedVersion = localStorage.getItem('lastViewedVersion');
             const hasVersionUpMsg = (!lastViewedVersion || lastViewedVersion !== currentVer);
 
@@ -738,10 +738,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     const versionUpMsgText = 
                         `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
-                        `【今回のアップデート（v0.9.2）】\n` +
-                        `・Google Drive同期の不具合（ダウンロード時の日時上書きバグ、ログイン時のデータ上書きバグ）をきれいに修正しました！\n` +
-                        `これでPCとスマホの間で、よりスムーズに同期＆執筆データのやり取りができるようになったよ！\n\n` +
-                        `新しくなった私と一緒に、また魔法を紡いでいこうね！`;
+                        `【今回のアップデート（v0.9.4）】\n` +
+                        `・Google Drive同期のシステムを極限まで賢くしました！\n` +
+                        `・間違えて空っぽの状態で同期ボタンを押しても、大事なデータが消えずに自動でクラウドから復元される「データ守護魔法」を追加しました！\n\n` +
+                        `これで母屋のPCでも、スマホでも、安心して執筆の続きができるよ！また魔法を紡いでいこうね！`;
                     
                     setTimeout(() => {
                         renderMessage(versionUpMsgText, 'genie', formatTime());
