@@ -2,7 +2,7 @@
   "name": "魔法のランプ",
   "short_name": "魔法のランプ",
   "description": "もとさんのKindle出版を加速させる魔法のランプ",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#abc1d1",
