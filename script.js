@@ -24,9 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const closePwaInstallBtn = document.getElementById('closePwaInstallBtn');
     const closePwaInstallFooterBtn = document.getElementById('closePwaInstallFooterBtn');
     const pwaIosInstructions = document.getElementById('pwaIosInstructions');
+    const pwaIosChromeInstructions = document.getElementById('pwaIosChromeInstructions');
     const pwaAndroidInstructions = document.getElementById('pwaAndroidInstructions');
     const settingsPwaInstallBtn = document.getElementById('settingsPwaInstallBtn');
     const manualPwaInstallBtn = document.getElementById('manualPwaInstallBtn');
+    const copyUrlForSafariBtn = document.getElementById('copyUrlForSafariBtn');
 
     let deferredPrompt = null;
     
@@ -738,10 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     const versionUpMsgText = 
                         `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
-                        `【今回のアップデート（v0.9.4）】\n` +
-                        `・Google Drive同期のシステムを極限まで賢くしました！\n` +
-                        `・間違えて空っぽの状態で同期ボタンを押しても、大事なデータが消えずに自動でクラウドから復元される「データ守護魔法」を追加しました！\n\n` +
-                        `これで母屋のPCでも、スマホでも、安心して執筆の続きができるよ！また魔法を紡いでいこうね！`;
+                        `【今回のアップデート（v0.9.7）】\n` +
+                        `・iPhoneでChrome等の他ブラウザをお使いの方向けに、ホーム画面への追加（PWAインストール）手順の解説を追加しました！\n` +
+                        `・簡単にSafariへ移行するための「URLコピーボタン」をインストールの説明欄に搭載しました！\n\n` +
+                        `これでどの環境からでも、よりスムーズにジーニーをスマホに宿せるようになったよ！また一緒におしゃべりして、本を紡いでいこうね！`;
                     
                     setTimeout(() => {
                         renderMessage(versionUpMsgText, 'genie', formatTime());
@@ -833,15 +835,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const isIOSNonSafari = () => {
+        const ua = navigator.userAgent;
+        const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+        const hasOtherBrowserTokens = /CriOS|FxiOS|OPiOS|EdgiOS|LINE/i.test(ua);
+        return isIOS && hasOtherBrowserTokens;
+    };
+
     const openPwaInstallModal = () => {
         closeAllPanels();
         
         if (pwaIosInstructions) pwaIosInstructions.classList.add('hidden');
+        if (pwaIosChromeInstructions) pwaIosChromeInstructions.classList.add('hidden');
         if (pwaAndroidInstructions) pwaAndroidInstructions.classList.add('hidden');
         
         const os = getMobileOS();
         if (os === 'iOS') {
-            if (pwaIosInstructions) pwaIosInstructions.classList.remove('hidden');
+            if (isIOSNonSafari()) {
+                if (pwaIosChromeInstructions) pwaIosChromeInstructions.classList.remove('hidden');
+            } else {
+                if (pwaIosInstructions) pwaIosInstructions.classList.remove('hidden');
+            }
         } else {
             if (pwaAndroidInstructions) pwaAndroidInstructions.classList.remove('hidden');
         }
@@ -1633,6 +1647,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (manualPwaInstallBtn) {
         manualPwaInstallBtn.addEventListener('click', triggerPwaInstallation);
+    }
+
+    if (copyUrlForSafariBtn) {
+        copyUrlForSafariBtn.addEventListener('click', () => {
+            const cleanUrl = window.location.origin + window.location.pathname;
+            navigator.clipboard.writeText(cleanUrl)
+                .then(() => {
+                    alert('URLをコピーしました！ Safariを開いてアドレス欄に貼り付けて開いてください。');
+                })
+                .catch(err => {
+                    console.error('Copy failed', err);
+                    const el = document.createElement('textarea');
+                    el.value = cleanUrl;
+                    document.body.appendChild(el);
+                    el.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(el);
+                    alert('URLをコピーしました！ Safariを開いてアドレス欄に貼り付けて開いてください。');
+                });
+        });
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {

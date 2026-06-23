@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=22">
+    <link rel="stylesheet" href="style.css?v=23">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google API for Drive Sync -->
@@ -310,6 +310,23 @@
                     </ol>
                     <p class="modal-hint" style="margin-top: 10px; color: var(--text-dim);">※Chromeなどの他ブラウザでは追加機能が制限される場合があります。必ずSafariで開いて操作してください。</p>
                 </div>
+                <!-- iOS Chrome/Firefox/Edge等の手順 -->
+                <div id="pwaIosChromeInstructions" class="pwa-instructions hidden">
+                    <p class="pwa-desc" style="font-size: 0.95rem; margin-bottom: 15px; line-height: 1.5;">iPhone/iPad (Chrome等) で追加する手順です：</p>
+                    <ol class="modal-list numbered" style="margin-left: 20px; font-size: 0.9rem; line-height: 1.7; margin-bottom: 15px;">
+                        <li>ブラウザ右上（または右下メニュー）にある<strong>共有アイコン</strong> <i class="fas fa-share-square" style="color: var(--accent);"></i> をタップします。</li>
+                        <li>メニューから<strong>「ホーム画面に追加」</strong> <i class="far fa-plus-square" style="color: var(--accent);"></i> を選択します。</li>
+                    </ol>
+                    <div style="margin-top: 15px; padding: 12px; background: var(--line-middle-border); border-radius: 8px; border: 1px dashed var(--accent);">
+                        <p style="font-size: 0.85rem; margin-bottom: 10px; line-height: 1.4; color: var(--text-main);">
+                            💡 <strong>おすすめ：Safariで開く</strong><br>
+                            Safariで開くと、より確実にホーム画面に追加できます。下のボタンからURLをコピーし、Safariを起動して貼り付けてみてください。
+                        </p>
+                        <button type="button" id="copyUrlForSafariBtn" class="secondary-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem; padding: 8px; cursor: pointer;">
+                            <i class="fas fa-copy"></i> URLをコピーする
+                        </button>
+                    </div>
+                </div>
                 <!-- Android/Othersの手順 -->
                 <div id="pwaAndroidInstructions" class="pwa-instructions hidden">
                     <p class="pwa-desc" style="font-size: 0.95rem; margin-bottom: 15px; line-height: 1.5;">Android / Chrome でアプリとして追加する手順です：</p>
@@ -365,7 +382,7 @@
         </div>
     </div>
 
-    <script src="version.js?v=20"></script>
-    <script src="script.js?v=20"></script>
+    <script src="version.js?v=21"></script>
+    <script src="script.js?v=21"></script>
 </body>
 </html>
