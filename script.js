@@ -740,11 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     const versionUpMsgText = 
                         `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
-                        `【今回のアップデート（v0.9.7）】\n` +
-                        `・iPhoneでChrome等の他ブラウザをお使いの方向けに、ホーム画面への追加（PWAインストール）手順の解説を追加しました！\n` +
-                        `・簡単にSafariへ移行するための「URLコピーボタン」をインストールの説明欄に搭載しました！\n\n` +
-                        `これでどの環境からでも、よりスムーズにジーニーをスマホに宿せるようになったよ！また一緒におしゃべりして、本を紡いでいこうね！`;
-                    
+                        `【今回のアップデート（v0.9.8）】\n` +
+                        `・左ナビの全アイコンをカラー化！取説・チャット・原稿・資料室・本棚・Drive（本家ロゴ）・LINE・設定、それぞれがひと目でわかるようになりました。\n` +
+                        `・選択中やタップ時は白く光って、今どこにいるかわかりやすくなったよ！\n\n` +
+                        `見た目も使いやすさも、少しずつ育てていこうね！また一緒におしゃべりして、本を紡いでいこう！`;
                     setTimeout(() => {
                         renderMessage(versionUpMsgText, 'genie', formatTime());
                         scrollToBottom();
