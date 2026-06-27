@@ -618,6 +618,17 @@ textarea:focus { outline: none; }
         height: 1.8rem;
     }
 
+    /* LINE SVG の公式グリーンをスマホでも確実に表示 */
+    #navLine .nav-line-svg rect {
+        fill: #00C300 !important;
+    }
+    #navLine .nav-line-svg path {
+        fill: white !important;
+    }
+    #navLine .nav-line-svg text {
+        fill: #00C300 !important;
+    }
+
     #settingsBtn .fa-cog {
         font-size: 1.3rem;
     }
