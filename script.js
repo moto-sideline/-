@@ -740,10 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     const versionUpMsgText = 
                         `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
-                        `【今回のアップデート（v0.9.8）】\n` +
-                        `・左ナビの全アイコンをカラー化！取説・チャット・原稿・資料室・本棚・Drive（本家ロゴ）・LINE・設定、それぞれがひと目でわかるようになりました。\n` +
-                        `・選択中やタップ時は白く光って、今どこにいるかわかりやすくなったよ！\n\n` +
-                        `見た目も使いやすさも、少しずつ育てていこうね！また一緒におしゃべりして、本を紡いでいこう！`;
+                        `【今回のアップデート（v0.9.11）】\n` +
+                        `・iPhone等の縦画面（幅の狭い画面）で、一番右端の「設定（歯車）」アイコンが半分はみ出て切れてしまう表示不具合を修正したよ！\n` +
+                        `・画面幅に合わせてアイコンの間隔とサイズが優しく自動調整されるようになりました。\n\n` +
+                        `これで縦画面でもばっちり設定ボタンを押せるね！引き続き、魔法のランプでたくさん本を紡いでいこう！`;
                     setTimeout(() => {
                         renderMessage(versionUpMsgText, 'genie', formatTime());
                         scrollToBottom();

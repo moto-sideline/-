@@ -607,15 +607,15 @@ textarea:focus { outline: none; }
     }
 
     .nav-icon {
-        padding: 10px 8px;
+        padding: 10px 5px;
         width: auto;
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
 
     #navLine .nav-line-svg,
     #navSync .nav-drive-svg {
-        width: 1.8rem;
-        height: 1.8rem;
+        width: 1.6rem;
+        height: 1.6rem;
     }
 
     /* LINE SVG の公式グリーンをスマホでも確実に表示 */
@@ -630,7 +630,7 @@ textarea:focus { outline: none; }
     }
 
     #settingsBtn .fa-cog {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
 
     .line-chat {
