@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const gdriveStatusText = document.getElementById('gdriveStatusText');
 
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
-    const LINE_OFFICIAL_URL = 'https://lin.ee/wbrbxXKu'; // サイドライン出版 公式LINE
+    const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
     
     const body = document.body;
 
