@@ -740,10 +740,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     const versionUpMsgText = 
                         `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
-                        `【今回のアップデート（v0.9.11）】\n` +
-                        `・iPhone等の縦画面（幅の狭い画面）で、一番右端の「設定（歯車）」アイコンが半分はみ出て切れてしまう表示不具合を修正したよ！\n` +
-                        `・画面幅に合わせてアイコンの間隔とサイズが優しく自動調整されるようになりました。\n\n` +
-                        `これで縦画面でもばっちり設定ボタンを押せるね！引き続き、魔法のランプでたくさん本を紡いでいこう！`;
+                        `【今回のアップデート（v0.9.12）】\n` +
+                        `・スマホへの追加手順やAPIキーの取得手順をまとめた「公式サポートガイド」のウェブサイトを新しく用意したよ！\n` +
+                        `・これに合わせて、アプリ内の取扱説明書をすっきりシンプルに軽量化して、もっと見やすくなったんだ。\n\n` +
+                        `困ったときは「取扱説明書」からいつでもガイドを確認できるから、安心してね！引き続き、魔法のランプでたくさん本を紡いでいこう！`;
                     setTimeout(() => {
                         renderMessage(versionUpMsgText, 'genie', formatTime());
                         scrollToBottom();
