@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧞 魔法のランプ Google Drive 自動同期ガイド</title>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #7494c0; /* LINE Blue */
+            --primary-dark: #5a7fa8;
+            --accent-gold: #d4af37;
+            --accent-green: #00c300; /* LINE Green */
+            --bg-light: #f4f7fa;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* Header Style */
+        header {
+            background: linear-gradient(135deg, var(--primary-bg), var(--primary-dark));
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            border-bottom: 4px solid var(--accent-gold);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "🧞";
+            position: absolute;
+            font-size: 8rem;
+            right: -20px;
+            bottom: -20px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        header p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px 80px 20px;
+        }
+
+        /* Warning Banner */
+        .alert-banner {
+            background: #fffaf0;
+            border-left: 4px solid var(--accent-gold);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .alert-banner h3 {
+            color: #b7791f;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .alert-banner p {
+            font-size: 0.85rem;
+            color: #744210;
+        }
+
+        /* Section styles */
+        section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 35px;
+            box-shadow: var(--card-shadow);
+            scroll-margin-top: 20px;
+        }
+
+        section h2 {
+            font-size: 1.3rem;
+            color: var(--primary-dark);
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        section h2 i {
+            color: var(--accent-gold);
+        }
+
+        h3.subsection-title {
+            font-size: 1.05rem;
+            margin: 20px 0 10px 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Lists */
+        ul.guide-list, ol.guide-list {
+            margin-left: 20px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        ul.guide-list li, ol.guide-list li {
+            margin-bottom: 8px;
+        }
+
+        .strong-point {
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        /* Step Container for Cloud Settings */
+        .step-container {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .step-container .subsection-title {
+            background: #f8fafc;
+            padding: 15px 20px;
+            margin: 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.95rem;
+        }
+
+        .step-content {
+            padding: 20px;
+            font-size: 0.88rem;
+        }
+
+        /* Image Display */
+        .step-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 12px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* External Button Link */
+        .btn-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            background-color: var(--primary-bg);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn-link:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-link.green {
+            background-color: var(--accent-green);
+        }
+
+        .btn-link.green:hover {
+            background-color: #00a300;
+        }
+
+        /* Step Badge */
+        .step-badge {
+            background: var(--accent-gold);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        /* Back to top & Support sticky footer */
+        .footer-action {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+            section {
+                padding: 20px;
+            }
+            .step-content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧞 魔法のランプ Google Drive 自動同期ガイド</h1>
+        <p>PC・スマホ間で原稿データを安全に自動同期するための手引書です。</p>
+    </header>
+
+    <div class="container">
+
+        <!-- LINE内ブラウザの警告 -->
+        <div class="alert-banner" id="line-escape">
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> LINEでこのページを開いている方へ</h3>
+            <p>
+                LINE内の画面（LINEブラウザ）のままだと、<strong>Googleアカウントとの同期ログインができないことがあります</strong>。<br>
+                以下の方法で、標準ブラウザに切り替えてから設定を行ってください。<br>
+                <strong>・iPhone</strong>: 画面右下の「・・・」をタップ → <strong>「Safariで開く」</strong><br>
+                <strong>・Android</strong>: 画面右上の「・・・」をタップ → <strong>「外部ブラウザ（Chrome）で開く」</strong>
+            </p>
+        </div>
+
+        <!-- メインセクション: Google Drive 同期 -->
+        <section id="sync-setup">
+            <h2><i class="fa-brands fa-google-drive"></i> PC・スマホ間で原稿を自動同期させる（詳細手順）</h2>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 25px;">
+                「PCでじっくり編集して、スマホで移動中にチャットしたい」という場合、Google Driveを仲介して原稿データを自動で同期させることができます。<br>
+                ※この設定には、Google Cloudでの簡単なシステム登録（クライアントIDの取得）が必要です。ご自身のGoogleアカウントがあれば、数分で完了します。
+            </p>
+
+            <!-- Step 1 -->
+            <div class="step-container">
+                <h3 class="subsection-title"><span class="step-badge">ステップ 1</span> Google Cloud プロジェクトの作成</h3>
+                <div class="step-content">
+                    <ol class="guide-list" style="margin-left: 15px;">
+                        <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">Google Cloud Console</a> にアクセスします。</li>
+                        <li>画面上部のプロジェクト選択メニューから「**新しいプロジェクト**」を選択して作成します。（名前は「Magic-Lamp-Sync」など何でも構いません）</li>
+                    </ol>
+                    <img src="memo/Step1.png" alt="Google Cloud プロジェクト作成" class="step-img">
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-container">
+                <h3 class="subsection-title"><span class="step-badge">ステップ 2</span> Google Drive API の有効化</h3>
+                <div class="step-content">
+                    <ol class="guide-list" style="margin-left: 15px;">
+                        <li>Cloud Consoleの上部検索バーに「**Google Drive API**」と入力します。</li>
+                        <li>検索結果の「Google Drive API」をクリックし、青い「**有効にする**」ボタンを押します。</li>
+                    </ol>
+                    <img src="memo/Step２.png" alt="Google Drive API有効化" class="step-img">
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-container">
+                <h3 class="subsection-title"><span class="step-badge">ステップ 3</span> OAuth 同意画面の設定</h3>
+                <div class="step-content">
+                    <ol class="guide-list" style="margin-left: 15px;">
+                        <li>左メニューの「**APIとサービス**」＞「**OAuth 同意画面**」を開きます。</li>
+                        <li>ユーザータイプに「**外部**」を選択して「作成」を押します。</li>
+                        <li>「アプリ名」「ユーザーサポートメール」「連絡先メールアドレス」を入力し、「保存して次へ」を最後まで進みます。</li>
+                        <li>**テストユーザーの設定**：テストユーザーに「**ご自身のGmailアドレス**」を追加します。（※これを忘れるとログイン時にエラーになります）</li>
+                    </ol>
+                    <img src="memo/Step３・４.png" alt="OAuth同意画面とテストユーザー設定" class="step-img">
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-container">
+                <h3 class="subsection-title"><span class="step-badge">ステップ 4</span> OAuth クライアントID（認証キー）の発行</h3>
+                <div class="step-content">
+                    <ol class="guide-list" style="margin-left: 15px;">
+                        <li>左メニューの「**認証情報**」を開きます。</li>
+                        <li>画面上の「**＋認証情報を作成**」＞「**OAuth クライアント ID**」を選択します。</li>
+                        <li>アプリケーションの種類で「**ウェブ アプリケーション**」を選択します。</li>
+                        <li>**承認された JavaScript 生成元**に、以下のURLを登録します：<br>
+                            <code>https://moto-sideline.github.io</code><br>
+                            (ローカルでテストする場合は <code>http://localhost:8000</code> 等も追加してください)
+                        </li>
+                        <li>**承認されたリダイレクト URI**に、以下のURLを登録します：<br>
+                            <code>https://moto-sideline.github.io/-/</code><br>
+                            (※最後にスラッシュ <code>/</code> が必要です。ローカル用には <code>http://localhost:8000/</code> 等)
+                        </li>
+                        <li>「作成」を押すと、「**クライアント ID**」が表示されます。この長い文字列をコピーします。</li>
+                    </ol>
+                    <img src="memo/Step５.png" alt="OAuthクライアントID作成" class="step-img">
+                    <img src="memo/Step６・７.png" alt="承認されたURI設定" class="step-img">
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="step-container">
+                <h3 class="subsection-title"><span class="step-badge">ステップ 5</span> アプリケーションでのログイン</h3>
+                <div class="step-content">
+                    <ol class="guide-list" style="margin-left: 15px;">
+                        <li>「魔法のランプ」アプリの左上（スマホは下部）にある **「Google Drive 同期」** アイコン（ <i class="fa-brands fa-google-drive"></i> ）をタップします。</li>
+                        <li>「クライアントID」の欄に、Step 4でコピーした文字列を貼り付けます。</li>
+                        <li>「**Googleでログインして同期開始**」を押し、画面の指示に従ってアクセス権を許可します。</li>
+                    </ol>
+                    <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">
+                        ※同期データはご自身のGoogle Drive of安全な隠しフォルダー（アプリデータフォルダー）にのみ保存され、第三者に公開されることはありません。
+                    </p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="https://moto-sideline.github.io/-/" class="btn-link"><i class="fa-solid fa-wand-magic-sparkles"></i> 魔法のランプに戻る</a>
+            </div>
+        </section>
+
+        <!-- 公式LINEへのサポート導線 -->
+        <section style="text-align: center; border: 2px solid var(--accent-gold); background: linear-gradient(to bottom, #ffffff, #fcfbf7);">
+            <h2 style="justify-content: center; border: none; padding: 0; margin-bottom: 10px;"><i class="fa-regular fa-comments"></i> 設定がうまくいかない時は？</h2>
+            <p style="font-size: 0.9rem; margin-bottom: 20px;">
+                Google Cloudの設定や同期ログインなどでエラーが出る場合は、<br>
+                公式LINEサポート「ランプの番人」までいつでもお気軽にご相談ください！
+            </p>
+            <a href="https://lin.ee/unF2fH4" class="btn-link green" target="_blank" rel="noopener noreferrer">
+                <i class="fa-brands fa-line" style="font-size: 1.2rem;"></i> 公式LINE「ランプの番人」へ相談する
+            </a>
+        </section>
+
+        <div class="footer-action">
+            <p>© 2026 魔法のランプ プロジェクト</p>
+        </div>
+
+    </div>
+
+</body>
+</html>

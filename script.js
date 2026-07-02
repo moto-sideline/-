@@ -738,12 +738,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 // バージョンアップ通知を表示（chatHistoryには保存せず、一度きり優しく案内）
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
-                    const versionUpMsgText = 
-                        `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
-                        `【今回のアップデート（v0.9.12）】\n` +
-                        `・スマホへの追加手順やAPIキーの取得手順をまとめた「公式サポートガイド」のウェブサイトを新しく用意したよ！\n` +
-                        `・これに合わせて、アプリ内の取扱説明書をすっきりシンプルに軽量化して、もっと見やすくなったんだ。\n\n` +
-                        `困ったときは「取扱説明書」からいつでもガイドを確認できるから、安心してね！引き続き、魔法のランプでたくさん本を紡いでいこう！`;
+                    let versionUpMsgText = '';
+                    if (currentVer === '0.9.13') {
+                        versionUpMsgText = 
+                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.13）】\n` +
+                            `・PCとスマホで原稿を同期できる「Google Drive自動同期手順」を、専用の分かりやすいウェブサイトに独立させたよ！\n` +
+                            `・上から順番に見るだけで迷わず設定できるように、ステップ図解を見直したんだ。\n\n` +
+                            `自動同期設定の「マニュアルを開く」からいつでも見られるから、必要になったら確認してみてね！`;
+                    } else {
+                        versionUpMsgText = 
+                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート】\n` +
+                            `・スマホへの追加手順やAPIキーの取得手順をまとめた「公式サポートガイド」のウェブサイトを新しく用意したよ！\n` +
+                            `・これに合わせて、アプリ内の取扱説明書をすっきりシンプルに軽量化して、もっと見やすくなったんだ。\n\n` +
+                            `困ったときは「取扱説明書」からいつでもガイドを確認できるから、安心してね！引き続き、魔法のランプでたくさん本を紡いでいこう！`;
+                    }
                     setTimeout(() => {
                         renderMessage(versionUpMsgText, 'genie', formatTime());
                         scrollToBottom();
@@ -1695,8 +1705,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeSyncBtn) closeSyncBtn.addEventListener('click', closeSyncModal);
     if (closeSyncFooterBtn) closeSyncFooterBtn.addEventListener('click', closeSyncModal);
     if (openSyncManualBtn) openSyncManualBtn.addEventListener('click', () => {
-        // iOS PWA等でアプリ内が上書きされるのを防ぐため、GitHub上の外部URLで開く
-        window.open('https://github.com/moto-sideline/-/blob/main/memo/google_drive_sync_manual.md', '_blank', 'noopener,noreferrer');
+        // iOS PWA等でアプリ内が上書きされるのを防ぐため、外部URLで開く
+        window.open('sync_guide.html', '_blank', 'noopener,noreferrer');
     });
 
     window.addEventListener('resize', () => {
