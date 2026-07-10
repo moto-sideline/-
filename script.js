@@ -66,6 +66,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const gdriveLoginBtn = document.getElementById('gdriveLoginBtn');
     const gdriveStatusText = document.getElementById('gdriveStatusText');
 
+    // OCR & Camera Selectors
+    const cameraBtn = document.getElementById('cameraBtn');
+    const ocrModal = document.getElementById('ocrModal');
+    const closeOcrBtn = document.getElementById('closeOcrBtn');
+    const closeOcrFooterBtn = document.getElementById('closeOcrFooterBtn');
+    const ocrCameraInput = document.getElementById('ocrCameraInput');
+    const ocrFileInput = document.getElementById('ocrFileInput');
+    const ocrTriggerCameraBtn = document.getElementById('ocrTriggerCameraBtn');
+    const ocrTriggerFileBtn = document.getElementById('ocrTriggerFileBtn');
+    const ocrInitialActions = document.getElementById('ocrInitialActions');
+    const ocrPreviewContainer = document.getElementById('ocrPreviewContainer');
+    const ocrImagePreview = document.getElementById('ocrImagePreview');
+    const ocrResetImageBtn = document.getElementById('ocrResetImageBtn');
+    const ocrStartBtn = document.getElementById('ocrStartBtn');
+    const ocrStatusContainer = document.getElementById('ocrStatusContainer');
+    const ocrStatusText = document.getElementById('ocrStatusText');
+    const ocrResultContainer = document.getElementById('ocrResultContainer');
+    const ocrResultText = document.getElementById('ocrResultText');
+    const ocrInsertToInputBtn = document.getElementById('ocrInsertToInputBtn');
+    const ocrAddToArchiveBtn = document.getElementById('ocrAddToArchiveBtn');
+
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
     const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
     
@@ -739,7 +760,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.13') {
+                    if (currentVer === '0.9.14') {
+                        versionUpMsgText = 
+                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.14）】\n` +
+                            `・チャット欄の左側にカメラボタンを追加したよ！手書きのノートや原稿の写真を撮って、ジーニーにテキストとして正確に読み取ってもらえる（OCR）ようになったんだ！\n` +
+                            `・読み取ったテキストはそのままチャットのメッセージ入力欄に送って修正して送ることも、直接「資料室（参考資料）」に保存することもできるよ。\n\n` +
+                            `手書きのアイデアがあったら、ぜひカメラでパシャリと撮ってジーニーに見せてね！`;
+                    } else if (currentVer === '0.9.13') {
                         versionUpMsgText = 
                             `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.13）】\n` +
@@ -933,6 +961,126 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeManualModal = () => {
         if (manualModal) manualModal.classList.add('hidden');
         focusChat();
+    };
+
+    const openOcrModal = () => {
+        closeAllPanels();
+        if (ocrModal) ocrModal.classList.remove('hidden');
+        resetOcrUi();
+    };
+
+    const closeOcrModal = () => {
+        if (ocrModal) ocrModal.classList.add('hidden');
+        resetOcrUi();
+        focusChat();
+    };
+
+    const resetOcrUi = () => {
+        if (ocrCameraInput) ocrCameraInput.value = '';
+        if (ocrFileInput) ocrFileInput.value = '';
+        if (ocrImagePreview) ocrImagePreview.src = '';
+        if (ocrPreviewContainer) ocrPreviewContainer.classList.add('hidden');
+        if (ocrStartBtn) ocrStartBtn.classList.add('hidden');
+        if (ocrStatusContainer) ocrStatusContainer.classList.add('hidden');
+        if (ocrResultContainer) ocrResultContainer.classList.add('hidden');
+        if (ocrResultText) ocrResultText.value = '';
+        if (ocrInitialActions) ocrInitialActions.style.display = 'flex';
+    };
+
+    const handleOcrFile = (file) => {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            alert('画像ファイルを選択してね！');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (ocrImagePreview) ocrImagePreview.src = e.target.result;
+            if (ocrPreviewContainer) ocrPreviewContainer.classList.remove('hidden');
+            if (ocrStartBtn) ocrStartBtn.classList.remove('hidden');
+            if (ocrInitialActions) ocrInitialActions.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const performGeminiOcr = async (base64Data, mimeType) => {
+        const apiKey = localStorage.getItem('geminiApiKey');
+        if (!apiKey) {
+            throw new Error("🔑 APIキーがまだ設定されていないみたい。\n右下にある【⚙️設定】からAPIキーを登録してね！");
+        }
+        
+        const selectedModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        const ocrPrompt = "この画像に写っている手書き文章やノートの文字を、非常に正確にテキストとして文字起こししてください。余計な挨拶や説明、推測、整形、マークダウン装飾などは一切含めず、画像から読み取ったテキスト部分のみをそのまま出力してください。";
+
+        const requestBody = {
+            contents: [{
+                parts: [
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data
+                        }
+                    },
+                    {
+                        text: ocrPrompt
+                    }
+                ]
+            }],
+            generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 2048
+            }
+        };
+
+        const attemptOcr = async (modelName, isRetry = false) => {
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    const errMsg = data.error.message || "";
+                    const errStatus = data.error.status || "";
+                    
+                    if (errMsg.includes("API key") || errStatus === "INVALID_ARGUMENT") {
+                        throw new Error("🔑 APIキーが正しくないみたい。\n【⚙️設定】からもう一度確認してみてね！");
+                    }
+                    
+                    // 混雑時は別モデルへフォールバック
+                    const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
+                    if (isCongested && !isRetry) {
+                        let fallbackModel = "";
+                        if (modelName === "gemini-2.5-pro") fallbackModel = "gemini-2.5-flash";
+                        else if (modelName === "gemini-2.5-flash") fallbackModel = "gemini-2.5-flash-lite";
+                        else if (modelName === "gemini-2.0-flash") fallbackModel = "gemini-2.0-flash-lite";
+                        
+                        if (fallbackModel) {
+                            console.log(`[OCR] 混雑のため ${modelName} から ${fallbackModel} にフォールバックして再試行します...`);
+                            return await attemptOcr(fallbackModel, true);
+                        }
+                    }
+                    throw new Error(errMsg || "ジーニーが文字を読み取るのに失敗しちゃった。");
+                }
+
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    throw new Error("画像から文字を読み取れなかったよ。画像がぼやけていないか確認してみてね。");
+                }
+            } catch (err) {
+                if (err.message && (err.message.includes("APIキー") || err.message.includes("読み取れなかった"))) {
+                    throw err;
+                }
+                throw new Error("通信エラーが発生したよ。電波の良い場所で試すか、時間をおいてみてね。(" + err.message + ")");
+            }
+        };
+
+        return await attemptOcr(selectedModel);
     };
 
     const renderMaterialsList = () => {
@@ -1613,7 +1761,8 @@ document.addEventListener('DOMContentLoaded', () => {
         [manualModal, closeManualModal],
         [archiveModal, closeArchiveModal],
         [bookshelfModal, closeBookshelfModal],
-        [pwaInstallModal, closePwaInstallModal]
+        [pwaInstallModal, closePwaInstallModal],
+        [ocrModal, closeOcrModal]
     ].forEach(([modal, closeFn]) => {
         if (!modal) return;
         modal.addEventListener('click', (e) => {
@@ -1629,6 +1778,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeArchiveFooterBtn) closeArchiveFooterBtn.addEventListener('click', closeArchiveModal);
     if (closeBookshelfBtn) closeBookshelfBtn.addEventListener('click', closeBookshelfModal);
     if (closeBookshelfFooterBtn) closeBookshelfFooterBtn.addEventListener('click', closeBookshelfModal);
+    if (closeOcrBtn) closeOcrBtn.addEventListener('click', closeOcrModal);
+    if (closeOcrFooterBtn) closeOcrFooterBtn.addEventListener('click', closeOcrModal);
 
     // PWA Install Event Listeners
     if (pwaCloseBannerBtn) {
@@ -1719,6 +1870,159 @@ document.addEventListener('DOMContentLoaded', () => {
     if (navLine) {
         navLine.addEventListener('click', () => {
             window.open(LINE_OFFICIAL_URL, '_blank', 'noopener,noreferrer');
+        });
+    }
+
+    // --- OCR & Camera UI Event Handlers ---
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', openOcrModal);
+    }
+
+    if (ocrTriggerCameraBtn) {
+        ocrTriggerCameraBtn.addEventListener('click', () => {
+            if (ocrCameraInput) ocrCameraInput.click();
+        });
+    }
+
+    if (ocrTriggerFileBtn) {
+        ocrTriggerFileBtn.addEventListener('click', () => {
+            if (ocrFileInput) ocrFileInput.click();
+        });
+    }
+
+    if (ocrCameraInput) {
+        ocrCameraInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleOcrFile(e.target.files[0]);
+            }
+        });
+    }
+
+    if (ocrFileInput) {
+        ocrFileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                handleOcrFile(e.target.files[0]);
+            }
+        });
+    }
+
+    if (ocrResetImageBtn) {
+        ocrResetImageBtn.addEventListener('click', resetOcrUi);
+    }
+
+    if (ocrStartBtn) {
+        ocrStartBtn.addEventListener('click', async () => {
+            if (!ocrImagePreview || !ocrImagePreview.src) return;
+            
+            const imgUrl = ocrImagePreview.src;
+            const commaIdx = imgUrl.indexOf(',');
+            if (commaIdx === -1) {
+                alert('画像のデータが不正です。');
+                return;
+            }
+            const base64Data = imgUrl.substring(commaIdx + 1);
+            const mimeMatch = imgUrl.substring(0, commaIdx).match(/data:(.*?);/);
+            const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+            // UIを読み込み中へ移行
+            if (ocrStartBtn) ocrStartBtn.classList.add('hidden');
+            if (ocrPreviewContainer) ocrPreviewContainer.classList.add('hidden');
+            if (ocrStatusContainer) ocrStatusContainer.classList.remove('hidden');
+            
+            try {
+                const text = await performGeminiOcr(base64Data, mimeType);
+                
+                // OCR結果画面へ移行
+                if (ocrStatusContainer) ocrStatusContainer.classList.add('hidden');
+                if (ocrResultContainer) ocrResultContainer.classList.remove('hidden');
+                if (ocrResultText) {
+                    ocrResultText.value = text;
+                }
+            } catch (err) {
+                console.error('OCR Error:', err);
+                alert(err.message || '文字の読み取り中にエラーが発生したよ。');
+                
+                // UIを戻す
+                if (ocrStatusContainer) ocrStatusContainer.classList.add('hidden');
+                if (ocrStartBtn) ocrStartBtn.classList.remove('hidden');
+                if (ocrPreviewContainer) ocrPreviewContainer.classList.remove('hidden');
+            }
+        });
+    }
+
+    if (ocrInsertToInputBtn) {
+        ocrInsertToInputBtn.addEventListener('click', () => {
+            if (!ocrResultText) return;
+            const text = ocrResultText.value.trim();
+            if (text) {
+                if (userInput) {
+                    userInput.value = text;
+                    userInput.style.height = 'auto';
+                    userInput.style.height = userInput.scrollHeight + 'px';
+                }
+                closeOcrModal();
+            } else {
+                alert('読み取り結果が空だよ。');
+            }
+        });
+    }
+
+    if (ocrAddToArchiveBtn) {
+        ocrAddToArchiveBtn.addEventListener('click', () => {
+            if (!ocrResultText) return;
+            const text = ocrResultText.value.trim();
+            if (!text) {
+                alert('読み取り結果が空だよ。');
+                return;
+            }
+
+            const newMaterial = {
+                id: Date.now(),
+                name: `手書き_${new Date().toLocaleDateString('ja-JP')} ${new Date().toLocaleTimeString('ja-JP', {hour: '2-digit', minute:'2-digit'})}`,
+                content: text,
+                addedAt: new Date().toISOString()
+            };
+
+            if (!appState.materials) appState.materials = [];
+            appState.materials.push(newMaterial);
+            syncKnowledgeFromMaterials();
+            saveData();
+            renderMaterialsList();
+            closeOcrModal();
+
+            // チャットへシステムメッセージを追加
+            addMessage('【資料室】手書き写真から読み取ったテキストを資料室に保存したよ。', 'user');
+
+            // ジーニーが自動応答で資料室追加をあたたかくコメントする
+            const apiKey = localStorage.getItem('geminiApiKey');
+            if (apiKey && apiKey.trim()) {
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'message-wrapper genie typing-indicator';
+                typingIndicator.innerHTML = `
+                    <div class="message-content">
+                        <div class="sender-name">ジーニー (思案中...)</div>
+                        <div class="bubble-row"><div class="bubble genie">✨ 思考中...</div></div>
+                    </div>
+                `;
+                if (chatMessages) {
+                    chatMessages.appendChild(typingIndicator);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+
+                const elapsedStart = Date.now();
+                callGeminiAPI('資料室に流し込んだよ。手書きの文章を読み取って保存したよ。', apiKey.trim(), (reply) => {
+                    const elapsed = Date.now() - elapsedStart;
+                    const minDelay = 2500;
+                    const remaining = Math.max(0, minDelay - elapsed);
+
+                    setTimeout(() => {
+                        if (typingIndicator.parentNode) {
+                            typingIndicator.parentNode.removeChild(typingIndicator);
+                        }
+                        addMessage(reply, 'genie');
+                    }, remaining);
+                });
+            }
         });
     }
 

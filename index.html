@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=33">
+    <link rel="stylesheet" href="style.css?v=34">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google API for Drive Sync -->
@@ -110,9 +110,10 @@
                 <!-- メッセージがここに表示されます -->
             </div>
 
-            <div class="chat-input-area">
-
                 <div class="input-container">
+                    <div id="cameraBtn" title="写真を撮る / 画像から文字を読み込む">
+                        <i class="fas fa-camera"></i>
+                    </div>
                     <textarea id="userInput" placeholder="メッセージを入力（紙飛行機ボタンで送信）" rows="1"></textarea>
                     <div class="input-actions" id="sendBtn">
                         <i class="fas fa-paper-plane tool-icon" style="color: var(--accent); cursor: pointer;"></i>
@@ -344,6 +345,74 @@
         </div>
     </div>
 
+    <!-- 隠しファイル入力要素（OCR用） -->
+    <input type="file" id="ocrCameraInput" accept="image/*" capture="environment" style="display: none;">
+    <input type="file" id="ocrFileInput" accept="image/*" style="display: none;">
+
+    <!-- 手書き文字読み込み（OCR）モーダル -->
+    <div id="ocrModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-camera"></i> 手書き文字の読み込み</h3>
+                <span class="close-modal" id="closeOcrBtn">&times;</span>
+            </div>
+            <div class="modal-body modal-scroll-body" style="display: flex; flex-direction: column; gap: 15px; padding: 20px;">
+                <p class="modal-hint" style="line-height: 1.4;">
+                    ノートや原稿の写真を撮るか、画像をアップロードしてください。ジーニーが手書き文字をテキストに書き起こします。
+                </p>
+                
+                <!-- 初期選択ボタン -->
+                <div id="ocrInitialActions" style="display: flex; gap: 12px; margin: 10px 0;">
+                    <button type="button" id="ocrTriggerCameraBtn" class="primary-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 10px;">
+                        <i class="fas fa-camera"></i> 写真を撮る
+                    </button>
+                    <button type="button" id="ocrTriggerFileBtn" class="secondary-btn" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 10px; border: 1px solid var(--line-middle-border);">
+                        <i class="fas fa-image"></i> 画像を選択
+                    </button>
+                </div>
+                
+                <!-- プレビュー -->
+                <div id="ocrPreviewContainer" class="ocr-preview-container hidden">
+                    <img id="ocrImagePreview" src="" alt="OCR Preview" style="max-width: 100%; max-height: 250px; border-radius: 4px; object-fit: contain;">
+                    <button type="button" id="ocrResetImageBtn" class="ocr-reset-btn">
+                        <i class="fas fa-redo"></i> 撮り直す
+                    </button>
+                </div>
+                
+                <!-- OCR実行ボタン -->
+                <button type="button" id="ocrStartBtn" class="primary-btn hidden" style="width: 100%; padding: 12px; background: var(--nav-chat-color); font-weight: bold;">
+                    🧞‍♂️ ジーニーに読み取ってもらう
+                </button>
+                
+                <!-- 読み込み中表示 -->
+                <div id="ocrStatusContainer" class="hidden" style="text-align: center; padding: 20px; color: var(--text-meta);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 1.8rem; color: var(--nav-chat-color); margin-bottom: 12px;"></i>
+                    <div id="ocrStatusText" style="font-size: 0.9rem;">ジーニーが文字を解読しています...</div>
+                </div>
+                
+                <!-- 結果表示 -->
+                <div id="ocrResultContainer" class="hidden" style="display: flex; flex-direction: column; gap: 8px;">
+                    <label for="ocrResultText" style="font-size: 0.85rem; font-weight: bold; color: var(--text-meta);">
+                        <i class="fas fa-file-alt"></i> 読み取り結果（自由に修正できます）:
+                    </label>
+                    <textarea id="ocrResultText" rows="6" class="ocr-textarea" placeholder="ここに読み取ったテキストが表示されます"></textarea>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" id="ocrInsertToInputBtn" class="primary-btn" style="flex: 2; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                            <i class="fas fa-keyboard"></i> 入力欄へ送る
+                        </button>
+                        <button type="button" id="ocrAddToArchiveBtn" class="secondary-btn" style="flex: 1.5; padding: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line-middle-border);">
+                            <i class="fas fa-folder-plus"></i> 資料室へ保存
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeOcrFooterBtn" class="secondary-btn" style="float: right;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Google Drive 自動同期モーダル -->
     <div id="syncModal" class="modal-overlay hidden">
         <div class="modal-content modal-content--wide">
@@ -383,7 +452,7 @@
         </div>
     </div>
 
-    <script src="version.js?v=33"></script>
-    <script src="script.js?v=33"></script>
+    <script src="version.js?v=34"></script>
+    <script src="script.js?v=34"></script>
 </body>
 </html>

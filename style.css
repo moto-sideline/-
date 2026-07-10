@@ -562,6 +562,111 @@ textarea:focus { outline: none; }
     font-size: 1.3rem;
 }
 
+#cameraBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    margin-right: 8px;
+    align-self: center;
+}
+
+#cameraBtn:hover, #cameraBtn:active {
+    background: rgba(88, 166, 255, 0.15);
+}
+
+#cameraBtn i {
+    font-size: 1.3rem;
+    color: #888;
+    transition: color 0.2s;
+}
+
+#cameraBtn:hover i {
+    color: var(--accent);
+}
+
+body.dark-theme #cameraBtn i {
+    color: var(--text-dim);
+}
+
+body.dark-theme #cameraBtn:hover i {
+    color: var(--accent);
+}
+
+/* OCR UI Styles */
+.ocr-textarea {
+    width: 100%;
+    border: 1px solid var(--line-middle-border);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: #111;
+    max-height: 200px;
+    resize: vertical;
+    line-height: 1.5;
+    transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+
+.ocr-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+body.dark-theme .ocr-textarea {
+    background: #111b21;
+    border-color: #2c2c2c;
+    color: var(--text-main);
+}
+
+.ocr-preview-container {
+    text-align: center;
+    border: 1px dashed var(--line-middle-border);
+    padding: 10px;
+    border-radius: 8px;
+    background: #fafafa;
+    position: relative;
+    transition: background-color 0.2s;
+}
+
+body.dark-theme .ocr-preview-container {
+    background: #111b21;
+    border-color: #2c2c2c;
+}
+
+.ocr-reset-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.ocr-reset-btn:hover {
+    background: #fff;
+}
+
+body.dark-theme .ocr-reset-btn {
+    background: rgba(32, 44, 51, 0.9);
+    color: var(--text-main);
+    border-color: #2c2c2c;
+}
+
+body.dark-theme .ocr-reset-btn:hover {
+    background: #202c33;
+}
+
 .nav-version {
     font-size: 0.65rem;
     color: var(--line-nav-icon);
