@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBookshelfBtn = document.getElementById('closeBookshelfBtn');
     const closeBookshelfFooterBtn = document.getElementById('closeBookshelfFooterBtn');
     const closeApiSettingsFooterBtn = document.getElementById('closeApiSettingsFooterBtn');
+    const updateAppBtn = document.getElementById('updateAppBtn');
     const resetProjectBtn = document.getElementById('resetProjectBtn');
     const openApiFromSettingsBtn = document.getElementById('openApiFromSettingsBtn');
 
@@ -760,7 +761,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.15') {
+                    if (currentVer === '0.9.16') {
+                        versionUpMsgText = 
+                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.16）】\n` +
+                            `・【⚙️設定】画面の一番下に「アプリを最新に更新する」ボタンを新設したよ！\n` +
+                            `・これを押すと、裏側の古いキャッシュを全てクリアして、強制的に最新のジーニーをロードし直せるようになったんだ。\n\n` +
+                            `「何か動きがおかしいな」と思った時や、新しいアップデートをすぐに受け取りたい時は、ぜひ使ってみてね！`;
+                    } else if (currentVer === '0.9.15') {
                         versionUpMsgText = 
                             `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.15）】\n` +
@@ -1539,6 +1547,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- 新機能：アプリの強制アップデート（キャッシュクリア＆再読み込み） ---
+    const forceUpdateApp = async () => {
+        if (confirm("アプリを最新バージョンに更新して、画面を再読み込みしますか？")) {
+            // サービスワーカーの登録を解除してキャッシュを削除する
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                    if (window.caches) {
+                        const keys = await caches.keys();
+                        for (let key of keys) {
+                            await caches.delete(key);
+                        }
+                    }
+                } catch (e) {
+                    console.error("Cache clear failed:", e);
+                }
+            }
+            // キャッシュをバイパスするためにタイムスタンプ付きでリロード
+            window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
+        }
+    };
+
     // --- 新機能：バックアップと復元 ---
     const exportBackup = () => {
         const backupData = {
@@ -1670,6 +1703,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (openApiFromManualBtn) {
         openApiFromManualBtn.addEventListener('click', openApiKeyPageInNewTab);
+    }
+
+    if (updateAppBtn) {
+        updateAppBtn.addEventListener('click', forceUpdateApp);
     }
 
     if (resetProjectBtn) {

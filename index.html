@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=35">
+    <link rel="stylesheet" href="style.css?v=36">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google API for Drive Sync -->
@@ -268,8 +268,18 @@
                 </div>
 
                 <div class="settings-reset-block" style="border-top: 1px solid var(--line-middle-border); text-align: center; margin-top: 15px; padding-top: 10px;">
+                    <label style="font-size: 0.8rem; font-weight: bold; color: var(--text-meta); display: block; text-align: left; margin-bottom: 5px;">
+                        <i class="fas fa-redo-alt"></i> アプリのアップデート・再読み込み
+                    </label>
+                    <p class="modal-hint" style="text-align: left; margin-bottom: 10px; line-height: 1.4;">
+                        新しいバージョンが配信された場合や、動きがおかしいと感じた時は、このボタンを押して最新の状態に更新してください。
+                    </p>
+                    <button type="button" id="updateAppBtn" class="primary-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--nav-chat-color); border: none; padding: 10px; font-weight: bold; margin-bottom: 20px;">
+                        <i class="fas fa-sync-alt"></i> アプリを最新に更新する
+                    </button>
+
                     <p class="modal-hint" style="text-align: left; margin-bottom: 10px;">チャット・プロット・資料を消して最初からやり直す場合</p>
-                    <button type="button" id="resetProjectBtn" class="danger-btn" style="margin-bottom: 15px;">プロジェクトをリセット</button>
+                    <button type="button" id="resetProjectBtn" class="danger-btn" style="margin-bottom: 15px; width: 100%;">プロジェクトをリセット</button>
                     <div class="app-version-display" style="font-size: 0.75rem; color: var(--text-meta); opacity: 0.8;">魔法のランプ v0.9.2 Beta</div>
                 </div>
 
@@ -452,7 +462,7 @@
         </div>
     </div>
 
-    <script src="version.js?v=35"></script>
-    <script src="script.js?v=35"></script>
+    <script src="version.js?v=36"></script>
+    <script src="script.js?v=36"></script>
 </body>
 </html>
