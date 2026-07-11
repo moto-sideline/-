@@ -760,7 +760,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.14') {
+                    if (currentVer === '0.9.15') {
+                        versionUpMsgText = 
+                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.15）】\n` +
+                            `・プロジェクトをリセットしたときに、Google Driveのバックアップも一緒にリセットされるようにしたよ！これで古い会話が勝手に復活しなくなるから安心だね。\n` +
+                            `・ジーニーの頭の中の考え事（思考プロセス）が、時々セリフの前に漏れ出ちゃっていたのを、綺麗にカットしてセリフだけ見せるように修正したよ！恥ずかしい頭の中を見られなくてホッとしたよ（笑）。\n\n` +
+                            `より使いやすくなった魔法のランプで、今日も楽しく本を紡いでいこうね！`;
+                    } else if (currentVer === '0.9.14') {
                         versionUpMsgText = 
                             `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.14）】\n` +
@@ -1500,10 +1507,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 新機能：リセット（新プロジェクト） ---
-    const resetProject = () => {
+    const resetProject = async () => {
         if (confirm("現在進行中の魔法（データ）をすべて消去して、新しい本を作り始めますか？\n（出力済みのファイルは消えません）")) {
+            const emptyState = {
+                chatHistory: [],
+                plots: [],
+                preview: '',
+                knowledge: '',
+                materials: [],
+                completedWorks: [],
+                userName: null,
+                bookTheme: '',
+                onboardingStep: -1
+            };
+
             localStorage.removeItem('magicLampState');
-            // キャッシュをバイパスするためにタイムスタンプ付きでリロード
+
+            // もしGoogle Driveがログイン中で、APIが初期化されていればクラウドも空データで上書きする
+            if (driveAccessToken && gapiInited) {
+                try {
+                    if (gdriveStatusText) gdriveStatusText.textContent = '現在：リセットデータをDriveに反映中...';
+                    appState = emptyState;
+                    await syncToDrive(true);
+                } catch (e) {
+                    console.error("Failed to reset Google Drive data:", e);
+                }
+            }
+
+            // クラウドへの上書きを待ってからリロード
             window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
         }
     };
@@ -2157,10 +2188,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 }
 
-                if (data.candidates && data.candidates.length > 0) {
+                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
+                    const parts = data.candidates[0].content.parts;
+                    
+                    // 思考プロセスやシステム指示書の漏れ（thoughtプロパティや特定の接頭辞）を除外
+                    const textParts = parts.filter(part => {
+                        if (part.thought) return false;
+                        if (part.text && (part.text.startsWith("SPECIAL INSTRUCTION:") || part.text.startsWith("Thinking Process:"))) {
+                            return false;
+                        }
+                        return true;
+                    }).map(part => part.text || "");
+                    
+                    let replyText = textParts.join("").trim();
+                    
+                    // 万が一すべて除外されて空になった場合のフォールバック（全結合）
+                    if (!replyText) {
+                        replyText = parts.map(part => part.text || "").join("").trim();
+                    }
+
                     return {
                         success: true,
-                        reply: data.candidates[0].content.parts[0].text
+                        reply: replyText
                     };
                 } else {
                     return {
