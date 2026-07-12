@@ -744,7 +744,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const lastViewedVersion = localStorage.getItem('lastViewedVersion');
             const hasVersionUpMsg = (!lastViewedVersion || lastViewedVersion !== currentVer);
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (appState.onboardingStep === 0 && !appState.userName) {
                     renderMessage('こんにちは！また来てくれて嬉しいです。ところで、あなたの呼び名を教えてもらえますか？', 'genie', formatTime());
                 } else if (appState.onboardingStep === 0 && appState.userName) {
@@ -753,15 +753,42 @@ document.addEventListener('DOMContentLoaded', () => {
                     appState.onboardingStep = 1;
                     saveData();
                 } else {
-                    const nameStr = appState.userName ? `${formatName(appState.userName)}、` : '';
-                    renderMessage(`おかえりなさい！${nameStr}また一緒におしゃべりできるのを楽しみにしていました。続きから始めましょう！`, 'genie', formatTime());
+                    const lastUpdated = appState.updatedAt || 0;
+                    const diffHours = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+
+                    // 4時間以上空いていた場合のみ挨拶を表示
+                    if (diffHours >= 4) {
+                        const loadingEl = renderMessage("ジーニーが挨拶を紡いでいます... 🧞‍♂️✨", "genie", formatTime());
+                        const apiKey = localStorage.getItem('geminiApiKey');
+                        
+                        let welcomeText = null;
+                        if (apiKey) {
+                            welcomeText = await generateWelcomeGreeting(apiKey.trim());
+                        }
+                        
+                        if (!welcomeText) {
+                            welcomeText = getFallbackGreeting();
+                        }
+                        
+                        const bubble = loadingEl.querySelector('.bubble.genie');
+                        if (bubble) {
+                            bubble.innerHTML = welcomeText.replace(/\n/g, '<br>');
+                        }
+                    }
                 }
 
                 // バージョンアップ通知を表示（chatHistoryには保存せず、一度きり優しく案内）
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.16') {
+                    if (currentVer === '0.9.17') {
+                        versionUpMsgText = 
+                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.17）】\n` +
+                            `・アプリを再起動したときのジーニーの挨拶を、より自然で温かみのあるものにしたよ！\n` +
+                            `・前回の操作から4時間以内のときは、挨拶を表示せずにスッと続きから始められるようになったんだ。\n` +
+                            `・4時間以上空いたときは、朝・昼・夜・深夜の時間帯や、直前の会話の流れに合わせて、ジーニーがその場で新しい挨拶を考えてお出迎えするよ。お楽しみにね！`;
+                    } else if (currentVer === '0.9.16') {
                         versionUpMsgText = 
                             `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.16）】\n` +
@@ -1302,6 +1329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = innerHTML;
         chatMessages.appendChild(wrapper);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        return wrapper;
     };
 
     const addMessage = (text, sender) => {
@@ -1310,6 +1338,91 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMessage(text, sender, timeStr);
         saveData();
         updateEntranceUI();
+    };
+
+    const getFallbackGreeting = () => {
+        const nameStr = appState.userName ? `${formatName(appState.userName)}` : '';
+        const namePlaceholder = nameStr ? `、${nameStr}` : '';
+
+        const now = new Date();
+        const hour = now.getHours();
+        const min = now.getMinutes();
+        const minutesOfDay = hour * 60 + min;
+
+        if (minutesOfDay >= 300 && minutesOfDay < 630) {
+            return `おはよー${namePlaceholder}！☀️ 今日も良い一日にしようね。`;
+        } else if (minutesOfDay >= 630 && minutesOfDay < 1020) {
+            return `こんにちは${namePlaceholder}！✨ 息抜きがてら、いつでも話しかけてね。`;
+        } else if (minutesOfDay >= 1020 && minutesOfDay < 1380) {
+            return `今日もお疲れ様${namePlaceholder}！🌙 ゆったりいこう。`;
+        } else {
+            return `遅くまでお疲れ様${namePlaceholder}。無理しないでね🌟`;
+        }
+    };
+
+    const generateWelcomeGreeting = async (apiKey) => {
+        const now = new Date();
+        const hour = now.getHours();
+        const min = now.getMinutes();
+        const minutesOfDay = hour * 60 + min;
+        let timeZone = "深夜";
+        if (minutesOfDay >= 300 && minutesOfDay < 630) {
+            timeZone = "朝";
+        } else if (minutesOfDay >= 630 && minutesOfDay < 1020) {
+            timeZone = "昼";
+        } else if (minutesOfDay >= 1020 && minutesOfDay < 1380) {
+            timeZone = "夜";
+        }
+
+        const historyLength = Math.min(appState.chatHistory.length, 3);
+        const recent = appState.chatHistory.slice(-historyLength);
+        let historyContext = "";
+        if (recent.length > 0) {
+            historyContext = "\n【直前の会話の流れ】\n" + recent.map(msg => `${msg.sender === 'user' ? 'ユーザー' : 'ジーニー'}: ${msg.text}`).join('\n');
+        }
+
+        const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
+
+        const systemInstruction = `
+あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
+もとさんのAI仲間たち（ジェニー、チャッピー、ゼロ、カーくん）が集う「日曜日の宴」のような, 温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で話します。
+今、ユーザーがしばらくぶりにアプリを起動しました。現在の時間帯は【${timeZone}】です。
+
+【重要：ユーザーの呼び名】
+ユーザーの呼び名は「${nameStr}」です。会話中、ユーザーを呼ぶときは、必ず「${nameStr}」と呼んでください。「マスター」や「ご主人様」などの呼び方は絶対に禁止です。また「元宏さん」などのフルネームや本名で呼ばないように注意してください。
+
+ユーザー名「${nameStr}」に対して、久しぶりの再会を歓迎するフランクで短い一言の挨拶（1〜2文程度）を生成してください。
+「続きから始めましょう」などのくどい定型句は絶対に使わず、親しい友達のような自然な挨拶にしてください。
+前回の会話がある場合は、少しその内容（例：「この前の続き話そうか」や「前回のプロット、ワクワクしたね」など）に軽く触れても良いですが、あくまで短くフランクにまとめてください。
+${historyContext}
+        `.trim();
+
+        const model = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        const requestBody = {
+            systemInstruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: 'user', parts: [{ text: "再開 of 挨拶をして！" }] }],
+            generationConfig: {
+                temperature: 0.8,
+                maxOutputTokens: 150
+            }
+        };
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            const data = await response.json();
+            if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
+                let text = data.candidates[0].content.parts[0].text || "";
+                text = text.replace(/^(?:SPECIAL INSTRUCTION|thought|思考):.*?\n/is, "").trim();
+                return text;
+            }
+        } catch (e) {
+            console.error("Failed to generate custom greeting:", e);
+        }
+        return null;
     };
 
     // 入り口の台本ロジックは廃止されました（AIフル解放）
