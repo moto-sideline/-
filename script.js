@@ -549,8 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `?client_id=${encodeURIComponent(gdriveClientId)}` +
                     `&redirect_uri=${encodeURIComponent(redirectUri)}` +
                     `&response_type=token` +
-                    `&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.appdata')}` +
-                    `&prompt=consent`;
+                    `&scope=${encodeURIComponent('https://www.googleapis.com/auth/drive.appdata')}`;
                 
                 if (gdriveStatusText) gdriveStatusText.textContent = '現在：Google認証画面へリダイレクト中...';
                 
