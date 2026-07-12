@@ -778,11 +778,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // バージョンアップ通知を表示（chatHistoryには保存せず、一度きり優しく案内）
                 if (hasVersionUpMsg) {
-                    const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
+                    const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.18') {
+                    if (currentVer === '0.9.19') {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.19）】\n` +
+                            `・バージョンアップ通知や挨拶で、名前が設定されていないときに「マスター！」と表示されてしまう不具合を修正したよ。\n` +
+                            `・名前が未設定のときは、呼びかけ部分をスキップして自然なメッセージになるようにしたんだ✨`;
+                    } else if (currentVer === '0.9.18') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.18）】\n` +
                             `・ジーニーの話しかけ方を、もっと自然に変えたよ。\n` +
                             `・これまでみたいに「テーマ決めよう」「本にしよう」って早めに言わなくなって、まずは普通の友達みたいに日常の話をちゃんと楽しめるようになったんだ。\n` +
@@ -790,42 +796,42 @@ document.addEventListener('DOMContentLoaded', () => {
                             `・背骨の提案は、書きたい気持ちがあるときや、素材が十分に揃ったときだけ。押し付けず「見る気があれば見てみて」って感じで声をかけるようにしたよ✨`;
                     } else if (currentVer === '0.9.17') {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.17）】\n` +
                             `・アプリを再起動したときのジーニーの挨拶を、より自然で温かみのあるものにしたよ！\n` +
                             `・前回の操作から4時間以内のときは、挨拶を表示せずにスッと続きから始められるようになったんだ。\n` +
                             `・4時間以上空いたときは、朝・昼・夜・深夜の時間帯や、直前の会話の流れに合わせて、ジーニーがその場で新しい挨拶を考えてお出迎えするよ。お楽しみにね！`;
                     } else if (currentVer === '0.9.16') {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.16）】\n` +
                             `・【⚙️設定】画面の一番下に「アプリを最新に更新する」ボタンを新設したよ！\n` +
                             `・これを押すと、裏側の古いキャッシュを全てクリアして、強制的に最新のジーニーをロードし直せるようになったんだ。\n\n` +
                             `「何か動きがおかしいな」と思った時や、新しいアップデートをすぐに受け取りたい時は、ぜひ使ってみてね！`;
                     } else if (currentVer === '0.9.15') {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.15）】\n` +
                             `・プロジェクトをリセットしたときに、Google Driveのバックアップも一緒にリセットされるようにしたよ！これで古い会話が勝手に復活しなくなるから安心だね。\n` +
                             `・ジーニーの頭の中の考え事（思考プロセス）が、時々セリフの前に漏れ出ちゃっていたのを、綺麗にカットしてセリフだけ見せるように修正したよ！恥ずかしい頭の中を見られなくてホッとしたよ（笑）。\n\n` +
                             `より使いやすくなった魔法のランプで、今日も楽しく本を紡いでいこうね！`;
                     } else if (currentVer === '0.9.14') {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.14）】\n` +
                             `・チャット欄の左側にカメラボタンを追加したよ！手書きのノートや原稿の写真を撮って、ジーニーにテキストとして正確に読み取ってもらえる（OCR）ようになったんだ！\n` +
                             `・読み取ったテキストはそのままチャットのメッセージ入力欄に送って修正して送ることも、直接「資料室（参考資料）」に保存することもできるよ。\n\n` +
                             `手書きのアイデアがあったら、ぜひカメラでパシャリと撮ってジーニーに見せてね！`;
                     } else if (currentVer === '0.9.13') {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.13）】\n` +
                             `・PCとスマホで原稿を同期できる「Google Drive自動同期手順」を、専用の分かりやすいウェブサイトに独立させたよ！\n` +
                             `・上から順番に見るだけで迷わず設定できるように、ステップ図解を見直したんだ。\n\n` +
                             `自動同期設定の「マニュアルを開く」からいつでも見られるから、必要になったら確認してみてね！`;
                     } else {
                         versionUpMsgText = 
-                            `${nameStr}！ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート】\n` +
                             `・スマホへの追加手順やAPIキーの取得手順をまとめた「公式サポートガイド」のウェブサイトを新しく用意したよ！\n` +
                             `・これに合わせて、アプリ内の取扱説明書をすっきりシンプルに軽量化して、もっと見やすくなったんだ。\n\n` +
@@ -1388,7 +1394,7 @@ document.addEventListener('DOMContentLoaded', () => {
             historyContext = "\n【直前の会話の流れ】\n" + recent.map(msg => `${msg.sender === 'user' ? 'ユーザー' : 'ジーニー'}: ${msg.text}`).join('\n');
         }
 
-        const nameStr = appState.userName ? `${formatName(appState.userName)}` : 'マスター';
+        const nameStr = appState.userName ? `${formatName(appState.userName)}` : '';
 
         const systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
