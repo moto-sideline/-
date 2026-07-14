@@ -103,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
         completedWorks: [],
         userName: null,
         bookTheme: '',
-        onboardingStep: -1 // -1: API設定待ち, 0: 名前確認中, 1-2: おしゃべり中, 3: 通常モード
+        onboardingStep: -1, // -1: API設定待ち, 0: 名前確認中, 1-2: おしゃべり中, 3: 通常モード
+        pendingImageDataUrl: null,   // 送信前の画像（Data URL）
+        pendingImageMimeType: null   // 送信前の画像MIMEタイプ
     };
 
     const PRE_AWAKENING_MESSAGE =
@@ -1308,12 +1310,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${ampm} ${hours % 12 || 12}:${mins}`;
     };
 
-    const renderMessage = (text, sender, timeStr) => {
+    const renderMessage = (text, sender, timeStr, imageDataUrl) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
         
         let innerHTML = '';
         if (sender === 'user') {
+            // 画像バブルとテキストバブルを両方組み立てる
+            let bubbleInner = '';
+            if (imageDataUrl) {
+                bubbleInner += `<img class="bubble-image" src="${imageDataUrl}" alt="送信した画像" data-src="${imageDataUrl}">`;
+            }
+            if (text) {
+                bubbleInner += (imageDataUrl ? `<div style="font-size:0.92rem;padding:4px 6px 2px;">` : '') + text.replace(/\n/g, '<br>') + (imageDataUrl ? '</div>' : '');
+            }
             innerHTML = `
                 <div class="message-content">
                     <div class="bubble-row">
@@ -1321,7 +1331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="read">既読</span>
                             <span class="time">${timeStr}</span>
                         </div>
-                        <div class="bubble user">${text.replace(/\n/g, '<br>')}</div>
+                        <div class="bubble user${imageDataUrl ? ' has-image' : ''}">${bubbleInner}</div>
                     </div>
                 </div>
             `;
@@ -1340,15 +1350,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         wrapper.innerHTML = innerHTML;
+
+        // 画像クリックでライトボックス表示
+        if (imageDataUrl) {
+            const img = wrapper.querySelector('.bubble-image');
+            if (img) {
+                img.addEventListener('click', () => {
+                    const lb = document.getElementById('imageLightbox');
+                    const lbImg = document.getElementById('imageLightboxImg');
+                    if (lb && lbImg) {
+                        lbImg.src = imageDataUrl;
+                        lb.classList.remove('hidden');
+                    }
+                });
+            }
+        }
+
         chatMessages.appendChild(wrapper);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return wrapper;
     };
 
-    const addMessage = (text, sender) => {
+    const addMessage = (text, sender, imageDataUrl) => {
         const timeStr = formatTime();
         appState.chatHistory.push({ text, sender, time: timeStr });
-        renderMessage(text, sender, timeStr);
+        renderMessage(text, sender, timeStr, imageDataUrl);
         saveData();
         updateEntranceUI();
     };
@@ -1444,11 +1470,19 @@ ${historyContext}
 
     const handleSend = () => {
         const text = userInput.value.trim();
-        if (!text) return;
+        const imageDataUrl = appState.pendingImageDataUrl || null;
+        const imageMimeType = appState.pendingImageMimeType || 'image/jpeg';
 
-        addMessage(text, 'user');
+        // テキストも画像もなければ送信しない
+        if (!text && !imageDataUrl) return;
+
+        // チャットバブルに表示（画像＋テキスト）
+        addMessage(text, 'user', imageDataUrl);
         userInput.value = '';
         userInput.style.height = 'auto';
+
+        // 送信後に画像プレビューをクリア
+        clearPendingImage();
 
         if (!hasValidApiKey()) {
             setTimeout(() => preAwakeningUserReply(text), 600);
@@ -1490,7 +1524,11 @@ ${historyContext}
         typingIndicator.className = 'message-wrapper genie typing-indicator';
         
         let senderName, bubbleText, avatarIcon;
-        if (isPlotting) {
+        if (imageDataUrl) {
+            senderName = 'ジーニー (画像を確認中...)';
+            bubbleText = '🖼️ 画像を見ています...';
+            avatarIcon = 'fa-image';
+        } else if (isPlotting) {
             senderName = 'ジーニー (魔法を紡ぎ中...)';
             bubbleText = '✨ 魔法を紡いでいます...';
             avatarIcon = 'fa-magic';
@@ -1528,8 +1566,9 @@ ${historyContext}
                     updatePreview(`【${appState.bookTheme || '新刊'}のプロット】\nジーニーと一緒に紡ぎ出しました！`);
                 }
             }, remaining);
-        });
+        }, imageDataUrl ? { base64: imageDataUrl.split(',')[1], mimeType: imageMimeType } : null);
     };
+
 
     const updatePreview = (text) => {
         const previewContent = `
@@ -2220,8 +2259,88 @@ ${historyContext}
         });
     }
 
+    // --- 画像チャット UI Event Handlers ---
+
+    // 画像をcanvasでリサイズしてData URLで返す
+    const resizeImageForChat = (file, maxSize = 1024) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxSize || h > maxSize) {
+                        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+                        else       { w = Math.round(w * maxSize / h); h = maxSize; }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const mimeType = file.type || 'image/jpeg';
+                    resolve({ dataUrl: canvas.toDataURL(mimeType, 0.85), mimeType });
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    // 送信前プレビューをクリアする
+    const clearPendingImage = () => {
+        appState.pendingImageDataUrl = null;
+        appState.pendingImageMimeType = null;
+        const preview = document.getElementById('imageChatPreview');
+        const previewImg = document.getElementById('imageChatPreviewImg');
+        const input = document.getElementById('imageChatInput');
+        if (preview) preview.classList.add('hidden');
+        if (previewImg) previewImg.src = '';
+        if (input) input.value = '';
+    };
+
+    // 🖼️ボタンクリック → ファイル選択ダイアログ
+    const imageChatBtn = document.getElementById('imageChatBtn');
+    const imageChatInput = document.getElementById('imageChatInput');
+    const imageChatPreview = document.getElementById('imageChatPreview');
+    const imageChatPreviewImg = document.getElementById('imageChatPreviewImg');
+    const imageChatClearBtn = document.getElementById('imageChatClearBtn');
+
+    if (imageChatBtn && imageChatInput) {
+        imageChatBtn.addEventListener('click', () => { imageChatInput.click(); });
+    }
+
+    // ファイルが選択されたらリサイズしてプレビュー表示
+    if (imageChatInput) {
+        imageChatInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してね！');
+                return;
+            }
+            const { dataUrl, mimeType } = await resizeImageForChat(file, 1024);
+            appState.pendingImageDataUrl = dataUrl;
+            appState.pendingImageMimeType = mimeType;
+            if (imageChatPreviewImg) imageChatPreviewImg.src = dataUrl;
+            if (imageChatPreview) imageChatPreview.classList.remove('hidden');
+        });
+    }
+
+    // ✕ボタンで画像クリア
+    if (imageChatClearBtn) {
+        imageChatClearBtn.addEventListener('click', clearPendingImage);
+    }
+
+    // ライトボックスクリックで閉じる
+    const imageLightbox = document.getElementById('imageLightbox');
+    if (imageLightbox) {
+        imageLightbox.addEventListener('click', () => {
+            imageLightbox.classList.add('hidden');
+        });
+    }
+
     // --- Gemini API Call Logic ---
-    const callGeminiAPI = async (inputText, apiKey, callback) => {
+    const callGeminiAPI = async (inputText, apiKey, callback, imageData) => {
         // 現在の履歴からGemini用の会話フォーマットを構築
         const historyLength = Math.min(appState.chatHistory.length, 20); // 最大20件
         const recentHistory = appState.chatHistory.slice(-historyLength);
@@ -2231,10 +2350,19 @@ ${historyContext}
 
         const contents = recentHistory.map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
+            parts: [{ text: msg.text || '' }]
         }));
         
-        contents.push({ role: 'user', parts: [{ text: inputText }] });
+        // 今回の送信: 画像があればマルチモーダルで追加
+        if (imageData && imageData.base64) {
+            const userParts = [];
+            userParts.push({ inlineData: { mimeType: imageData.mimeType || 'image/jpeg', data: imageData.base64 } });
+            if (inputText) userParts.push({ text: inputText });
+            else userParts.push({ text: 'この画像について教えて！' });
+            contents.push({ role: 'user', parts: userParts });
+        } else {
+            contents.push({ role: 'user', parts: [{ text: inputText }] });
+        }
 
         let systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。

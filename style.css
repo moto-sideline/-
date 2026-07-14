@@ -594,8 +594,137 @@ body.dark-theme #cameraBtn i {
     color: var(--text-dim);
 }
 
+
 body.dark-theme #cameraBtn:hover i {
     color: var(--accent);
+}
+
+/* 画像チャットボタン */
+#imageChatBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    margin-right: 8px;
+    align-self: center;
+}
+
+#imageChatBtn:hover, #imageChatBtn:active {
+    background: rgba(88, 166, 255, 0.15);
+}
+
+#imageChatBtn i {
+    font-size: 1.3rem;
+    color: #888;
+    transition: color 0.2s;
+}
+
+#imageChatBtn:hover i {
+    color: #a78bfa;
+}
+
+body.dark-theme #imageChatBtn i {
+    color: var(--text-dim);
+}
+
+body.dark-theme #imageChatBtn:hover i {
+    color: #a78bfa;
+}
+
+/* 送信前の画像プレビュー */
+.image-chat-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 15px;
+    background: rgba(167, 139, 250, 0.08);
+    border-radius: 12px;
+    margin: 6px 0;
+    border: 1px solid rgba(167, 139, 250, 0.25);
+}
+
+.image-chat-preview.hidden {
+    display: none;
+}
+
+.image-chat-preview img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+}
+
+#imageChatClearBtn {
+    background: rgba(0, 0, 0, 0.15);
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+    font-size: 0.75rem;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+#imageChatClearBtn:hover {
+    background: rgba(255, 80, 80, 0.25);
+    color: #c00;
+}
+
+/* チャットバブル内の画像 */
+.bubble-image {
+    max-width: 220px;
+    width: 100%;
+    border-radius: 10px;
+    display: block;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.bubble-image:hover {
+    opacity: 0.9;
+}
+
+.bubble.has-image {
+    padding: 6px;
+    background: none !important;
+    box-shadow: none !important;
+}
+
+.bubble.has-image::before {
+    display: none;
+}
+
+/* 画像ライトボックス */
+#imageLightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    cursor: zoom-out;
+}
+
+#imageLightbox.hidden { display: none; }
+
+#imageLightbox img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    object-fit: contain;
 }
 
 /* OCR UI Styles */
