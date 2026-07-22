@@ -215,26 +215,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (subtitle) subtitle.textContent = subtitles[stepKey] || subtitles['3'];
     };
 
-    const preAwakeningUserReply = (text) => {
-        const t = text.trim();
-        const snippet = t.length > 24 ? `${t.slice(0, 24)}…` : t;
-        
+    const preAwakeningUserReply = (_text) => {
         addMessage(
-            `「${snippet}」——素敵な話だね！\n\n` +
+            '話しかけてくれてありがとう！\n\n' +
             '本当にお話しするには、鍵（APIキー）をセットしてジーニーを覚醒させる必要があるんだ✨\n' +
             '今から画面が開くから、無料で鍵を取って貼り付けてみてね！',
             'genie'
         );
 
-        // 1秒後に自動で設定画面（API設定モーダル）を開く
+        // 0.6秒後に自動で設定画面（API設定モーダル）を開く
         setTimeout(() => {
-            if (apiSettingsModal) {
-                openModal(apiSettingsModal);
-                if (apiKeyInput) {
-                    apiKeyInput.focus();
-                }
+            openApiSettingsModal();
+            if (apiKeyInput) {
+                apiKeyInput.focus();
             }
-        }, 800);
+        }, 600);
     };
 
     // 敬称（さん、さま等）の重複を防ぐヘルパー関数
