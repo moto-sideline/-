@@ -217,19 +217,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const preAwakeningUserReply = (_text) => {
         addMessage(
-            '話しかけてくれてありがとう！\n\n' +
-            '本当にお話しするには、鍵（APIキー）をセットしてジーニーを覚醒させる必要があるんだ✨\n' +
-            '今から画面が開くから、無料で鍵を取って貼り付けてみてね！',
+            'メッセージありがとう！\n\n' +
+            'まだ鍵（APIキー）がセットされていないから、本当のお話しはお預けなんだ🔑✨\n' +
+            '今から開く設定画面から「無料で鍵を取得」して貼り付けてね！',
             'genie'
         );
 
-        // 0.6秒後に自動で設定画面（API設定モーダル）を開く
+        // タイマーを少し早めて（300ms）、何度閉じられても毎回確実に設定画面を自動で開く
         setTimeout(() => {
             openApiSettingsModal();
             if (apiKeyInput) {
                 apiKeyInput.focus();
             }
-        }, 600);
+        }, 300);
     };
 
     // 敬称（さん、さま等）の重複を防ぐヘルパー関数
