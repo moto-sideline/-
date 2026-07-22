@@ -1465,3 +1465,111 @@ body.dark-theme .pwa-banner-btn:hover {
 body.dark-theme .pwa-desc {
     color: var(--text-main);
 }
+
+/* --- API Wizard Guide Card --- */
+.api-wizard-card {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    border: 2px solid #818cf8;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+}
+
+.api-wizard-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.wizard-icon {
+    font-size: 1.5rem;
+    color: #4f46e5;
+    margin-top: 2px;
+}
+
+.wizard-title {
+    margin: 0 0 2px 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e1b4b;
+}
+
+.wizard-desc {
+    margin: 0;
+    font-size: 0.78rem;
+    color: #4338ca;
+    line-height: 1.3;
+}
+
+.wizard-get-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(79, 70, 229, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.wizard-get-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 12px rgba(79, 70, 229, 0.4);
+}
+
+.wizard-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 8px 10px;
+    border-radius: 6px;
+}
+
+.wizard-step-item {
+    font-size: 0.78rem;
+    color: #312e81;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.step-num {
+    background: #4f46e5;
+    color: #fff;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.api-input-group {
+    margin-bottom: 16px;
+}
+
+.wizard-input-highlight {
+    border: 2px solid #6366f1 !important;
+    background: #f5f3ff !important;
+    font-size: 0.9rem !important;
+    padding: 10px 12px !important;
+}
+
+.wizard-input-highlight:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+}
