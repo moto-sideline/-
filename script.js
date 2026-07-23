@@ -734,30 +734,47 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const revisions = revData.revisions;
-            // 最新は末尾。過去データ（直前の保存）は末尾から2番目（もし1件ならそれ）
-            const targetRev = revisions.length > 1 ? revisions[revisions.length - 2] : revisions[revisions.length - 1];
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：最高の会話データを全履歴から検索中...';
 
-            const revContentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/revisions/${targetRev.id}?alt=media`, {
-                headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken})
-            });
-            
-            const revContentStr = await revContentRes.text();
-            if (revContentStr) {
-                const restoredState = JSON.parse(revContentStr);
-                if (restoredState && restoredState.chatHistory) {
-                    const count = restoredState.chatHistory.length;
-                    const timeStr = targetRev.modifiedTime ? new Date(targetRev.modifiedTime).toLocaleString() : '過去';
-                    if (confirm(`【上書き前の過去データが見つかりました！】\n\n保存日時：${timeStr}\n会話数：${count}件\n\nこの過去の会話データに復元しますか？`)) {
-                        appState = restoredState;
-                        normalizeAppState();
-                        saveData(false);
-                        renderAll();
-                        alert("✨ 上書き前の過去の会話データを復元しました！");
-                        if (gdriveStatusText) gdriveStatusText.textContent = '現在：過去データの復元完了';
+            let bestRev = null;
+            let maxChatCount = -1;
+            let bestState = null;
+
+            // 最新の過去10件のリビジョンを逆順（最新→過去）で探索
+            const recentRevisions = revisions.slice(-10).reverse();
+            for (const rev of recentRevisions) {
+                try {
+                    const revContentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/revisions/${rev.id}?alt=media`, {
+                        headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken})
+                    });
+                    const revContentStr = await revContentRes.text();
+                    if (revContentStr) {
+                        const st = JSON.parse(revContentStr);
+                        if (st && st.chatHistory && st.chatHistory.length > maxChatCount) {
+                            maxChatCount = st.chatHistory.length;
+                            bestRev = rev;
+                            bestState = st;
+                        }
                     }
-                } else {
-                    alert("過去データの内容を正常に読み込めませんでした。");
+                } catch(err) {
+                    console.error("Revision fetch error:", err);
                 }
+            }
+
+            if (bestState && bestState.chatHistory && bestState.chatHistory.length > 0) {
+                const count = bestState.chatHistory.length;
+                const timeStr = bestRev && bestRev.modifiedTime ? new Date(bestRev.modifiedTime).toLocaleString() : '過去';
+                if (confirm(`【✨会話データ（${count}件）を発見しました！】\n\n保存日時：${timeStr}\n会話数：${count}件\n\nこのデータを復元し、Google Driveにも最新として固定保存しますか？`)) {
+                    appState = bestState;
+                    normalizeAppState();
+                    appState.updatedAt = Date.now(); // タイムスタンプを今この瞬間に更新
+                    saveData(true); // クラウドにも即座に上書き保存して再消失を完全防止
+                    renderAll();
+                    alert(`🎉 会話データ（${count}件）を無事に復元・固定保存しました！`);
+                    if (gdriveStatusText) gdriveStatusText.textContent = '現在：過去データの復元＆固定完了';
+                }
+            } else {
+                alert("復元可能な有効な会話データが見つかりませんでした。");
             }
         } catch(e) {
             console.error("Restore error:", e);
@@ -851,7 +868,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.23') {
+                    if (currentVer === '0.9.24') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.24）】\n` +
+                            `・【復元機能の強化】Google Driveの過去履歴全件から『一番会話が多い状態』を自動検索して復元＆Google Driveへも確定固定保存する完璧な復元処理にバージョンアップしたよ！✨`;
+                    } else if (currentVer === '0.9.23') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.23）】\n` +
