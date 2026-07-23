@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openSyncManualBtn = document.getElementById('openSyncManualBtn');
     const gdriveClientIdInput = document.getElementById('gdriveClientIdInput');
     const gdriveLoginBtn = document.getElementById('gdriveLoginBtn');
+    const restoreDriveRevBtn = document.getElementById('restoreDriveRevBtn');
     const gdriveStatusText = document.getElementById('gdriveStatusText');
 
     // OCR & Camera Selectors
@@ -565,6 +566,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    if (restoreDriveRevBtn) {
+        restoreDriveRevBtn.addEventListener('click', () => {
+            restoreDriveRevision();
+        });
+    }
     
     // Poll to check if window.gapi is loaded since we didn't use onload
     let gapiLoadCalled = false;
@@ -701,6 +708,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const restoreDriveRevision = async () => {
+        if (!driveAccessToken) {
+            alert("Google Driveと連携されていません。【⚙️設定】→「Googleでログインして同期開始」を行ってからお試しください。");
+            return;
+        }
+        try {
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：過去の同期データを探索中...';
+            const fileId = await getSyncFileId();
+            if (!fileId) {
+                alert("クラウド上に同期データが見つかりませんでした。");
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：同期データなし';
+                return;
+            }
+
+            const revRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/revisions?fields=revisions(id,modifiedTime)`, {
+                headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken})
+            });
+            const revData = await revRes.json();
+            
+            if (!revData.revisions || revData.revisions.length === 0) {
+                alert("復元可能なバックアップ履歴が見つかりませんでした。");
+                if (gdriveStatusText) gdriveStatusText.textContent = '現在：履歴なし';
+                return;
+            }
+
+            const revisions = revData.revisions;
+            // 最新は末尾。過去データ（直前の保存）は末尾から2番目（もし1件ならそれ）
+            const targetRev = revisions.length > 1 ? revisions[revisions.length - 2] : revisions[revisions.length - 1];
+
+            const revContentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/revisions/${targetRev.id}?alt=media`, {
+                headers: new Headers({'Authorization': 'Bearer ' + driveAccessToken})
+            });
+            
+            const revContentStr = await revContentRes.text();
+            if (revContentStr) {
+                const restoredState = JSON.parse(revContentStr);
+                if (restoredState && restoredState.chatHistory) {
+                    const count = restoredState.chatHistory.length;
+                    const timeStr = targetRev.modifiedTime ? new Date(targetRev.modifiedTime).toLocaleString() : '過去';
+                    if (confirm(`【上書き前の過去データが見つかりました！】\n\n保存日時：${timeStr}\n会話数：${count}件\n\nこの過去の会話データに復元しますか？`)) {
+                        appState = restoredState;
+                        normalizeAppState();
+                        saveData(false);
+                        renderAll();
+                        alert("✨ 上書き前の過去の会話データを復元しました！");
+                        if (gdriveStatusText) gdriveStatusText.textContent = '現在：過去データの復元完了';
+                    }
+                } else {
+                    alert("過去データの内容を正常に読み込めませんでした。");
+                }
+            }
+        } catch(e) {
+            console.error("Restore error:", e);
+            alert("復元処理中にエラーが発生しました: " + (e.message || e));
+            if (gdriveStatusText) gdriveStatusText.textContent = '現在：復元エラー';
+        }
+    };
+
     const saveData = (triggerSync = true) => {
         if (triggerSync) {
             appState.updatedAt = Date.now(); // ローカルの操作時のみ日時を更新（Driveからの受信時は上書きしない）
@@ -786,7 +851,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.22') {
+                    if (currentVer === '0.9.23') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.23）】\n` +
+                            `・【緊急救援】Google Driveの過去の同期履歴（上書き前のデータ）から直前の会話を復元できる「過去データ復元ボタン」を設置したよ！\n` +
+                            `・長文の会話や構成案が途中で切れないように、応答出力の上限枠（トークン数）を大きく引き上げたよ✨`;
+                    } else if (currentVer === '0.9.22') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.22）】\n` +
@@ -2454,7 +2525,7 @@ ${historyContext}
             contents: contents,
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 1000
+                maxOutputTokens: 2500
             }
         };
 

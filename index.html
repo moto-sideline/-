@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=43">
+    <link rel="stylesheet" href="style.css?v=44">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google API for Drive Sync -->
@@ -486,6 +486,9 @@
                     <button type="button" id="gdriveLoginBtn" class="primary-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" disabled>
                         <i class="fab fa-google"></i> Googleでログインして同期開始
                     </button>
+                    <button type="button" id="restoreDriveRevBtn" class="secondary-btn" style="width: 100%; margin-top: 10px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px; border-color: #f39c12; color: #d35400;">
+                        <i class="fas fa-history"></i> 🕒 過去の同期データ（上書き前の状態）を復元
+                    </button>
                     <p id="gdriveStatusText" class="modal-hint" style="margin-top: 10px; text-align: center; color: var(--text-meta);">
                         現在：未設定
                     </p>
@@ -502,7 +505,7 @@
         <img id="imageLightboxImg" src="" alt="拡大表示">
     </div>
 
-    <script src="version.js?v=43"></script>
-    <script src="script.js?v=43"></script>
+    <script src="version.js?v=44"></script>
+    <script src="script.js?v=44"></script>
 </body>
 </html>
