@@ -400,7 +400,7 @@ body {
     margin: 12px 0 8px;
     position: relative;
     font-size: 0.78rem;
-    color: #888;
+    color: #fff;
     font-weight: 500;
     letter-spacing: 0.03em;
 }
@@ -411,17 +411,17 @@ body {
     top: 50%;
     width: 30%;
     height: 1px;
-    background: rgba(0,0,0,0.12);
+    background: rgba(255,255,255,0.35);
 }
 .date-separator::before { left: 0; }
 .date-separator::after  { right: 0; }
 
 body.dark-theme .date-separator {
-    color: #aaa;
+    color: #fff;
 }
 body.dark-theme .date-separator::before,
 body.dark-theme .date-separator::after {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.25);
 }
 
 .message-wrapper.user {
