@@ -771,9 +771,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             welcomeText = getFallbackGreeting();
                         }
                         
-                        const bubble = loadingEl.querySelector('.bubble.genie');
-                        if (bubble) {
-                            bubble.innerHTML = welcomeText.replace(/\n/g, '<br>');
+                        // ローディング要素を削除して、会話履歴として保存・レンダリング
+                        if (loadingEl && loadingEl.parentNode) {
+                            loadingEl.parentNode.removeChild(loadingEl);
+                        }
+                        
+                        if (welcomeText) {
+                            addMessage(welcomeText, 'genie');
                         }
                     }
                 }
@@ -782,7 +786,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.20') {
+                    if (currentVer === '0.9.22') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.22）】\n` +
+                            `・4時間ぶりの再会挨拶が、メッセージ送信時に消えてしまう不具合を完全に修正して、チャット履歴にしっかり保存されるようにしたよ！\n` +
+                            `・挨拶の生成処理を安定化して、「わぁ！も」のように途切れたり崩れたりしないように改良したんだ✨`;
+                    } else if (currentVer === '0.9.21') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.21）】\n` +
+                            `・未覚醒時の2ターン目以降の応答・設定モーダル自動オープンを完全保証したよ！\n` +
+                            `・覚醒前の応答オウム返しを解消したよ✨`;
+                    } else if (currentVer === '0.9.20') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.20）】\n` +
@@ -1446,10 +1462,10 @@ ${historyContext}
         const model = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
         const requestBody = {
             systemInstruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ role: 'user', parts: [{ text: "再開 of 挨拶をして！" }] }],
+            contents: [{ role: 'user', parts: [{ text: "再開の挨拶をしてね！" }] }],
             generationConfig: {
-                temperature: 0.8,
-                maxOutputTokens: 150
+                temperature: 0.7,
+                maxOutputTokens: 300
             }
         };
 
@@ -1461,9 +1477,12 @@ ${historyContext}
             });
             const data = await response.json();
             if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
-                let text = data.candidates[0].content.parts[0].text || "";
+                const parts = data.candidates[0].content.parts;
+                let textParts = parts.filter(p => !p.thought).map(p => p.text || "");
+                let text = textParts.join("").trim();
+                if (!text && parts[0] && parts[0].text) text = parts[0].text;
                 text = text.replace(/^(?:SPECIAL INSTRUCTION|thought|思考):.*?\n/is, "").trim();
-                return text;
+                if (text && text.length > 3) return text;
             }
         } catch (e) {
             console.error("Failed to generate custom greeting:", e);
