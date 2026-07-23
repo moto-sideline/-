@@ -868,7 +868,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.24') {
+                    if (currentVer === '0.9.25') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.25）】\n` +
+                            `・チャット画面に「今日（水）」「昨日（火）」「7月22日（火）」のような日付区切り線を追加したよ！会話が昨日なのか今日なのかひと目でわかるようになったんだ✨`;
+                    } else if (currentVer === '0.9.24') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.24）】\n` +
@@ -1380,7 +1385,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderAll = () => {
         chatMessages.innerHTML = '';
-        appState.chatHistory.forEach(msg => renderMessage(msg.text, msg.sender, msg.time));
+        let lastDateStr = null;
+        appState.chatHistory.forEach(msg => {
+            const dateStr = getDateLabel(msg.time);
+            if (dateStr && dateStr !== lastDateStr) {
+                renderDateSeparator(dateStr);
+                lastDateStr = dateStr;
+            }
+            renderMessage(msg.text, msg.sender, msg.time);
+        });
         renderPlots();
         if (appState.preview) previewArea.innerHTML = appState.preview;
     };
@@ -1423,7 +1436,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const hours = now.getHours();
         const mins = now.getMinutes().toString().padStart(2, '0');
         const ampm = hours >= 12 ? '午後' : '午前';
-        return `${ampm} ${hours % 12 || 12}:${mins}`;
+        const timeOnly = `${ampm} ${hours % 12 || 12}:${mins}`;
+        const datePrefix = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')}`;
+        return `${datePrefix} ${timeOnly}`;
+    };
+
+    const getTimeOnlyDisplay = (timeStr) => {
+        // "YYYY/MM/DD 午前/午後 H:MM" → "午前/午後 H:MM" に整形
+        if (!timeStr) return '';
+        const m = timeStr.match(/(午前|午後) \d+:\d+$/);
+        return m ? m[0] : timeStr;
+    };
+
+    const getDateLabel = (timeStr) => {
+        // "YYYY/MM/DD 午前/午後 H:MM" → "YYYY/MM/DD"
+        if (!timeStr) return null;
+        const m = timeStr.match(/^(\d{4}\/\d{2}\/\d{2})/);
+        return m ? m[1] : null;
+    };
+
+    const formatDateSeparator = (dateStr) => {
+        if (!dateStr) return '';
+        const [y, mo, d] = dateStr.split('/').map(Number);
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        const dt = new Date(y, mo - 1, d);
+        const today = new Date();
+        const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+        const isToday = dt.toDateString() === today.toDateString();
+        const isYesterday = dt.toDateString() === yesterday.toDateString();
+        const label = isToday ? '今日' : isYesterday ? '昨日' : `${mo}月${d}日`;
+        const week = weekdays[dt.getDay()];
+        return `${label}（${week}）`;
+    };
+
+    const renderDateSeparator = (dateStr) => {
+        const sep = document.createElement('div');
+        sep.className = 'date-separator';
+        sep.textContent = formatDateSeparator(dateStr);
+        chatMessages.appendChild(sep);
     };
 
     const renderMessage = (text, sender, timeStr, imageDataUrl) => {
@@ -1445,7 +1495,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="bubble-row">
                         <div class="message-meta">
                             <span class="read">既読</span>
-                            <span class="time">${timeStr}</span>
+                            <span class="time">${getTimeOnlyDisplay(timeStr)}</span>
                         </div>
                         <div class="bubble user${imageDataUrl ? ' has-image' : ''}">${bubbleInner}</div>
                     </div>
@@ -1458,7 +1508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="bubble-row">
                         <div class="bubble genie">${text.replace(/\n/g, '<br>')}</div>
                         <div class="message-meta">
-                            <span class="time">${timeStr}</span>
+                            <span class="time">${getTimeOnlyDisplay(timeStr)}</span>
                         </div>
                     </div>
                 </div>
@@ -1489,6 +1539,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const addMessage = (text, sender, imageDataUrl) => {
         const timeStr = formatTime();
+        const dateStr = getDateLabel(timeStr);
+        // 直前の履歴と日付が違ったら区切り線を挿入
+        const lastMsg = appState.chatHistory[appState.chatHistory.length - 1];
+        const lastDateStr = lastMsg ? getDateLabel(lastMsg.time) : null;
+        if (dateStr && dateStr !== lastDateStr) {
+            renderDateSeparator(dateStr);
+        }
         appState.chatHistory.push({ text, sender, time: timeStr });
         renderMessage(text, sender, timeStr, imageDataUrl);
         saveData();
