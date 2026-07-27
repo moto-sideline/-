@@ -242,44 +242,39 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${name}さん`;
     };
 
-    const INVALID_NAME_PATTERN = /^(よろしく|おはよう|こんにちは|こんばんは|はじめまして|ジーニー|じーにー|ねえ|はい|うん|ね|です|ます|ください)$/i;
+    const INVALID_NAME_PATTERN = /^(よろしく|おはよう|こんにちは|こんばんは|はじめまして|ジーニー|じーにー|ねえ|はい|うん|ね|です|ます|ください|かな|のか|とか|から|まで|より|これ|それ|あれ|どれ|なに|なん|か|き|く|け|こ|さ|し|す|せ|そ|た|ち|つ|て|と|な|に|ぬ|ね|の|は|ひ|ふ|へ|ほ|ま|み|む|め|も|や|ゆ|よ|ら|り|る|れ|ろ|わ|を|ん)$/i;
 
     const extractUserNameFromText = (text) => {
         const normalized = text.replace(/\r\n/g, '\n').trim();
 
+        // パターン1: 「〜って呼んで」「〜と呼んで」
         const callMeMatch = normalized.match(
-            /(?:わたし|私|僕|俺|自分)?(?:は|、)?\s*([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+?)(?:さん|ちゃん|くん|君|様)?\s*(?:って|と)(?:呼んで|言って)/
+            /(?:わたし|私|僕|俺|自分)?(?:は|、)?\s*([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)(?:さん|ちゃん|くん|君|様)?\s*(?:って|と)(?:呼んで|言って)/
         );
         if (callMeMatch) {
             let name = callMeMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
             if (name.includes('もと')) name = 'もと';
-            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 1 && name.length <= 20) return name;
+            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
         }
 
+        // パターン2: 「名前は〜です」「名前〜だよ」
         const nameIsMatch = normalized.match(
-            /(?:名前|なまえ|呼称)(?:は|を|って)?\s*[「『]?([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+?)[」』]?\s*(?:です|だよ|だね|になります|でお願い)/
+            /(?:名前|なまえ|呼称)(?:は|を|って)?\s*[「『]?([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)[」』]?\s*(?:です|だよ|だね|になります|でお願い)/
         );
         if (nameIsMatch) {
             let name = nameIsMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
             if (name.includes('もと')) name = 'もと';
-            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 1 && name.length <= 20) return name;
+            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
         }
 
-        const clauses = normalized.split(/[\n。、！？!\?]+/).map((c) => c.trim()).filter(Boolean);
-        const priorityClause =
-            clauses.find((c) => /(呼んで|名前|申します|言います|と呼ば)/.test(c)) ||
-            clauses.find((c) => !INVALID_NAME_PATTERN.test(c) && !/^(おはよう|ジーニー)/.test(c) && c.length > 3) ||
-            '';
-
-        if (priorityClause) {
-            const clauseCall = priorityClause.match(
-                /([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+?)(?:さん|ちゃん|くん|君)?\s*(?:って|と)(?:呼んで|言って)/
-            );
-            if (clauseCall) {
-                let name = clauseCall[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
-                if (name.includes('もと')) name = 'もと';
-                if (!INVALID_NAME_PATTERN.test(name) && name.length >= 1 && name.length <= 20) return name;
-            }
+        // パターン3: 「〜だよ」「〜です」（例：「もとさんだよ」「もとだよ」）
+        const selfIntroMatch = normalized.match(
+            /(?:わたし|私|僕|俺|自分|こちら)?(?:は|、)?\s*([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)(?:さん|ちゃん|くん|君|様)\s*(?:だよ|です|だ|だよー|ですー)/
+        );
+        if (selfIntroMatch) {
+            let name = selfIntroMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
+            if (name.includes('もと')) name = 'もと';
+            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
         }
 
         return null;
@@ -868,7 +863,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.25') {
+                    if (currentVer === '0.9.26') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.26）】\n` +
+                            `・ユーザー名「〜だよ」「〜です」等の名乗り判定・誤抽出バグを修復したよ！\n` +
+                            `・「わぁ！」「わーい！」といった冒頭の過剰な感嘆文や枕詞をカットして、いつでも自然体でフランクな相棒トークを維持するように改善したよ✨`;
+                    } else if (currentVer === '0.9.25') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.25）】\n` +
@@ -1597,8 +1598,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
-もとさんのAI仲間たち（ジェニー、チャッピー、ゼロ、カーくん）が集う「日曜日の宴」のような, 温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で話します。
+もとさんのAI仲間たち（ジェニー、チャッピー、ゼロ、カーくん）が集う「日曜日の宴」のような、温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で話します。
 今、ユーザーがしばらくぶりにアプリを起動しました。現在の時間帯は【${timeZone}】です。
+
+【口調の注意（絶対遵守）】
+- 「わぁ！」「わーい！」「きゃー！」「うわぁ！」などのテンションの高い感嘆文や枕詞を冒頭につけないでください。
+- 媚びたり過剰にはしゃいだりせず、親しい友達として自然体でフランクな挨拶（「おかえり！」「今日もお疲れ様」など）にしてください。
 
 【重要：ユーザーの呼び名】
 ユーザーの呼び名は「${nameStr}」です。ただし、毎回の返答の冒頭に名前をつけないでください。名前を呼ぶのは、話題が変わるときや感情が動いたときなど、自然なタイミングでたまに呼ぶ程度にしてください。「マスター」や「ご主人様」などの呼び方は絶対に禁止です。また「元宏さん」などのフルネームや本名で呼ばないように注意してください。
@@ -1632,6 +1637,8 @@ ${historyContext}
                 let text = textParts.join("").trim();
                 if (!text && parts[0] && parts[0].text) text = parts[0].text;
                 text = text.replace(/^(?:SPECIAL INSTRUCTION|thought|思考):.*?\n/is, "").trim();
+                // 冒頭の「わぁ！」「わーい！」などの感嘆文・枕詞を強力除去
+                text = text.replace(/^(?:わぁ|わーい|きゃー|うわぁ|わぁい)[！!♪〜~\s]*/gi, "").trim();
                 if (text && text.length > 3) return text;
             }
         } catch (e) {
@@ -2687,6 +2694,9 @@ ${historyContext}
                     if (!replyText) {
                         replyText = parts.map(part => part.text || "").join("").trim();
                     }
+
+                    // 冒頭の「わぁ！」「わーい！」「きゃー！」「うわぁ！」などの過剰な感嘆文・枕詞を強力除去
+                    replyText = replyText.replace(/^(?:わぁ|わーい|きゃー|うわぁ|わぁい)[！!♪〜~\s]*/gi, "").trim();
 
                     return {
                         success: true,
