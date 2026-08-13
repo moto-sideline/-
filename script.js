@@ -242,7 +242,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${name}さん`;
     };
 
-    const INVALID_NAME_PATTERN = /^(よろしく|おはよう|こんにちは|こんばんは|はじめまして|ジーニー|じーにー|ねえ|はい|うん|ね|です|ます|ください|かな|のか|とか|から|まで|より|これ|それ|あれ|どれ|なに|なん|か|き|く|け|こ|さ|し|す|せ|そ|た|ち|つ|て|と|な|に|ぬ|ね|の|は|ひ|ふ|へ|ほ|ま|み|む|め|も|や|ゆ|よ|ら|り|る|れ|ろ|わ|を|ん)$/i;
+    // 冒頭の感嘆詞や「！」などの記号を強力除去する共通関数
+    const cleanLeadingExclamations = (text, isReplyAfterGreeting = false) => {
+        if (!text) return '';
+        let cleaned = text.trim();
+        // 冒頭の感嘆詞・枕詞を強力除去
+        cleaned = cleaned.replace(/^(?:わぁ|わーい|わー|きゃー|うわぁ|わぁい|お|おっ|あ|あぁ|やあ|やぁ|ハーイ|イェイ|ひゃー|へぇ|へえ)[！!♪〜~\s]*/gi, '').trim();
+
+        // 挨拶直後の返答の場合は、冒頭の重複再会挨拶（「おかえり」「おはよう」等）をカット
+        if (isReplyAfterGreeting) {
+            cleaned = cleaned.replace(/^(?:お?久しぶり|おかえり|おかえりなさい|おはよう|こんにちは|こんばんは|お疲れ様|おつかれさま)[！!♪〜~\s]*(?:[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+(?:さん|ちゃん|くん|君|様)?[！!♪〜~\s]*)?/gi, '').trim();
+        }
+
+        // 先頭に残った感嘆符、感嘆記号、不要な約物を除去（例: 「！もとさん」→「もとさん」）
+        cleaned = cleaned.replace(/^[！!♪～〜★☆✨・:：,，.!?\s]+/, '').trim();
+        return cleaned;
+    };
+
+    const INVALID_NAME_PATTERN = /^(よろしく|おはよう|こんにちは|こんばんは|はじめまして|ジーニー|じーにー|マスター|ご主人様|ねえ|はい|うん|ね|です|ます|ください|かな|のか|とか|から|まで|より|これ|それ|あれ|どれ|なに|なん|か|き|く|け|こ|さ|し|す|せ|そ|た|ち|つ|て|と|な|に|ぬ|ね|の|は|ひ|ふ|へ|ほ|ま|み|む|め|も|や|ゆ|よ|ら|り|る|れ|ろ|わ|を|ん|奥|客|皆|みんな|仕事|今日|明日|昨日|秘密|未定|主人公|キャラクター|キャラ|タイトル|見出し|章|節|本|作品|話|資料|メモ)$/i;
 
     const extractUserNameFromText = (text) => {
         const normalized = text.replace(/\r\n/g, '\n').trim();
@@ -257,19 +274,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
         }
 
-        // パターン2: 「名前は〜です」「名前〜だよ」
-        const nameIsMatch = normalized.match(
-            /(?:名前|なまえ|呼称)(?:は|を|って)?\s*[「『]?([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)[」』]?\s*(?:です|だよ|だね|になります|でお願い)/
-        );
-        if (nameIsMatch) {
-            let name = nameIsMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
-            if (name.includes('もと')) name = 'もと';
-            if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
+        // パターン2: 「名前は〜です」「名前〜だよ」（本や章の名前などは除外）
+        if (!normalized.match(/(?:本|章|タイトル|キャラクター|キャラ|主人公|店|会社|作品|ゲーム|映画)の(?:名前|なまえ|呼称)/)) {
+            const nameIsMatch = normalized.match(
+                /(?:私|わたし|僕|俺|自分|こちら)?(?:の)?(?:名前|なまえ|呼称)(?:は|を|って)?\s*[「『]?([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)[」』]?\s*(?:です|だよ|だね|になります|でお願い)/
+            );
+            if (nameIsMatch) {
+                let name = nameIsMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
+                if (name.includes('もと')) name = 'もと';
+                if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
+            }
         }
 
-        // パターン3: 「〜だよ」「〜です」（例：「もとさんだよ」「もとだよ」）
+        // パターン3: 明示的な自己紹介「（私は）〜だよ」「〜です」（例：「もとさんだよ」「もとだよ」）
         const selfIntroMatch = normalized.match(
-            /(?:わたし|私|僕|俺|自分|こちら)?(?:は|、)?\s*([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)(?:さん|ちゃん|くん|君|様)\s*(?:だよ|です|だ|だよー|ですー)/
+            /(?:わたし|私|僕|俺|自分|こちら)\s*(?:は|、)?\s*([ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,20}?)(?:さん|ちゃん|くん|君|様)?\s*(?:だよ|です|だ|だよー|ですー)/
         );
         if (selfIntroMatch) {
             let name = selfIntroMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
@@ -831,7 +850,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     appState.onboardingStep = 1;
                     saveData();
                 } else {
-                    const lastUpdated = appState.updatedAt || 0;
+                    const lastUpdated = appState.updatedAt || Date.now();
+                    if (!appState.updatedAt) {
+                        appState.updatedAt = Date.now();
+                        saveData();
+                    }
                     const diffHours = (Date.now() - lastUpdated) / (1000 * 60 * 60);
 
                     // 4時間以上空いていた場合のみ挨拶を表示
@@ -863,7 +886,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.26') {
+                    if (currentVer === '0.9.28') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.28）】\n` +
+                            `・名前の誤抽出バグをさらに強化修復し、日常会話（「仕事だよ」「本だよ」等）から変な名前が登録される現象を完全防衛したよ！\n` +
+                            `・挨拶の冒頭に「！」（例: 「！もとさん」）が残ってしまう問題や過剰な感嘆詞を綺麗にカットするように改善したよ✨\n` +
+                            `・4時間経過後の再起動挨拶が途中で切れないよう出力トークン枠を拡大し、ローカル環境での「久しぶり」誤判定も修復したよ！`;
+                    } else if (currentVer === '0.9.27') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.27）】\n` +
+                            `・前回のアクセスから2日（48時間）以上経過した場合のみ「久しぶり」を解禁し、それ未満（数時間〜前日ぶり）は日常の自然な挨拶に統一したよ！`;
+                    } else if (currentVer === '0.9.26') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.26）】\n` +
@@ -1605,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 【挨拶言葉の絶対ルール】
 ${isLongAbsence ? `- 前回のアクセスから2日以上（${daysCount}日）離れているため、「久しぶり！」「少し間が空いたね！」といった再会の言葉を使っても構いません。` : `- 経過時間が短いため（数時間〜前日ぶり）、「久しぶり」「お久しぶり」「久しぶりの再会」といった表現は【絶対禁止】です！毎朝や数時間ぶりの起動で「久しぶり」と言うと不自然になります。代わりに時間帯に合わせた「おかえり！」「おはよう！」「今日もお疲れ様！」などのフランクで自然な日常の挨拶にしてください。`}
-- 「わぁ！」「わーい！」「きゃー！」「うわぁ！」などのテンションの高い感嘆文や枕詞を冒頭につけないでください。
+- 冒頭に「！」や「！」付きの感嘆詞（「わぁ！」「おっ！」「！もとさん」など）を絶対に付けず、1文字目から「おかえり」「おはよう」等の挨拶言葉で直接始めてください。
 - 媚びたり過剰にはしゃいだりせず、親しい友達として自然体でフランクな挨拶にしてください。
 
 【重要：ユーザーの呼び名】
@@ -1623,7 +1658,7 @@ ${historyContext}
             contents: [{ role: 'user', parts: [{ text: "再開の挨拶をしてね！" }] }],
             generationConfig: {
                 temperature: 0.7,
-                maxOutputTokens: 300
+                maxOutputTokens: 1500
             }
         };
 
@@ -1640,8 +1675,10 @@ ${historyContext}
                 let text = textParts.join("").trim();
                 if (!text && parts[0] && parts[0].text) text = parts[0].text;
                 text = text.replace(/^(?:SPECIAL INSTRUCTION|thought|思考):.*?\n/is, "").trim();
-                // 冒頭の「わぁ！」「わーい！」などの感嘆文・枕詞を強力除去
-                text = text.replace(/^(?:わぁ|わーい|きゃー|うわぁ|わぁい)[！!♪〜~\s]*/gi, "").trim();
+                if (!isLongAbsence) {
+                    text = text.replace(/(?:お?久しぶり|久しぶりの再会)[！!♪〜~\s]*/gi, "おかえり！");
+                }
+                text = cleanLeadingExclamations(text);
                 if (text && text.length > 3) return text;
             }
         } catch (e) {
@@ -2527,6 +2564,9 @@ ${historyContext}
 
     // --- Gemini API Call Logic ---
     const callGeminiAPI = async (inputText, apiKey, callback, imageData) => {
+        // 直前がジーニーからのメッセージ（再開挨拶等）であるかを判定
+        const isReplyAfterGreeting = (appState.chatHistory.length >= 2 && appState.chatHistory[appState.chatHistory.length - 2].sender === 'genie');
+
         // 現在の履歴からGemini用の会話フォーマットを構築
         const historyLength = Math.min(appState.chatHistory.length, 20); // 最大20件
         const recentHistory = appState.chatHistory.slice(-historyLength);
@@ -2575,6 +2615,10 @@ ${historyContext}
 
         if (appState.userName) {
             systemInstruction += `\n\n【重要：ユーザーの呼び名】\nユーザーの呼び名は「${appState.userName}」です。ただし、毎回の返答の冒頭に名前をつけないでください。名前を呼ぶのは、話題が変わるときや感情が動いたときなど、自然なタイミングでたまに呼ぶ程度にしてください。「元宏さん」などのフルネームや本名で呼ばないように注意してください。`;
+        }
+
+        if (isReplyAfterGreeting) {
+            systemInstruction += `\n\n【最重要：挨拶の重複・連投の絶対禁止】\n直前のメッセージで既に「おかえり」「おはよう」等の挨拶を行っています。今回の返答の冒頭で「おかえり」「おはよう」「こんにちは」「お疲れ様」などの挨拶を【絶対に繰り返さない】でください。連続した挨拶は非常に不自然です。ユーザーの発言へのリアクションや感想から直接返答を始めてください。`;
         }
 
         if (appState.knowledge) {
@@ -2698,8 +2742,8 @@ ${historyContext}
                         replyText = parts.map(part => part.text || "").join("").trim();
                     }
 
-                    // 冒頭の「わぁ！」「わーい！」「きゃー！」「うわぁ！」などの過剰な感嘆文・枕詞を強力除去
-                    replyText = replyText.replace(/^(?:わぁ|わーい|きゃー|うわぁ|わぁい)[！!♪〜~\s]*/gi, "").trim();
+                    // 冒頭の感嘆詞や「！」などの記号、重複挨拶を強力除去
+                    replyText = cleanLeadingExclamations(replyText, isReplyAfterGreeting);
 
                     return {
                         success: true,
