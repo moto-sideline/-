@@ -93,13 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
 
     // Gemini モデル（Google AI Studio v1beta 公式対応モデル）
-    const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
-    const FALLBACK_GEMINI_MODEL = 'gemini-2.0-flash-lite';
-    const LITE_GEMINI_MODEL = 'gemini-2.0-flash-lite';
+    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
+    const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
+    const LITE_GEMINI_MODEL = 'gemini-2.5-flash-lite';
     const LEGACY_GEMINI_MODELS = new Set([
-        'gemini-2.5-flash',
-        'gemini-2.5-flash-lite',
-        'gemini-2.5-pro',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
         'gemini-3.6-flash',
         'gemini-3.5-flash-lite',
         'gemini-3.7-flash',
