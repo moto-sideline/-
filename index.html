@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=61">
+    <link rel="stylesheet" href="style.css?v=62">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google API for Drive Sync -->
@@ -50,6 +50,7 @@
                 <div class="nav-icon" id="navManual" title="取扱説明書"><i class="fas fa-book-open"></i></div>
                 <div class="nav-icon active" id="navChat" title="チャット"><i class="fas fa-comment-dots"></i></div>
                 <div class="nav-icon" id="navRecord" title="原稿キャンバス"><i class="fas fa-feather-alt"></i></div>
+                <div class="nav-icon" id="navPicturebook" title="絵本モード"><i class="fas fa-book-open"></i></div>
                 <div class="nav-icon" id="navArchive" title="資料室"><i class="fas fa-folder-open"></i></div>
                 <div class="nav-icon" id="navBookshelf" title="本棚（出来上がった作品）"><i class="fas fa-book"></i></div>
                 <div class="nav-icon" id="navSync" title="Google Drive 自動同期"><i class="fab fa-google-drive"></i></div>
@@ -65,13 +66,14 @@
         <!-- 2列目: 中央のキャンバス（ワークスペース） -->
         <section class="line-middle" id="middleCanvas">
             <div class="middle-header">
-                <h2>原稿キャンバス</h2>
+                <h2 id="canvasModeTitle">原稿キャンバス</h2>
                 <div class="header-actions">
                     <i class="fas fa-sort-amount-down"></i>
                 </div>
             </div>
-            
-            <div class="middle-content">
+
+            <!-- 通常原稿モード -->
+            <div class="middle-content" id="normalCanvasPanel">
                 <div class="manuscript-card">
                     <h4>構成案（プロット）</h4>
                     <div id="plotList">
@@ -88,6 +90,26 @@
 
                 <button class="crystallize-btn" type="button">
                     <i class="fas fa-gem"></i> 原稿を研ぎ出し・出力
+                </button>
+            </div>
+
+            <!-- 絵本モードパネル -->
+            <div class="middle-content hidden" id="picturebookPanel">
+                <div class="picturebook-header">
+                    <span class="pb-badge">🎨 絵本モード</span>
+                    <button class="pb-generate-btn" id="pbGenerateBtn" type="button">
+                        <i class="fas fa-magic"></i> ジーニーに絵本を作ってもらう
+                    </button>
+                </div>
+                <div id="picturebookPages" class="picturebook-pages">
+                    <div class="pb-empty-state">
+                        <div class="pb-empty-icon">📖</div>
+                        <p>ジーニーに<strong>絵本を作って！</strong>と話しかけてみよう</p>
+                        <p class="pb-empty-sub">テーマや主人公を伝えると、絵つきの絵本を作ってくれるよ✨</p>
+                    </div>
+                </div>
+                <button class="pb-export-btn hidden" id="pbExportBtn" type="button">
+                    <i class="fas fa-download"></i> 絵本を保存する
                 </button>
             </div>
         </section>
@@ -514,7 +536,7 @@
         <img id="imageLightboxImg" src="" alt="拡大表示">
     </div>
 
-    <script src="version.js?v=61"></script>
-    <script src="script.js?v=61"></script>
+    <script src="version.js?v=62"></script>
+    <script src="script.js?v=62"></script>
 </body>
 </html>
