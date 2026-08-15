@@ -1,0 +1,46 @@
+// Google Drive API (GAPI) を用いたリビジョン（世代）復元設計
+document.getElementById('restoreDriveRevBtn').addEventListener('click', async () => {
+    const fileId = localStorage.getItem('gdrive_file_id'); // 同期中ファイルのID
+    if (!fileId) {
+        alert('同期されたファイルが見つかりません。');
+        return;
+    }
+    
+    try {
+        // 1. Google Driveから該当ファイルの過去のリビジョン一覧を取得
+        const response = await gapi.client.drive.revisions.list({
+            fileId: fileId,
+            fields: 'revisions(id, modifiedTime, keepForever)'
+        });
+        
+        const revisions = response.result.revisions;
+        if (!revisions || revisions.length <= 1) {
+            alert('復元可能な過去のバックアップデータがありません。');
+            return;
+        }
+        
+        // 2. 直近の過去バージョン（配列の最後から2番目）を取得
+        const targetRevision = revisions[revisions.length - 2];
+        const formattedTime = new Date(targetRevision.modifiedTime).toLocaleString();
+        
+        if (confirm(`【データ復元】\n${formattedTime} 時点の過去データに巻き戻しますか？\n（現在のチャット履歴は上書きされます）`)) {
+            
+            // 3. 対象リビジョンのファイル内容（JSON）をバイナリとしてダウンロード
+            const fileData = await gapi.client.drive.revisions.get({
+                fileId: fileId,
+                revisionId: targetRevision.id,
+                alt: 'media' // メディア（中身）を直接取得する指定
+            });
+            
+            // 4. アプリケーションの状態を復元して再起動
+            const restoredProject = JSON.parse(fileData.body);
+            applyRestoredData(restoredProject); // UIと変数を更新する関数
+            
+            alert('過去の同期データから正常に復元されました！');
+            location.reload(); // アプリを安全に再起動
+        }
+    } catch (error) {
+        console.error('Drive Revision Error:', error);
+        document.getElementById('debugError').innerText = error.message;
+    }
+});

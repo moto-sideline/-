@@ -242,20 +242,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${name}さん`;
     };
 
-    // 冒頭の感嘆詞や「！」などの記号を強力除去する共通関数
-    const cleanLeadingExclamations = (text, isReplyAfterGreeting = false) => {
+    // 冒頭の感嘆詞や「！」、読点、不要な名前呼びかけを強力除去する共通関数
+    const cleanLeadingExclamations = (text, isReplyAfterGreeting = false, isChatMessage = false) => {
         if (!text) return '';
         let cleaned = text.trim();
-        // 冒頭の感嘆詞・枕詞を強力除去
-        cleaned = cleaned.replace(/^(?:わぁ|わーい|わー|きゃー|うわぁ|わぁい|お|おっ|あ|あぁ|やあ|やぁ|ハーイ|イェイ|ひゃー|へぇ|へえ)[！!♪〜~\s]*/gi, '').trim();
 
-        // 挨拶直後の返答の場合は、冒頭の重複再会挨拶（「おかえり」「おはよう」等）をカット
+        // 1. 冒頭の感嘆詞・枕詞を強力除去
+        cleaned = cleaned.replace(/^(?:わぁ|わーい|わー|きゃー|うわぁ|わぁい|お|おっ|あ|あぁ|やあ|やぁ|ハーイ|イェイ|ひゃー|へぇ|へえ)[！!♪〜~、,，\s]*/gi, '').trim();
+
+        // 2. 挨拶直後の返答の場合は、冒頭の重複再会挨拶（「おかえり」「おはよう」等）をカット
         if (isReplyAfterGreeting) {
-            cleaned = cleaned.replace(/^(?:お?久しぶり|おかえり|おかえりなさい|おはよう|こんにちは|こんばんは|お疲れ様|おつかれさま)[！!♪〜~\s]*(?:[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+(?:さん|ちゃん|くん|君|様)?[！!♪〜~\s]*)?/gi, '').trim();
+            cleaned = cleaned.replace(/^(?:お?久しぶり|おかえり|おかえりなさい|おはよう|こんにちは|こんばんは|お疲れ様|おつかれさま)[！!♪〜~、,，\s]*(?:[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+(?:さん|ちゃん|くん|君|様)?[！!♪〜~、,，\s]*)?/gi, '').trim();
         }
 
-        // 先頭に残った感嘆符、感嘆記号、不要な約物を除去（例: 「！もとさん」→「もとさん」）
-        cleaned = cleaned.replace(/^[！!♪～〜★☆✨・:：,，.!?\s]+/, '').trim();
+        // 3. 通常の会話中の場合、冒頭の不自然な名前呼びかけ（例：「もとさん！」「、もとさん、」等）を完全カット
+        if (isChatMessage) {
+            if (appState.userName) {
+                const uName = appState.userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const nameRegex = new RegExp(`^[！!♪～〜★☆✨・:：,，.!?、\\s]*${uName}(?:さん|ちゃん|くん|君|様)?[！!♪～〜★☆✨・:：,，.!?、\\s]*`, 'gi');
+                cleaned = cleaned.replace(nameRegex, '').trim();
+            }
+            // 一般的な名前呼びかけ（例：「〇〇さん！」）が先頭にある場合もカット
+            cleaned = cleaned.replace(/^[！!♪～〜★☆✨・:：,，.!?、\s]*[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,10}(?:さん|ちゃん|くん|君|様)[！!♪～〜★☆✨・:：,，.!?、\s]*/gi, '').trim();
+        }
+
+        // 4. 先頭に残った感嘆符、感嘆記号、読点、不要な約物を除去（例: 「！もとさん」「、それはね」→「それはね」）
+        cleaned = cleaned.replace(/^[！!♪～〜★☆✨・:：,，.!?、\s]+/, '').trim();
         return cleaned;
     };
 
@@ -886,7 +898,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (hasVersionUpMsg) {
                     const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.28') {
+                    if (currentVer === '0.9.29') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.29）】\n` +
+                            `・会話の流れの中でいちいち相手の名前を呼ばないよう、チャット中の呼びかけをなくして自然な友達同士の会話に改善したよ！\n` +
+                            `・名前を呼ぶのは一日の始まり（お出迎え）だけに限定し、冒頭の「、もとさん！」のような不要な読点や記号も完全クリーニングしたよ✨`;
+                    } else if (currentVer === '0.9.28') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.28）】\n` +
@@ -1590,7 +1608,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const getFallbackGreeting = () => {
         const nameStr = appState.userName ? `${formatName(appState.userName)}` : '';
-        const namePlaceholder = nameStr ? `、${nameStr}` : '';
+        const nameSuffix = nameStr ? `、${nameStr}` : '';
 
         const now = new Date();
         const hour = now.getHours();
@@ -1598,13 +1616,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const minutesOfDay = hour * 60 + min;
 
         if (minutesOfDay >= 300 && minutesOfDay < 630) {
-            return `おはよー${namePlaceholder}！☀️ 今日も良い一日にしようね。`;
+            return `おはよー${nameSuffix}！☀️ 今日も良い一日にしようね。`;
         } else if (minutesOfDay >= 630 && minutesOfDay < 1020) {
-            return `こんにちは${namePlaceholder}！✨ 息抜きがてら、いつでも話しかけてね。`;
+            return `こんにちは${nameSuffix}！✨ 息抜きがてら、いつでも話しかけてね。`;
         } else if (minutesOfDay >= 1020 && minutesOfDay < 1380) {
-            return `今日もお疲れ様${namePlaceholder}！🌙 ゆったりいこう。`;
+            return `今日もお疲れ様${nameSuffix}！🌙 ゆったりいこう。`;
         } else {
-            return `遅くまでお疲れ様${namePlaceholder}。無理しないでね🌟`;
+            return `遅くまでお疲れ様${nameSuffix}。無理しないでね🌟`;
         }
     };
 
@@ -1644,9 +1662,9 @@ ${isLongAbsence ? `- 前回のアクセスから2日以上（${daysCount}日）�
 - 媚びたり過剰にはしゃいだりせず、親しい友達として自然体でフランクな挨拶にしてください。
 
 【重要：ユーザーの呼び名】
-ユーザーの呼び名は「${nameStr}」です。ただし、毎回の返答の冒頭に名前をつけないでください。名前を呼ぶのは、話題が変わるときや感情が動いたときなど, 自然なタイミングでたまに呼ぶ程度にしてください。「マスター」や「ご主人様」などの呼び方は絶対に禁止です。また「元宏さん」などのフルネームや本名で呼ばないように注意してください。
+ユーザーの呼び名は「${nameStr}」です。再開挨拶の冒頭や文中で自然に「${nameStr}」と呼びかけてお出迎えしてください。「マスター」や「ご主人様」などの呼び方は絶対に禁止です。また「元宏さん」などのフルネームや本名で呼ばないように注意してください。
 
-ユーザー名「${nameStr}」に対して、自然でフランクな短い一言の挨拶（1〜2文程度）を生成してください。
+ユーザー名「${nameStr}」に対して、自然でフランクなお出迎えの一言挨拶（1〜2文程度）を生成してください。
 「続きから始めましょう」などのくどい定型句は絶対に使わず、親しい友達のような自然な挨拶にしてください。
 前回の会話がある場合は、少しその内容（例：「この前の続き話そうか」や「前回のプロット、ワクワクしたね」など）に軽く触れても良いですが、あくまで短くフランクにまとめてください。
 ${historyContext}
@@ -2614,7 +2632,7 @@ ${historyContext}
         `.trim();
 
         if (appState.userName) {
-            systemInstruction += `\n\n【重要：ユーザーの呼び名】\nユーザーの呼び名は「${appState.userName}」です。ただし、毎回の返答の冒頭に名前をつけないでください。名前を呼ぶのは、話題が変わるときや感情が動いたときなど、自然なタイミングでたまに呼ぶ程度にしてください。「元宏さん」などのフルネームや本名で呼ばないように注意してください。`;
+            systemInstruction += `\n\n【最重要：ユーザーの名前呼びかけに関する絶対ルール】\nユーザーの名前は「${appState.userName}」ですが、【通常の会話中や返答の冒頭でユーザーの名前を呼ぶことは禁止】です。親しい友達同士のチャットと同じように、名前を呼びかけずに直接リアクションや意見を述べてください。「元宏さん」などのフルネームや本名、「マスター」や「ご主人様」などの呼び方は絶対に禁止です。`;
         }
 
         if (isReplyAfterGreeting) {
@@ -2742,8 +2760,8 @@ ${historyContext}
                         replyText = parts.map(part => part.text || "").join("").trim();
                     }
 
-                    // 冒頭の感嘆詞や「！」などの記号、重複挨拶を強力除去
-                    replyText = cleanLeadingExclamations(replyText, isReplyAfterGreeting);
+                    // 冒頭の感嘆詞や「！」などの記号、重複挨拶、会話中の名前呼びかけを強力除去
+                    replyText = cleanLeadingExclamations(replyText, isReplyAfterGreeting, true);
 
                     return {
                         success: true,

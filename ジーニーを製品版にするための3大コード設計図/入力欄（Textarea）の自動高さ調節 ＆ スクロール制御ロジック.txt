@@ -1,0 +1,31 @@
+// 入力欄の自動高さ調節ロジック
+const userInput = document.getElementById('userInput');
+
+userInput.addEventListener('input', function() {
+    // 1. 一度高さをリセットして、正確なスクロール高さを取得できるようにする
+    this.style.height = 'auto';
+    
+    // 2. 1行あたりの高さ（line-height）と上限の行数を設定（ここでは最大5行）
+    // ※CSSのpaddingやline-heightに応じて自動計算されますが、上限をpxで指定するのが一番安全です
+    const maxHeight = 120; // 5行分のおおよその高さ（CSSに合わせて調整してください）
+    
+    // 3. 現在の文字量に応じた高さを計算
+    let newHeight = this.scrollHeight;
+    
+    if (newHeight > maxHeight) {
+        // 最大高さを超えたら、高さを固定してスクロールバーを表示
+        this.style.height = maxHeight + 'px';
+        this.style.overflowY = 'auto'; 
+    } else {
+        // 最大高さ未満なら、文字に合わせてぴったり伸縮し、スクロールバーを隠す
+        this.style.height = newHeight + 'px';
+        this.style.overflowY = 'hidden';
+    }
+});
+
+// 送信ボタン（sendBtn）が押されて文字がクリアされた時用のリセット関数
+function resetUserInputSize() {
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    userInput.style.overflowY = 'hidden';
+}

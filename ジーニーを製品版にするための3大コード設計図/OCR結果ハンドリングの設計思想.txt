@@ -1,0 +1,51 @@
+// OCR結果ハンドリングの設計思想
+const ocrResultText = document.getElementById('ocrResultText');
+const userInput = document.getElementById('userInput');
+const materialsList = document.getElementById('materialsList');
+
+// パターンA: チャット入力欄へ送る
+document.getElementById('ocrInsertToInputBtn').addEventListener('click', () => {
+    const textToInsert = ocrResultText.value;
+    if (!textToInsert.trim()) return;
+    
+    // 現在の入力内容の末尾に追加（改行を挟む配慮）
+    if (userInput.value) {
+        userInput.value += '\n' + textToInsert;
+    } else {
+        userInput.value = textToInsert;
+    }
+    
+    // 入力欄の自動伸縮（Textareaの高さを文字数に合わせる）
+    userInput.style.height = 'auto';
+    userInput.style.height = userInput.scrollHeight + 'px';
+    
+    // OCRモーダルを閉じてチャットにフォーカス
+    closeModal('ocrModal');
+    userInput.focus();
+});
+
+// パターンB: 資料室へ保存する
+document.getElementById('ocrAddToArchiveBtn').addEventListener('click', () => {
+    const textToSave = ocrResultText.value;
+    if (!textToSave.trim()) return;
+    
+    // プロジェクトの資料配列（仮: projectData.materials）に格納
+    const newMaterial = {
+        id: 'ocr_' + Date.now(),
+        name: `OCR読み取り_${new Date().toLocaleDateString()}.txt`,
+        content: textToSave,
+        timestamp: new Date().toISOString()
+    };
+    
+    projectData.materials.push(newMaterial);
+    
+    // ローカルストレージ保存 ＆ Drive同期トリガー
+    saveToLocalStorage();
+    triggerDriveSync(); 
+    
+    // 資料室のUI（DOM）を再描画する関数を呼ぶ
+    renderMaterialsList();
+    
+    alert('資料室にテキストファイルとして保存しました！');
+    closeModal('ocrModal');
+});

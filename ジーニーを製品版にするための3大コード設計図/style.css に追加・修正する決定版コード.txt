@@ -1,0 +1,42 @@
+/* ==========================================================================
+   入力欄の自動伸縮に対応するチャットエリアの最終調整
+   ========================================================================== */
+
+/* 1. チャットメッセージの表示エリア（ここが最重要！） */
+.chat-messages {
+    flex: 1;                /* 入力欄以外の余った縦のスペースをすべてこのエリアに割り当てる */
+    overflow-y: auto;       /* 文字が増えて画面からはみ出したら、このエリア内だけでスクロールさせる */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    /* 以下の設定を入れると、入力欄が伸びたときにメッセージが綺麗に上に押し上がります */
+    justify-content: flex-end; 
+}
+
+/* 2. 入力欄を囲むコンテナ（カメラや飛行機ボタンの親要素） */
+.input-container {
+    flex-shrink: 0;         /* 入力欄自体が他の要素に潰されるのを防ぐ */
+    background-color: #ffffff;
+    padding: 10px 15px;
+    display: flex;
+    align-items: flex-end;  /* 入力欄が伸びたとき、ボタン類が下に固定されるようにする（LINEと同じ挙動） */
+    gap: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* 3. テキストエリア自体の最終調整 */
+#userInput {
+    flex: 1;
+    min-height: 36px;       /* 1行目のデフォルトの高さ */
+    max-height: 120px;      /* JavaScript側と合わせた最大5行分の高さの上限 */
+    padding: 8px 12px;
+    border: 1px solid #ccced1;
+    border-radius: 18px;    /* LINE風の丸みのある入力欄 */
+    font-size: 0.95rem;
+    line-height: 1.4;
+    resize: none;           /* ユーザーが手動で広げるのを禁止 */
+    overflow-y: hidden;     /* 5行未満のときはスクロールバーを隠す（JSと連動） */
+    outline: none;
+    transition: height 0.1s ease; /* 伸び縮みを滑らかにする */
+}

@@ -1,0 +1,13 @@
+// 画面読み込み時に実行する初期化処理
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const syncDebugPanel = document.getElementById('syncDebugPanel');
+    
+    // URLの末尾に「?mode=debug」がついている時だけパネルを表示する
+    if (urlParams.get('mode') === 'debug') {
+        syncDebugPanel.style.display = 'block';
+        console.log('🧞‍♂️ ジーニー：開発者デバッグモードが有効です。');
+    } else {
+        syncDebugPanel.style.display = 'none'; // 通常ユーザーには完全に隠す
+    }
+});
