@@ -92,37 +92,73 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
     const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
 
-    // Gemini モデル（Google AI Studio v1beta 公式対応モデル）
-    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
-    const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
-    const LITE_GEMINI_MODEL = 'gemini-2.5-flash-lite';
-    const LEGACY_GEMINI_MODELS = new Set([
+    // Gemini モデル管理（ListModels APIによる自動検出 + 優先度フォールバック）
+    const PREFERRED_MODEL_ORDER = [
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-pro',
         'gemini-2.0-flash',
         'gemini-2.0-flash-lite',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash-lite',
-        'gemini-3.7-flash',
-        'gemini-3.5-flash',
-        'gemini-3.1-pro-preview',
-        'gemini-3.1-flash-lite',
         'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-1.5-flash-lite',
-    ]);
+        'gemini-1.5-flash-8b',
+        'gemini-1.5-pro'
+    ];
+    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
     const getGeminiModel = () => {
-        const stored = localStorage.getItem('geminiModel');
-        if (!stored || LEGACY_GEMINI_MODELS.has(stored)) {
-            return DEFAULT_GEMINI_MODEL;
-        }
-        return stored;
+        return localStorage.getItem('geminiModel') || DEFAULT_GEMINI_MODEL;
     };
 
-    const normalizeStoredGeminiModel = () => {
-        const stored = localStorage.getItem('geminiModel');
-        if (!stored || LEGACY_GEMINI_MODELS.has(stored)) {
-            localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
+    /**
+     * Google AI StudioのListModels APIを叩いて、このAPIキーで実際にgenerateContentが使えるモデル一覧を取得し、
+     * 最適なモデルを自動選定してlocalStorageに保存・返却する
+     */
+    const discoverAndSaveBestGeminiModel = async (apiKey) => {
+        if (!apiKey || !apiKey.trim()) return DEFAULT_GEMINI_MODEL;
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
+            if (!res.ok) {
+                console.warn('[Genie] ListModels API request failed with status:', res.status);
+                return getGeminiModel();
+            }
+            const data = await res.json();
+            if (data && Array.isArray(data.models)) {
+                // generateContent がサポートされているモデル名を抽出（"models/xxx" -> "xxx"）
+                const availableModels = data.models
+                    .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+                    .map(m => m.name.replace(/^models\//, ''));
+
+                console.log('[Genie] 利用可能なGeminiモデル一覧:', availableModels);
+
+                // 1. 優先リスト順にマッチするものを探す
+                for (const preferred of PREFERRED_MODEL_ORDER) {
+                    if (availableModels.includes(preferred)) {
+                        console.log(`[Genie] 最適モデルを自動選択: ${preferred}`);
+                        localStorage.setItem('geminiModel', preferred);
+                        return preferred;
+                    }
+                }
+
+                // 2. 優先リストに完全一致がない場合、flashが含まれるモデルを優先して選択
+                const anyFlash = availableModels.find(m => m.includes('flash') && !m.includes('thinking'));
+                if (anyFlash) {
+                    console.log(`[Genie] 利用可能なFlashモデルを自動選択: ${anyFlash}`);
+                    localStorage.setItem('geminiModel', anyFlash);
+                    return anyFlash;
+                }
+
+                // 3. どれでも使える先頭のモデルを選択
+                if (availableModels.length > 0) {
+                    const fallbackAny = availableModels[0];
+                    console.log(`[Genie] 利用可能なモデルを自動選択: ${fallbackAny}`);
+                    localStorage.setItem('geminiModel', fallbackAny);
+                    return fallbackAny;
+                }
+            }
+        } catch (e) {
+            console.error('[Genie] モデル自動検出エラー:', e);
         }
+        return getGeminiModel();
     };
 
     const isGeminiModelUnavailableError = (errMsg = '', status = '') =>
@@ -131,14 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
         errMsg.includes('is not supported') ||
         errMsg.includes('models/') ||
         status === 'NOT_FOUND';
-
-    const getGeminiFallbackModel = (currentModel) => {
-        if (currentModel === DEFAULT_GEMINI_MODEL) return FALLBACK_GEMINI_MODEL;
-        if (currentModel === FALLBACK_GEMINI_MODEL) return LITE_GEMINI_MODEL;
-        return DEFAULT_GEMINI_MODEL;
-    };
-
-    normalizeStoredGeminiModel();
     
     const body = document.body;
 
@@ -1368,12 +1396,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
                     const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
                     if ((isCongested || isModelUnavailable) && !isRetry) {
-                        const fallbackModel = getGeminiFallbackModel(modelName);
-                        if (fallbackModel) {
+                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey);
+                        if (fallbackModel && fallbackModel !== modelName) {
                             console.log(`[OCR] ${modelName} から ${fallbackModel} にフォールバックして再試行します...`);
-                            if (isModelUnavailable) {
-                                localStorage.setItem('geminiModel', fallbackModel);
-                            }
                             return await attemptOcr(fallbackModel, true);
                         }
                     }
@@ -2223,10 +2248,8 @@ ${historyContext}
     if (saveApiKeyBtn) {
         saveApiKeyBtn.addEventListener('click', async () => {
             const key = apiKeyInput.value.trim();
-            const model = apiModelSelect.value || DEFAULT_GEMINI_MODEL;
             const newName = userNameInput.value.trim();
 
-            localStorage.setItem('geminiModel', model);
             if (newName) appState.userName = newName;
 
             if (!key) {
@@ -2238,15 +2261,18 @@ ${historyContext}
                 return;
             }
 
-            // --- 🔑 APIキー検証（実際にGeminiに繋いで確認）---
-            // ボタンをローディング状態にする
+            // --- 🔑 APIキー検証（実際に利用可能モデルを自動検出して確認）---
             saveApiKeyBtn.disabled = true;
-            saveApiKeyBtn.textContent = '🔑 鍵を確認中...';
+            saveApiKeyBtn.textContent = '🔑 鍵と魔法を確認中...';
 
             let keyIsValid = false;
             try {
+                // 1. そのキーで利用可能な最適なモデルを自動選定
+                const bestModel = await discoverAndSaveBestGeminiModel(key);
+
+                // 2. 選定されたモデルで疎通テスト
                 const testRes = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/${bestModel}:generateContent?key=${key}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2257,20 +2283,18 @@ ${historyContext}
                     }
                 );
                 const testData = await testRes.json();
-                // candidatesがあれば成功、error.status が INVALID_ARGUMENTなら無効キー
                 if (testData.error) {
                     const s = testData.error.status || '';
                     if (s === 'INVALID_ARGUMENT' || (testData.error.message || '').includes('API key')) {
                         keyIsValid = false;
                     } else {
-                        // 混雑等は「キーは正しい」と判定
+                        // モデルエラーや混雑等はキー自体は有効と判定
                         keyIsValid = true;
                     }
                 } else {
                     keyIsValid = true;
-                }
             } catch (_e) {
-                // ネットワークエラーなら「繋がらない」扱い（キーは保存して続行）
+                // オフライン等でも一旦キーを保存できるよう true 扱い
                 keyIsValid = true;
             }
 
@@ -2792,12 +2816,9 @@ ${historyContext}
                     const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
                     
                     if ((isCongested || isModelUnavailable) && !isRetry) {
-                        const fallbackModel = getGeminiFallbackModel(currentModel);
+                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey);
                         if (fallbackModel && fallbackModel !== currentModel) {
                             console.log(`[Genie] モデル切り替え: ${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
-                            if (isModelUnavailable) {
-                                localStorage.setItem('geminiModel', fallbackModel);
-                            }
                             return await attemptRequest(fallbackModel, true);
                         }
                     }
@@ -2917,4 +2938,10 @@ ${historyContext}
     // Load Initial Data
     loadData();
     initPwaInstallation();
+
+    // バックグラウンドで利用可能な最適なGeminiモデルを自動検出・更新
+    const savedApiKey = localStorage.getItem('geminiApiKey');
+    if (savedApiKey && savedApiKey.trim()) {
+        discoverAndSaveBestGeminiModel(savedApiKey.trim());
+    }
 });
