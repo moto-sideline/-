@@ -3047,15 +3047,73 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
 
 
     // ===================================================================
+    // ===================================================================
     // 🎨 絵本モード (Picture Book Mode) - AIイラスト自動生成・インライン表示・全画面ビュー
     // ===================================================================
 
-    /** Pollinations.ai で子供向けイラストを生成する URL を作る */
+    // グローバルな画像読み込み・エラー・リトライ制御
+    window.handlePbImgSuccess = (id) => {
+        const loadEl = document.getElementById(id);
+        if (!loadEl) return;
+        const parent = loadEl.parentElement;
+        const imgEl = parent ? parent.querySelector('img') : null;
+        if (imgEl) imgEl.style.opacity = '1';
+        loadEl.style.display = 'none';
+    };
+
+    window.handlePbImgError = (id) => {
+        const loadEl = document.getElementById(id);
+        if (!loadEl) return;
+        const parent = loadEl.parentElement;
+        const imgEl = parent ? parent.querySelector('img') : null;
+        if (imgEl) imgEl.style.display = 'none';
+        loadEl.style.display = 'flex';
+        loadEl.innerHTML = '<span style="color:#f39c12;font-size:1.3rem;">🎨</span><span style="font-size:0.75rem;color:#888;">生成タイムアウト</span>' +
+            '<button type="button" class="pb-retry-btn" onclick="window.retryPbImg(\'' + id + '\')"><i class="fas fa-sync-alt"></i> 再読み込み</button>';
+    };
+
+    window.retryPbImg = (id) => {
+        const loadEl = document.getElementById(id);
+        if (!loadEl) return;
+        const parent = loadEl.parentElement;
+        const imgEl = parent ? parent.querySelector('img') : null;
+        if (!imgEl) return;
+
+        loadEl.style.display = 'flex';
+        loadEl.innerHTML = '<div class="pb-spinner"></div><span style="font-size:0.8rem;">再生成中…</span>';
+        imgEl.style.display = 'block';
+        imgEl.style.opacity = '0';
+
+        const rawUrl = imgEl.getAttribute('data-raw-url') || imgEl.src;
+        const freshSeed = Math.floor(Math.random() * 999999);
+        let newUrl = rawUrl.replace(/&seed=\d+/, '&seed=' + freshSeed);
+        if (!newUrl.includes('&seed=')) newUrl += '&seed=' + freshSeed;
+        newUrl += '&t=' + Date.now();
+
+        imgEl.src = newUrl;
+
+        setTimeout(() => {
+            if (imgEl.style.opacity !== '1' && loadEl.style.display !== 'none') {
+                window.handlePbImgError(id);
+            }
+        }, 15000);
+    };
+
+    window.initPbImgTimeout = (id) => {
+        setTimeout(() => {
+            const loadEl = document.getElementById(id);
+            if (loadEl && loadEl.style.display !== 'none') {
+                window.handlePbImgError(id);
+            }
+        }, 15000);
+    };
+
+    /** Pollinations.ai で子供向けイラストを高速生成する URL を作る (model=turbo) */
     const buildIllustrationUrl = (descriptionJa) => {
         const cleanDesc = (descriptionJa || '').replace(/[\[\]【】\(\)]/g, '').trim();
         const styleTag = "children's picture book illustration, beautiful watercolor storybook art, cute, soft pastel colors, whimsical, kawaii, vibrant, clean white background, high quality";
         const prompt = encodeURIComponent(cleanDesc + ", " + styleTag);
-        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&seed=' + Math.floor(Math.random() * 999999);
+        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&model=turbo&seed=' + Math.floor(Math.random() * 999999);
     };
 
     /** ジーニーの絵本テキストを柔軟にページ配列へ変換する */
@@ -3063,7 +3121,6 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         const pages = [];
         if (!text) return pages;
 
-        // 様々なページ区切りに対応: 【ページ1】, 【第1ページ】, ## ページ1, 1ページ目 など
         const pageRegex = /(?:【(?:第\s*)?ページ\s*\d+[^】]*】|###?\s*(?:第\s*)?ページ\s*\d+|(?:^|\n)(?:第\s*)?\d+\s*ページ目[：:]?)/gi;
         const matches = [...text.matchAll(pageRegex)];
 
@@ -3073,11 +3130,9 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                 const end = (i + 1 < matches.length) ? matches[i + 1].index : text.length;
                 const block = text.substring(start, end).trim();
 
-                // イラスト説明文を抽出 ([イラスト: ...], 【イラスト: ...】, イラスト: ...)
                 const illustMatch = block.match(/(?:\[|【)?(?:イラスト|挿絵|プロンプト|画像)[：:]\s*([^\n\]】]+)(?:\]|】)?/i);
                 const illustDesc = illustMatch ? illustMatch[1].trim() : '';
 
-                // 本文からイラストタグを除去
                 const pageText = block
                     .replace(/(?:\[|【)?(?:イラスト|挿絵|プロンプト|画像)[：:][^\n\]】]*(?:\]|】)?/gi, '')
                     .replace(/^\s*[\r\n]+/, '')
@@ -3092,7 +3147,6 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                 }
             }
         } else {
-            // 区切りがない場合でも [イラスト: ...] が複数あれば分割
             const illustBlocks = text.split(/(?=\[(?:イラスト|挿絵)|【(?:イラスト|挿絵))/gi);
             if (illustBlocks.length >= 2) {
                 illustBlocks.forEach(block => {
@@ -3126,7 +3180,6 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
             return rawText.replace(/\n/g, '<br>');
         }
 
-        // タイトルの抽出
         const titleMatch = rawText.match(/(?:タイトル[：:]\s*|『)(.+?)(?:』|\n)/);
         const title = titleMatch ? titleMatch[1].trim() : '絵本';
 
@@ -3137,19 +3190,22 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         '</div>';
 
         pages.forEach((p, idx) => {
+            const loadId = 'chat-pb-load-' + idx + '-' + Math.floor(Math.random() * 10000);
             html += '<div class="chat-pb-page-card">' +
                 '<div class="chat-pb-page-num">— ' + (idx + 1) + ' ページ —</div>';
             if (p.imageUrl) {
                 html += '<div class="chat-pb-image-wrap">' +
-                    '<div class="chat-pb-img-loading" id="chat-pb-load-' + idx + '">' +
+                    '<div class="chat-pb-img-loading" id="' + loadId + '">' +
                         '<div class="pb-spinner"></div>' +
                         '<span>絵を描いているよ…</span>' +
                     '</div>' +
-                    '<img src="' + p.imageUrl + '" alt="挿絵 ' + (idx + 1) + '" class="chat-pb-img" ' +
+                    '<img src="' + p.imageUrl + '" alt="挿絵 ' + (idx + 1) + '" class="chat-pb-img" loading="lazy" ' +
+                         'data-raw-url="' + p.imageUrl + '" ' +
                          'style="opacity:0;transition:opacity 0.4s ease;" ' +
-                         'onload="this.style.opacity=1;const l=document.getElementById(\'chat-pb-load-' + idx + '\');if(l)l.style.display=\'none\';" ' +
-                         'onerror="this.style.display=\'none\';const l=document.getElementById(\'chat-pb-load-' + idx + '\');if(l)l.innerHTML=\'<span style=\\\'color:#fff;font-size:1.5rem;\\\'>🎨</span><span>挿絵準備中</span>\';">' +
+                         'onload="window.handlePbImgSuccess(\'' + loadId + '\')" ' +
+                         'onerror="window.handlePbImgError(\'' + loadId + '\')">' +
                 '</div>';
+                setTimeout(() => window.initPbImgTimeout(loadId), 100);
             }
             html += '<div class="chat-pb-page-text">' + p.text.replace(/\n/g, '<br>') + '</div>' +
             '</div>';
@@ -3177,14 +3233,17 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
 
         let imgHtml = '<span style="font-size:3rem;">📖</span>';
         if (page.imageUrl) {
-            imgHtml = '<div class="pb-image-loading" id="pb-loading-' + index + '">' +
+            const loadId = 'pb-loading-' + index + '-' + Math.floor(Math.random() * 10000);
+            imgHtml = '<div class="pb-image-loading" id="' + loadId + '">' +
                 '<div class="pb-spinner"></div>' +
                 '<span>AIが挿絵を描いています…</span>' +
             '</div>' +
-            '<img src="' + page.imageUrl + '" alt="ページ' + (index + 1) + 'のイラスト" ' +
+            '<img src="' + page.imageUrl + '" alt="ページ' + (index + 1) + 'のイラスト" loading="lazy" ' +
+                 'data-raw-url="' + page.imageUrl + '" ' +
                  'style="opacity:0;transition:opacity 0.5s ease;" ' +
-                 'onload="this.style.opacity=1; const el=document.getElementById(\'pb-loading-' + index + '\'); if(el) el.style.display=\'none\';" ' +
-                 'onerror="this.style.display=\'none\'; const el=document.getElementById(\'pb-loading-' + index + '\'); if(el) el.innerHTML=\'<span style=\\\'color:#fff;font-size:2rem;\\\'>🎨</span><span>挿絵を準備中…</span>\';">';
+                 'onload="window.handlePbImgSuccess(\'' + loadId + '\')" ' +
+                 'onerror="window.handlePbImgError(\'' + loadId + '\')">';
+            setTimeout(() => window.initPbImgTimeout(loadId), 100);
         }
 
         pageEl.innerHTML = '<div class="pb-page-number">— ' + (index + 1) + ' ページ —</div>' +
