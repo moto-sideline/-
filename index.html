@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=58">
+    <link rel="stylesheet" href="style.css?v=59">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google API for Drive Sync -->
@@ -146,6 +146,15 @@
                     <li><strong>資料室</strong>に参考テキストを流し込めます。</li>
                     <li><strong>本棚</strong>に出力した完成原稿が並びます。</li>
                 </ul>
+
+                <h4 class="modal-section-title">🚨 【重要】新規でAPIキーが作成できない方へ</h4>
+                <div class="modal-hint" style="margin-bottom: 15px; border-left: 3px solid #ff4a4a; padding: 8px 10px; background: rgba(255, 74, 74, 0.06); border-radius: 4px;">
+                    <p style="font-weight: bold; margin-bottom: 6px; color: #ff4a4a;">Google AI Studioでキー作成ボタンが押せない場合の突破法：</p>
+                    <ol style="margin-left: 16px; padding-left: 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-color);">
+                        <li>先に <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener noreferrer" style="color: var(--accent); font-weight: bold; text-decoration: underline;">Google Cloud Console</a> でプロジェクトを1つ新規作成（名前は何でもOK）してください。</li>
+                        <li>その後、再度 AI Studio を開き、作成したプロジェクトを選択すると100%キーが発行できます。</li>
+                    </ol>
+                </div>
 
                 <h4 class="modal-section-title">📖 設定 ＆ 使い方ガイド</h4>
                 <p class="modal-hint" style="margin-bottom: 12px;">
@@ -505,7 +514,7 @@
         <img id="imageLightboxImg" src="" alt="拡大表示">
     </div>
 
-    <script src="version.js?v=58"></script>
-    <script src="script.js?v=58"></script>
+    <script src="version.js?v=59"></script>
+    <script src="script.js?v=59"></script>
 </body>
 </html>

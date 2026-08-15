@@ -1,4 +1,4 @@
-const CACHE_NAME = 'magic-lamp-v58';
+const CACHE_NAME = 'magic-lamp-v59';
 const urlsToCache = [
   './',
   './index.html',
