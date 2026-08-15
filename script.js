@@ -3108,12 +3108,13 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         }, 15000);
     };
 
-    /** Pollinations.ai で子供向けイラストを高速生成する URL を作る (model=turbo) */
+    /** Pollinations.ai で子供向けイラストを安全・高速生成する URL を作る (safe=true & SFWヘッダー) */
     const buildIllustrationUrl = (descriptionJa) => {
         const cleanDesc = (descriptionJa || '').replace(/[\[\]【】\(\)]/g, '').trim();
-        const styleTag = "children's picture book illustration, beautiful watercolor storybook art, cute, soft pastel colors, whimsical, kawaii, vibrant, clean white background, high quality";
-        const prompt = encodeURIComponent(cleanDesc + ", " + styleTag);
-        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&model=turbo&seed=' + Math.floor(Math.random() * 999999);
+        // 事故防止のため、SFW（全年齢対象・子供向け）英語タグを最優先で冒頭に配置
+        const safeHeaderTag = "safe for work, sfw, children's book illustration, cute watercolor storybook art, soft pastel colors, whimsical, kawaii, vibrant, clean white background, high quality";
+        const prompt = encodeURIComponent(safeHeaderTag + (cleanDesc ? ", " + cleanDesc : ''));
+        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&safe=true&seed=' + Math.floor(Math.random() * 999999);
     };
 
     /** ジーニーの絵本テキストを柔軟にページ配列へ変換する */
