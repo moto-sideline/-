@@ -2815,17 +2815,9 @@ ${historyContext}
                     const errStatus = data.error.status || "";
                     console.error(`API Error on model ${currentModel}:`, data.error);
 
-                    // 1. APIキー無効エラーのハンドリング
-                    if (errMsg.includes("API key") || errMsg.includes("Key not valid") || errStatus === "INVALID_ARGUMENT") {
-                        return {
-                            success: false,
-                            msg: "🔑 鍵（APIキー）がうまく合わないみたい。\nコピーする時に余計なスペースが入っちゃったりしていないかな？\n【⚙️設定】からもう一度確認してみてね！"
-                        };
-                    }
-
-                    // 2. 混雑エラー・上限エラー・モデル利用不可エラーのハンドリング
+                    // 1. モデル利用不可・混雑エラーのハンドリング（先に判定して自動リトライ）
                     const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
-                    const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
+                    const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus) || (errStatus === "INVALID_ARGUMENT" && /model|unsupported|not supported|not found/i.test(errMsg));
                     
                     if ((isCongested || isModelUnavailable) && retryCount < 3) {
                         failedModels.add(currentModel);
@@ -2834,6 +2826,18 @@ ${historyContext}
                             console.log(`[Genie] モデル切り替え (再試行 ${retryCount + 1}): ${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
                             return await attemptRequest(fallbackModel, retryCount + 1);
                         }
+                    }
+
+                    // 2. 本当のAPIキー無効エラーのハンドリング
+                    const isInvalidApiKey = errMsg.includes("API_KEY_INVALID") ||
+                        /API key not valid/i.test(errMsg) ||
+                        (errStatus === "INVALID_ARGUMENT" && /API key/i.test(errMsg) && !/model/i.test(errMsg));
+
+                    if (isInvalidApiKey) {
+                        return {
+                            success: false,
+                            msg: "🔑 鍵（APIキー）がうまく合わないみたい。\nコピーする時に余計なスペースが入っちゃったりしていないかな？\n【⚙️設定】からもう一度確認してみてね！"
+                        };
                     }
 
                     if (isCongested) {
