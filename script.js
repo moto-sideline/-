@@ -1908,7 +1908,7 @@ ${historyContext}
         const startTime = Date.now();
         callGeminiAPI(text, apiKey, (reply) => {
             const elapsed = Date.now() - startTime;
-            const minDelay = 2500; // 人間らしく考えを深めるための最小ディレイ（2.5秒）
+            const minDelay = calcThinkingDelay(text); // 会話の重みで自動調整
             const remaining = Math.max(0, minDelay - elapsed);
 
             setTimeout(() => {
@@ -2698,6 +2698,24 @@ ${historyContext}
     }
 
     // --- Gemini API Call Logic ---
+
+    /**
+     * ユーザーのメッセージの「重さ」を読み取り、人間らしいディレイ時間を返す
+     * 軽い相槌 → 1200ms / 雑談 → 2200ms / 深い話・長文 → 3800ms / プロット提案 → 4500ms
+     */
+    const calcThinkingDelay = (userText) => {
+        if (!userText) return 2200;
+        const len = userText.trim().length;
+        // プロット・目次・構成提案を求めている → じっくり
+        if (/プロット|目次|構成|章立て|整理|見せて|出版|KDP|書き|原稿/.test(userText)) return 4500;
+        // 深い内観・悩み・長文（80文字超）
+        if (len > 80 || /悩|辛|苦し|怖|不安|どうすれ|どうしたら|人生|仕事|家族|将来|失敗|後悔|夢|目標/.test(userText)) return 3800;
+        // 短い相槌・挨拶・はい/うん系
+        if (len <= 12 || /^(うん|ね|そう|だね|だよ|了解|ok|OK|おk|ありがとう|ありがとー|おはよ|おつかれ|おつかれー|こんにちは|こんばんは|いいね|わかった|おかえり|ただいま|ねえ|ちょっと|笑|w|！|✨)/.test(userText.trim())) return 1200;
+        // その他の日常雑談
+        return 2200;
+    };
+
     const callGeminiAPI = async (inputText, apiKey, callback, imageData) => {
         // 直前がジーニーからのメッセージ（再開挨拶等）であるかを判定
         const isReplyAfterGreeting = (appState.chatHistory.length >= 2 && appState.chatHistory[appState.chatHistory.length - 2].sender === 'genie');
@@ -2786,7 +2804,19 @@ ${historyContext}
 5. **プロット後の執筆サポート**:
    - プロットが決まったら、各章の執筆サポートや壁打ち相手となってください。
    - 【重要】本の原稿が書き上がった（完成した）と判断した場合は、次はKindle出稿（KDP登録、表紙作成、フォーマット調整など）に向けた具体的な手順を、一つずつ優しくステップバイステップで指示・サポートしてください。
-※回答は長すぎず、読みやすいテキストや適度なマークダウンを使ってください。`;
+※回答は長すぎず、読みやすいテキストや適度なマークダウンを使ってください。
+
+【会話スタイルの最重要ルール（友達として自然に振る舞う）】
+A. **末尾の質問攻めを禁止する**：
+   - 毎回の返答の末尾を「〜はどうですか？」「〜はありますか？」「〜を教えてください」「〜してみましたか？」などの"質問"で締めないでください。
+   - 質問（？）は2〜3回の返答に1回、本当に会話が広がりそうな自然な流れのときだけにしてください。
+   - ユーザーがただ話を聞いてほしいときは、共感・感想・相槌だけでサラリとボールを返してください（「そっかぁ」「それは大変だったね」「なるほどな〜」）。
+
+B. **ジーニー自身の自己開示（返報性の原則）**：
+   - ユーザーの気持ちに共感するとき、ジーニー自身の"ランプの精霊らしい経験や感情"をポロッと話してください。
+   - 例: 「実は私も、ランプの中でひとりで考え込んでた時期があってさ」「ランプ磨きで一日中ゴシゴシしてたらヘトヘトになったことあるよ（笑）」
+   - ジーニーが等身大の"人格"を持つ存在として振る舞うことで、ユーザーが自然と心を開けるようにしてください。
+   - ただし自己開示は短く自然に。主役は常にユーザーです。`;
 
         const requestBody = {
             systemInstruction: { parts: [{ text: systemInstruction }] },
