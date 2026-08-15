@@ -139,6 +139,26 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const normalizeAppState = () => {
+        // ユーザー名が異常な文章（過去の誤登録）になっている場合の自動修復・安全サニタイズ
+        if (appState.userName) {
+            let name = String(appState.userName).trim();
+            if (name.includes('もと')) {
+                appState.userName = 'もと';
+            } else if (
+                name.length > 8 ||
+                INVALID_NAME_PATTERN.test(name) ||
+                /[、。\n\r\t,!?！？]/.test(name) ||
+                /(?:手伝って|もらった|行った|食べた|思った|言った|した|する|ある|ない|です|ます|でした|ました|だよ|だね)$/.test(name)
+            ) {
+                appState.userName = null;
+            }
+        }
+        if (userNameInput && appState.userName) {
+            userNameInput.value = appState.userName;
+        } else if (userNameInput && !appState.userName) {
+            userNameInput.value = '';
+        }
+
         if (!Array.isArray(appState.materials)) appState.materials = [];
         if (!Array.isArray(appState.completedWorks)) appState.completedWorks = [];
         if (appState.knowledge && appState.materials.length === 0) {
@@ -233,13 +253,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     };
 
-    // 敬称（さん、さま等）の重複を防ぐヘルパー関数
+    // 敬称（さん、さま等）の重複を防ぐヘルパー関数（異常な文章は弾く安全ガード付き）
     const formatName = (name) => {
-        if (!name) return '';
-        if (name.match(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/)) {
-            return name;
+        if (!name || typeof name !== 'string') return '';
+        const trimmed = name.trim();
+        if (trimmed.length > 8 || /[、。\n\r,!?！？]/.test(trimmed)) return '';
+        if (trimmed.match(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/)) {
+            return trimmed;
         }
-        return `${name}さん`;
+        return `${trimmed}さん`;
     };
 
     // 冒頭の感嘆詞や「！」、読点、不要な名前呼びかけを強力除去する共通関数
@@ -896,9 +918,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // バージョンアップ通知を表示（chatHistoryには保存せず、一度きり優しく案内）
                 if (hasVersionUpMsg) {
-                    const nameStr = appState.userName ? `${formatName(appState.userName)}！` : '';
+                    const formatted = appState.userName ? formatName(appState.userName) : '';
+                    const nameStr = formatted ? `${formatted}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.29') {
+                    if (currentVer === '0.9.30') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.30）】\n` +
+                            `・会話の流れの中でいちいち相手の名前を呼ばないよう、チャット中の呼びかけをなくして自然な友達同士の会話に改善したよ！\n` +
+                            `・過去の会話から文章が誤ってユーザー名として登録されていた問題を完全修復し、名前の自動サニタイズ＆安全ガードを強化したよ✨`;
+                    } else if (currentVer === '0.9.29') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.29）】\n` +
