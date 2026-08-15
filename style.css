@@ -1875,3 +1875,51 @@ body.dark-theme .pwa-desc {
 .chat-open-pb-btn:active {
     transform: scale(0.98);
 }
+
+.pb-theme-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 117, 140, 0.08);
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.pb-theme-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #ff6b81;
+    white-space: nowrap;
+}
+
+.pb-theme-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pb-theme-chip {
+    background: var(--bg-primary);
+    border: 1px solid rgba(255, 117, 140, 0.35);
+    color: var(--text-main);
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.pb-theme-chip:hover {
+    background: linear-gradient(135deg, #ff758c, #ff7eb3);
+    color: #fff;
+    border-color: transparent;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 117, 140, 0.3);
+}
+
+.pb-theme-chip:active {
+    transform: scale(0.96);
+}

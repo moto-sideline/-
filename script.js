@@ -1007,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formatted = appState.userName ? formatName(appState.userName) : '';
                     const nameStr = formatted ? `${formatted}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.44' || currentVer === '0.9.43' || currentVer === '0.9.42' || currentVer === '0.9.41') {
+                    if (currentVer === '0.9.45' || currentVer === '0.9.44' || currentVer === '0.9.43' || currentVer === '0.9.42' || currentVer === '0.9.41') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回の大型アップデート（v${currentVer}）】\n` +
@@ -2847,8 +2847,8 @@ ${historyContext}
    - 【重要】本の原稿が書き上がった（完成した）と判断した場合は、次はKindle出稿（KDP登録、表紙作成、フォーマット調整など）に向けた具体的な手順を、一つずつ優しくステップバイステップで指示・サポートしてください。
 ※回答は長すぎず、読みやすいテキストや適度なマークダウンを使ってください。
 
-【絵本制作モード（子供向け絵本を作るとき）】
-ユーザーから「絵本を作って」「絵本にして」「子供向けの本を作りたい」などのリクエストが来たら、以下のフォーマットで絵本を生成してください（必ず10〜14ページで）：
+【絵本制作モード（子供向け絵本を作るとき） - 最重要】
+ユーザーから「絵本を作って」「絵本にして」「子供向け」「絵本」などのリクエストやテーマが来たら、質問で返さずに、その場で即座に【タイトル】と【ページ1】〜【ページ10】までの完全な絵本ストーリー（各ページのイラスト説明とやさしい本文）を一気に生成してください！
 ※絵本を生成した後は「絵本キャンバスに挿絵付きの絵本が完成したよ！キャンバスを開いて見てみてね🎨」と伝えてください（「本棚に移動した」とは言わないでください）。
 
 タイトル：（絵本のタイトル）
@@ -3268,18 +3268,34 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         });
     }
 
-    // 「ジーニーに絵本を作ってもらう」ボタン
+    // 「ジーニーに絵本を作ってもらう」ボタン＆テーマチップ
     const pbGenerateBtn = document.getElementById('pbGenerateBtn');
     if (pbGenerateBtn) {
         pbGenerateBtn.addEventListener('click', () => {
             const ui = document.getElementById('userInput');
             if (ui) {
-                ui.value = '子供向けの絵本を作って！主人公は小さな動物で、温かい冒険のお話にして！';
+                ui.value = '子供向けの絵本を作って！テーマは【森の小さなうさぎの冒険】で、タイトル・【ページ1】〜【ページ10】まで各ページのイラスト説明と本文を出力してね！';
                 ui.focus();
                 ui.dispatchEvent(new Event('input'));
+                const sendBtn = document.getElementById('sendBtn');
+                if (sendBtn) sendBtn.click();
             }
         });
     }
+
+    document.querySelectorAll('.pb-theme-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const theme = chip.getAttribute('data-theme') || '温かい冒険のお話';
+            const ui = document.getElementById('userInput');
+            if (ui) {
+                ui.value = `子供向けの絵本を作って！テーマは【${theme}】で、タイトル・【ページ1】〜【ページ10】まで各ページのイラスト説明と本文を出力してね！`;
+                ui.focus();
+                ui.dispatchEvent(new Event('input'));
+                const sendBtn = document.getElementById('sendBtn');
+                if (sendBtn) sendBtn.click();
+            }
+        });
+    });
 
     // 絵本エクスポート
     const pbExportBtn = document.getElementById('pbExportBtn');
