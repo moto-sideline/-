@@ -2293,6 +2293,7 @@ ${historyContext}
                     }
                 } else {
                     keyIsValid = true;
+                }
             } catch (_e) {
                 // オフライン等でも一旦キーを保存できるよう true 扱い
                 keyIsValid = true;
