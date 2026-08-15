@@ -92,9 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
     const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
 
-    // Gemini モデル（Google AI Studio 公式対応モデル）
+    // Gemini モデル（Google AI Studio v1beta 公式対応モデル）
     const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
-    const FALLBACK_GEMINI_MODEL = 'gemini-1.5-flash';
+    const FALLBACK_GEMINI_MODEL = 'gemini-2.0-flash-lite';
     const LITE_GEMINI_MODEL = 'gemini-2.0-flash-lite';
     const LEGACY_GEMINI_MODELS = new Set([
         'gemini-2.5-flash',
@@ -105,7 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
         'gemini-3.7-flash',
         'gemini-3.5-flash',
         'gemini-3.1-pro-preview',
-        'gemini-3.1-flash-lite'
+        'gemini-3.1-flash-lite',
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-1.5-flash-lite',
     ]);
 
     const getGeminiModel = () => {
