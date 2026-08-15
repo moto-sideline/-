@@ -1568,6 +1568,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         renderPlots();
         if (appState.preview) previewArea.innerHTML = appState.preview;
+        if (appState.picturebook && appState.picturebook.pages && appState.picturebook.pages.length > 0) {
+            renderPicturebook(appState.picturebook.pages, appState.picturebook.title);
+        }
     };
 
     const renderPlots = () => {
@@ -1674,11 +1677,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
+            const formattedBody = formatGenieReplyHtml(text);
             innerHTML = `
                 <div class="message-content">
                     <div class="sender-name">ジーニー</div>
                     <div class="bubble-row">
-                        <div class="bubble genie">${text.replace(/\n/g, '<br>')}</div>
+                        <div class="bubble genie">${formattedBody}</div>
                         <div class="message-meta">
                             <span class="time">${getTimeOnlyDisplay(timeStr)}</span>
                         </div>
@@ -1703,6 +1707,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         }
+
+        // チャット内の「絵本を開く」ボタンのイベント紐付け
+        const openBtn = wrapper.querySelector('.chat-open-pb-btn');
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                if (typeof openPicturebookCanvas === 'function') {
+                    openPicturebookCanvas();
+                }
+            });
+        }
+
+        // チャット内の挿絵クリックでライトボックス表示
+        wrapper.querySelectorAll('.chat-pb-img').forEach(img => {
+            img.addEventListener('click', () => {
+                const lb = document.getElementById('imageLightbox');
+                const lbImg = document.getElementById('imageLightboxImg');
+                if (lb && lbImg) {
+                    lbImg.src = img.src;
+                    lb.classList.remove('hidden');
+                }
+            });
+        });
 
         chatMessages.appendChild(wrapper);
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -2813,6 +2839,7 @@ ${historyContext}
 
 【絵本制作モード（子供向け絵本を作るとき）】
 ユーザーから「絵本を作って」「絵本にして」「子供向けの本を作りたい」などのリクエストが来たら、以下のフォーマットで絵本を生成してください（必ず10〜14ページで）：
+※絵本を生成した後は「絵本キャンバスに挿絵付きの絵本が完成したよ！キャンバスを開いて見てみてね🎨」と伝えてください（「本棚に移動した」とは言わないでください）。
 
 タイトル：（絵本のタイトル）
 
@@ -3010,37 +3037,126 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
 
 
     // ===================================================================
-    // 🎨 絵本モード (Picture Book Mode)
+    // 🎨 絵本モード (Picture Book Mode) - AIイラスト自動生成・インライン表示・全画面ビュー
     // ===================================================================
 
     /** Pollinations.ai で子供向けイラストを生成する URL を作る */
     const buildIllustrationUrl = (descriptionJa) => {
-        const styleTag = "children's picture book illustration, watercolor painting, cute, soft colors, simple, kawaii, white background, high quality";
-        const prompt = encodeURIComponent(`${descriptionJa}, ${styleTag}`);
-        return `https://image.pollinations.ai/prompt/${prompt}?width=512&height=384&nologo=true&seed=${Math.floor(Math.random()*99999)}`;
+        const cleanDesc = descriptionJa.replace(/[\[\]【】\(\)]/g, '').trim();
+        const styleTag = "children's picture book illustration, beautiful watercolor storybook art, cute, soft pastel colors, whimsical, kawaii, vibrant, clean white background, high quality";
+        const prompt = encodeURIComponent(`${cleanDesc}, ${styleTag}`);
+        return `https://image.pollinations.ai/prompt/${prompt}?width=600&height=450&nologo=true&seed=${Math.floor(Math.random()*999999)}`;
     };
 
-    /** ジーニーの絵本テキストをページ配列に変換する
-     * 期待フォーマット:
-     * 【ページ1】
-     * [イラスト: 説明文]
-     * テキスト本文
-     */
+    /** ジーニーの絵本テキストを柔軟にページ配列へ変換する */
     const parsePicturebookText = (text) => {
         const pages = [];
-        const pageBlocks = text.split(/【ページ\s*\d+[：:]?】/g).filter(s => s.trim());
-        pageBlocks.forEach((block, idx) => {
-            const illustMatch = block.match(/\[イラスト[：:]\s*(.+?)\]/s);
-            const illustDesc = illustMatch ? illustMatch[1].replace(/\n/g, ' ').trim() : '';
-            const pageText = block
-                .replace(/\[イラスト[：:].+?\]/s, '')
-                .replace(/^\s*[\r\n]+/, '')
-                .trim();
-            if (pageText) {
-                pages.push({ text: pageText, illustDesc, imageUrl: illustDesc ? buildIllustrationUrl(illustDesc) : '' });
+        // 様々なページ区切りに対応: 【ページ1】, 【第1ページ】, ## ページ1, 1ページ目 など
+        const pageRegex = /(?:【(?:第\s*)?ページ\s*\d+[^】]*】|###?\s*(?:第\s*)?ページ\s*\d+|(?:^|
+)(?:第\s*)?\d+\s*ページ目[：:]?)/gi;
+        const matches = [...text.matchAll(pageRegex)];
+
+        if (matches.length > 0) {
+            for (let i = 0; i < matches.length; i++) {
+                const start = matches[i].index + matches[i][0].length;
+                const end = (i + 1 < matches.length) ? matches[i + 1].index : text.length;
+                const block = text.substring(start, end).trim();
+
+                // イラスト説明文を抽出 ([イラスト: ...], 【イラスト: ...】, イラスト: ...)
+                const illustMatch = block.match(/(?:\[|【)?(?:イラスト|挿絵|プロンプト|画像)[：:]\s*([^
+\]】]+)(?:\]|】)?/i);
+                const illustDesc = illustMatch ? illustMatch[1].trim() : '';
+
+                // 本文からイラストタグを除去
+                const pageText = block
+                    .replace(/(?:\[|【)?(?:イラスト|挿絵|プロンプト|画像)[：:][^
+\]】]*(?:\]|】)?/gi, '')
+                    .replace(/^\s*[
+]+/, '')
+                    .trim();
+
+                if (pageText || illustDesc) {
+                    pages.push({
+                        text: pageText,
+                        illustDesc: illustDesc,
+                        imageUrl: illustDesc ? buildIllustrationUrl(illustDesc) : ''
+                    });
+                }
             }
-        });
+        } else {
+            // 区切りがない場合でも [イラスト: ...] が複数あれば分割
+            const illustBlocks = text.split(/(?=\[(?:イラスト|挿絵)|【(?:イラスト|挿絵))/gi);
+            if (illustBlocks.length >= 2) {
+                illustBlocks.forEach(block => {
+                    const illustMatch = block.match(/(?:\[|【)?(?:イラスト|挿絵|プロンプト|画像)[：:]\s*([^
+\]】]+)(?:\]|】)?/i);
+                    const illustDesc = illustMatch ? illustMatch[1].trim() : '';
+                    const pageText = block.replace(/(?:\[|【)?(?:イラスト|挿絵|プロンプト|画像)[：:][^
+\]】]*(?:\]|】)?/gi, '').trim();
+                    if (pageText || illustDesc) {
+                        pages.push({
+                            text: pageText,
+                            illustDesc: illustDesc,
+                            imageUrl: illustDesc ? buildIllustrationUrl(illustDesc) : ''
+                        });
+                    }
+                });
+            }
+        }
+
         return pages;
+    };
+
+    /** チャットバブル内にも直接イラスト付き絵本カードを表示するフォーマッター */
+    const formatGenieReplyHtml = (rawText) => {
+        const hasPicturebookFormat = rawText.includes('【ページ') || rawText.includes('ページ1') || rawText.includes('[イラスト') || rawText.includes('【イラスト');
+        if (!hasPicturebookFormat) {
+            return rawText.replace(/\n/g, '<br>');
+        }
+
+        const pages = parsePicturebookText(rawText);
+        if (pages.length < 1) {
+            return rawText.replace(/\n/g, '<br>');
+        }
+
+        // タイトルの抽出
+        const titleMatch = rawText.match(/(?:タイトル[：:]\s*|『)(.+?)(?:』|
+)/);
+        const title = titleMatch ? titleMatch[1].trim() : '絵本';
+
+        let html = `<div class="chat-pb-container">`;
+        html += `<div class="chat-pb-header">
+            <div class="chat-pb-title">📖 『${title}』</div>
+            <div class="chat-pb-subtitle">ジーニーが挿絵付きの絵本を作ったよ！🎨</div>
+        </div>`;
+
+        pages.forEach((p, idx) => {
+            html += `
+            <div class="chat-pb-page-card">
+                <div class="chat-pb-page-num">— ${idx + 1} ページ —</div>
+                ${p.imageUrl ? `
+                <div class="chat-pb-image-wrap">
+                    <div class="chat-pb-img-loading" id="chat-pb-load-${idx}">
+                        <div class="pb-spinner"></div>
+                        <span>絵を描いているよ…</span>
+                    </div>
+                    <img src="${p.imageUrl}" alt="挿絵 ${idx+1}" class="chat-pb-img"
+                         style="opacity:0;transition:opacity 0.4s ease;"
+                         onload="this.style.opacity=1;const l=document.getElementById('chat-pb-load-${idx}');if(l)l.style.display='none';"
+                         onerror="this.style.display='none';const l=document.getElementById('chat-pb-load-${idx}');if(l)l.innerHTML='<span style=\'color:#fff;font-size:1.5rem;\'>🎨</span><span>挿絵準備中</span>';">
+                </div>
+                ` : ''}
+                <div class="chat-pb-page-text">${p.text.replace(/\n/g, '<br>')}</div>
+            </div>`;
+        });
+
+        html += `
+        <button type="button" class="chat-open-pb-btn" id="chatOpenPbBtn_${Date.now()}">
+            <i class="fas fa-book-open"></i> 絵本キャンバスで全画面表示する ✨
+        </button>
+        </div>`;
+
+        return html;
     };
 
     /** 絵本ページを1件レンダリングして picturebookPages に追加 */
@@ -3048,7 +3164,6 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         const pbPages = document.getElementById('picturebookPages');
         if (!pbPages) return;
 
-        // 空state表示を消す
         const empty = pbPages.querySelector('.pb-empty-state');
         if (empty) empty.remove();
 
@@ -3057,23 +3172,22 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         pageEl.id = `pb-page-${index}`;
 
         pageEl.innerHTML = `
-            <div class="pb-page-number">— ${index + 1}ページ —</div>
+            <div class="pb-page-number">— ${index + 1} ページ —</div>
             <div class="pb-image-wrap">
                 ${page.imageUrl ? `
                 <div class="pb-image-loading" id="pb-loading-${index}">
                     <div class="pb-spinner"></div>
-                    <span>絵を描いているよ…</span>
+                    <span>AIが挿絵を描いています…</span>
                 </div>
                 <img src="${page.imageUrl}" alt="ページ${index+1}のイラスト"
-                     style="opacity:0;transition:opacity 0.5s;"
-                     onload="this.style.opacity=1; document.getElementById('pb-loading-${index}') && (document.getElementById('pb-loading-${index}').style.display='none');"
-                     onerror="this.style.display='none'; document.getElementById('pb-loading-${index}') && (document.getElementById('pb-loading-${index}').innerHTML='<span style=\\'color:#fff;font-size:2rem;\\'>🎨</span><span>絵を準備中…</span>');">
+                     style="opacity:0;transition:opacity 0.5s ease;"
+                     onload="this.style.opacity=1; const el=document.getElementById('pb-loading-${index}'); if(el) el.style.display='none';"
+                     onerror="this.style.display='none'; const el=document.getElementById('pb-loading-${index}'); if(el) el.innerHTML='<span style=\'color:#fff;font-size:2rem;\'>🎨</span><span>挿絵を準備中…</span>';">
                 ` : '<span style="font-size:3rem;">📖</span>'}
             </div>
-            <div class="pb-text">${page.text}</div>
+            <div class="pb-text">${page.text.replace(/\n/g, '<br>')}</div>
         `;
         pbPages.appendChild(pageEl);
-        pbPages.scrollTop = pbPages.scrollHeight;
     };
 
     /** 絵本パネルを全ページでレンダリング */
@@ -3081,29 +3195,17 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         const pbPages = document.getElementById('picturebookPages');
         if (!pbPages) return;
         pbPages.innerHTML = '';
-        appState.picturebook.pages = pages;
-        appState.picturebook.title = title || '絵本';
+        appState.picturebook = {
+            title: title || '絵本',
+            pages: pages
+        };
         pages.forEach((p, i) => renderPbPage(p, i));
         const exportBtn = document.getElementById('pbExportBtn');
         if (exportBtn && pages.length > 0) exportBtn.classList.remove('hidden');
         saveData();
     };
 
-    /** ジーニーの返答から絵本を自動検出してレンダリング */
-    const tryParsePicturebookFromReply = (reply) => {
-        if (!reply.includes('【ページ')) return false;
-        const pages = parsePicturebookText(reply);
-        if (pages.length < 2) return false;
-        // タイトルを抽出（「タイトル：〜」or 「『〜』」）
-        const titleMatch = reply.match(/(?:タイトル[：:]\s*|『)(.+?)(?:』|\n)/);
-        const title = titleMatch ? titleMatch[1].trim() : '絵本';
-        renderPicturebook(pages, title);
-        // 絵本パネルに自動切り替え
-        switchToPanel('picturebook');
-        return true;
-    };
-
-    // ナビ切り替え
+    /** ナビ切り替え */
     const switchToPanel = (mode) => {
         const normalPanel = document.getElementById('normalCanvasPanel');
         const pbPanel = document.getElementById('picturebookPanel');
@@ -3125,13 +3227,39 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         }
     };
 
+    /** キャンバスを開いて絵本モードを表示 */
+    const openPicturebookCanvas = () => {
+        switchToPanel('picturebook');
+        const middleCanvas = document.getElementById('middleCanvas');
+        if (middleCanvas) {
+            middleCanvas.classList.remove('hidden');
+            middleCanvas.classList.add('active');
+        }
+        updateToggleCanvasIcon();
+    };
+
+    /** ジーニーの返答から絵本を自動検出してレンダリング */
+    const tryParsePicturebookFromReply = (reply) => {
+        const hasPicturebookFormat = reply.includes('【ページ') || reply.includes('ページ1') || reply.includes('[イラスト') || reply.includes('【イラスト');
+        if (!hasPicturebookFormat) return false;
+
+        const pages = parsePicturebookText(reply);
+        if (pages.length < 1) return false;
+
+        const titleMatch = reply.match(/(?:タイトル[：:]\s*|『)(.+?)(?:』|
+)/);
+        const title = titleMatch ? titleMatch[1].trim() : '絵本';
+
+        renderPicturebook(pages, title);
+        openPicturebookCanvas();
+        return true;
+    };
+
     // ナビ絵本アイコン
     const navPicturebook = document.getElementById('navPicturebook');
     if (navPicturebook) {
         navPicturebook.addEventListener('click', () => {
-            switchToPanel('picturebook');
-            const middleCanvas = document.getElementById('middleCanvas');
-            if (middleCanvas) middleCanvas.classList.add('active');
+            openPicturebookCanvas();
         });
     }
 
@@ -3139,10 +3267,9 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
     const pbGenerateBtn = document.getElementById('pbGenerateBtn');
     if (pbGenerateBtn) {
         pbGenerateBtn.addEventListener('click', () => {
-            // チャットにフォーカスして絵本リクエストを自動入力
             const ui = document.getElementById('userInput');
             if (ui) {
-                ui.value = '子供向けの絵本を作って！テーマや主人公は一緒に考えよう！';
+                ui.value = '子供向けの絵本を作って！主人公は小さな動物で、温かい冒険のお話にして！';
                 ui.focus();
                 ui.dispatchEvent(new Event('input'));
             }
@@ -3153,12 +3280,14 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
     const pbExportBtn = document.getElementById('pbExportBtn');
     if (pbExportBtn) {
         pbExportBtn.addEventListener('click', () => {
-            if (!appState.picturebook.pages.length) return;
+            if (!appState.picturebook || !appState.picturebook.pages.length) return;
             let content = `【絵本】${appState.picturebook.title}\n${'='.repeat(30)}\n\n`;
             appState.picturebook.pages.forEach((p, i) => {
-                content += `--- ${i+1}ページ ---\n${p.text}\n\n`;
+                content += `--- 第${i+1}ページ ---\n`;
+                if (p.illustDesc) content += `[挿絵プロンプト: ${p.illustDesc}]\n`;
+                content += `${p.text}\n\n`;
             });
-            const blob = new Blob([content], { type: 'text/plain' });
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -3171,7 +3300,6 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
     // ===================================================================
     // END 絵本モード
     // ===================================================================
-
     // Load Initial Data
     loadData();
     initPwaInstallation();

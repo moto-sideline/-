@@ -1745,3 +1745,133 @@ body.dark-theme .pwa-desc {
     transition: opacity 0.2s;
 }
 .pb-export-btn:hover { opacity: 0.85; }
+
+/* ==========================================================================
+   チャット内絵本カード・挿絵ビューア (v0.9.42)
+   ========================================================================== */
+.chat-pb-container {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.chat-pb-header {
+    background: linear-gradient(135deg, rgba(255, 154, 162, 0.25), rgba(255, 183, 178, 0.25));
+    border: 1px solid rgba(255, 154, 162, 0.4);
+    border-radius: 12px;
+    padding: 10px 14px;
+    text-align: center;
+}
+
+.chat-pb-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #e056fd;
+}
+
+.dark-theme .chat-pb-title {
+    color: #ff9ff3;
+}
+
+.chat-pb-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.chat-pb-page-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chat-pb-page-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.chat-pb-page-num {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ff6b81;
+    text-align: center;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+
+.chat-pb-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #fce4ec, #e8f0fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.dark-theme .chat-pb-image-wrap {
+    background: linear-gradient(135deg, #2d1b36, #1e293b);
+}
+
+.chat-pb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+}
+
+.chat-pb-img-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #888;
+    font-size: 0.82rem;
+}
+
+.chat-pb-page-text {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-main);
+    padding: 4px 4px 0 4px;
+    word-break: break-word;
+}
+
+.chat-open-pb-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 117, 140, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-top: 4px;
+}
+
+.chat-open-pb-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 117, 140, 0.45);
+}
+
+.chat-open-pb-btn:active {
+    transform: scale(0.98);
+}
