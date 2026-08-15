@@ -1,0 +1,60 @@
+■ セッション日時：2026-08-15（夜）母屋PC
+■ 担当：アンジー（Antigravity）
+■ バージョン：v0.9.47
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【今回やったこと】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+◆ v0.9.46: 絵本モード 画像生成の信頼性改善
+  - Pollinations.ai の画像生成に15秒のクライアントタイムアウトを実装（initPbImgTimeout）
+  - タイムアウト後に「再読み込み」ボタンを表示（retryPbImg）
+  - 再試行時はシード値＋タイムスタンプを新規発行してURLを更新
+  - model=turbo を指定して高速化
+  - img タグに loading="lazy" を追加
+
+◆ v0.9.47: 絵本モード 不適切画像の防止（安全フィルター強化）
+  - buildIllustrationUrl に safe=true パラメータを追加
+  - 全プロンプトの冒頭に英語SFWタグを強制配置：
+    "safe for work, sfw, children's book illustration, cute watercolor storybook art,
+     soft pastel colors, whimsical, kawaii, vibrant, clean white background, high quality"
+  - これにより「温泉」などの日本語キーワードが誤解釈されてNSFW画像が生成される
+    問題（実際に裸の女性が生成された）を防止。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【残課題・次回へ引き継ぎ】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+◆ 絵本モードの画像生成がまだ動かない（ユーザー報告）
+  - 「再読み込み」ボタンを押しても何度やっても生成されない
+  - Pollinations.ai が HTTP 429 (Too Many Requests) を返している可能性が高い
+  - CLIテスト時にも 429 を確認済み
+  - 次回の対策候補：
+    1. リトライの際に指数バックオフ（待ち時間を徐々に延ばす）を実装
+    2. プロキシ・別エンドポイントへの切り替えを検討
+    3. ブラウザのコンソールエラーを確認してもらう
+       （DevTools → Console → 画像エラーの内容）
+    4. Pollinations.ai の代替サービス（Picsum等）を暫定利用するか検討
+
+◆ sw.js・index.html
+  - キャッシュ名: magic-lamp-v68
+  - キャッシュバスター: v=68
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【編集ファイル一覧】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  - script.js   : buildIllustrationUrl・retryPbImg・initPbImgTimeout・handlePbImgError
+  - version.js  : v0.9.47
+  - sw.js       : magic-lamp-v68
+  - index.html  : キャッシュバスター v=68
+  - changelog.md: v0.9.47 エントリ追加
+  - status.md   : ヘッダー更新
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【特記事項】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  - Pollinations.ai curl テストで「許可」ダイアログが出た際は
+    「2番目（Yes, and always allow ... in this project）」を選ぶのが正解。
+  - もとさんはお疲れで就寝。次回セッション時に絵本画像問題を継続調査。
+
+お疲れ様でした！🌙
