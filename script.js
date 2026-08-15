@@ -91,6 +91,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const API_KEY_URL = 'https://aistudio.google.com/app/apikey';
     const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
+
+    // Gemini モデル（Google AI Studio 公式対応モデル）
+    const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+    const FALLBACK_GEMINI_MODEL = 'gemini-1.5-flash';
+    const LITE_GEMINI_MODEL = 'gemini-2.0-flash-lite';
+    const LEGACY_GEMINI_MODELS = new Set([
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-pro',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-3.7-flash',
+        'gemini-3.5-flash',
+        'gemini-3.1-pro-preview',
+        'gemini-3.1-flash-lite'
+    ]);
+
+    const getGeminiModel = () => {
+        const stored = localStorage.getItem('geminiModel');
+        if (!stored || LEGACY_GEMINI_MODELS.has(stored)) {
+            return DEFAULT_GEMINI_MODEL;
+        }
+        return stored;
+    };
+
+    const normalizeStoredGeminiModel = () => {
+        const stored = localStorage.getItem('geminiModel');
+        if (!stored || LEGACY_GEMINI_MODELS.has(stored)) {
+            localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
+        }
+    };
+
+    const isGeminiModelUnavailableError = (errMsg = '', status = '') =>
+        errMsg.includes('no longer available') ||
+        errMsg.includes('not found') ||
+        errMsg.includes('is not supported') ||
+        errMsg.includes('models/') ||
+        status === 'NOT_FOUND';
+
+    const getGeminiFallbackModel = (currentModel) => {
+        if (currentModel === DEFAULT_GEMINI_MODEL) return FALLBACK_GEMINI_MODEL;
+        if (currentModel === FALLBACK_GEMINI_MODEL) return LITE_GEMINI_MODEL;
+        return DEFAULT_GEMINI_MODEL;
+    };
+
+    normalizeStoredGeminiModel();
     
     const body = document.body;
 
@@ -921,7 +967,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formatted = appState.userName ? formatName(appState.userName) : '';
                     const nameStr = formatted ? `${formatted}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.30') {
+                    if (currentVer === '0.9.31') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.31）】\n` +
+                            `・Google AI Studioの最新Geminiモデル（Gemini 2.0 Flash / 1.5 Flash）に完全対応し、新規登録・初期起動時のモデル接続エラーを完全修復したよ！✨`;
+                    } else if (currentVer === '0.9.30') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.30）】\n` +
@@ -1271,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error("🔑 APIキーがまだ設定されていないみたい。\n右下にある【⚙️設定】からAPIキーを登録してね！");
         }
         
-        const selectedModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        const selectedModel = getGeminiModel();
         const ocrPrompt = "この画像に写っている手書き文章やノートの文字を、非常に正確にテキストとして文字起こししてください。余計な挨拶や説明、推測、整形、マークダウン装飾などは一切含めず、画像から読み取ったテキスト部分のみをそのまま出力してください。";
 
         const requestBody = {
@@ -1312,16 +1363,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error("🔑 APIキーが正しくないみたい。\n【⚙️設定】からもう一度確認してみてね！");
                     }
                     
-                    // 混雑時は別モデルへフォールバック
                     const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
-                    if (isCongested && !isRetry) {
-                        let fallbackModel = "";
-                        if (modelName === "gemini-2.5-pro") fallbackModel = "gemini-2.5-flash";
-                        else if (modelName === "gemini-2.5-flash") fallbackModel = "gemini-2.5-flash-lite";
-                        else if (modelName === "gemini-2.0-flash") fallbackModel = "gemini-2.0-flash-lite";
-                        
+                    const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
+                    if ((isCongested || isModelUnavailable) && !isRetry) {
+                        const fallbackModel = getGeminiFallbackModel(modelName);
                         if (fallbackModel) {
-                            console.log(`[OCR] 混雑のため ${modelName} から ${fallbackModel} にフォールバックして再試行します...`);
+                            console.log(`[OCR] ${modelName} から ${fallbackModel} にフォールバックして再試行します...`);
+                            if (isModelUnavailable) {
+                                localStorage.setItem('geminiModel', fallbackModel);
+                            }
                             return await attemptOcr(fallbackModel, true);
                         }
                     }
@@ -1699,7 +1749,7 @@ ${isLongAbsence ? `- 前回のアクセスから2日以上（${daysCount}日）�
 ${historyContext}
         `.trim();
 
-        const model = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        const model = getGeminiModel();
         const requestBody = {
             systemInstruction: { parts: [{ text: systemInstruction }] },
             contents: [{ role: 'user', parts: [{ text: "再開の挨拶をしてね！" }] }],
@@ -2012,7 +2062,7 @@ ${historyContext}
         const backupData = {
             appState: appState,
             geminiApiKey: localStorage.getItem('geminiApiKey') || '',
-            geminiModel: localStorage.getItem('geminiModel') || 'gemini-2.5-flash',
+            geminiModel: getGeminiModel(),
             theme: localStorage.getItem('theme') || 'light'
         };
         const date = new Date().toLocaleDateString('ja-JP').replace(/\//g, '-');
@@ -2091,7 +2141,7 @@ ${historyContext}
     const openApiSettingsModal = () => {
         closeAllPanels();
         apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
-        apiModelSelect.value = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        apiModelSelect.value = getGeminiModel();
         userNameInput.value = appState.userName || '';
         apiSettingsModal.classList.remove('hidden');
     };
@@ -2171,7 +2221,7 @@ ${historyContext}
     if (saveApiKeyBtn) {
         saveApiKeyBtn.addEventListener('click', async () => {
             const key = apiKeyInput.value.trim();
-            const model = apiModelSelect.value || 'gemini-2.5-flash';
+            const model = apiModelSelect.value || DEFAULT_GEMINI_MODEL;
             const newName = userNameInput.value.trim();
 
             localStorage.setItem('geminiModel', model);
@@ -2709,7 +2759,7 @@ ${historyContext}
             }
         };
 
-        const primaryModel = localStorage.getItem('geminiModel') || 'gemini-2.5-flash';
+        const primaryModel = getGeminiModel();
 
         // ヘルパー関数: API送信処理（エラー時に自動フォールバックを試みる）
         const attemptRequest = async (currentModel, isRetry = false) => {
@@ -2735,31 +2785,25 @@ ${historyContext}
                         };
                     }
 
-                    // 2. 混雑エラー・上限エラーのハンドリング
+                    // 2. 混雑エラー・上限エラー・モデル利用不可エラーのハンドリング
                     const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
+                    const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
                     
-                    if (isCongested) {
-                        if (!isRetry) {
-                            // 自動で軽量・混雑に強いモデルへ切り替えて再試行
-                            let fallbackModel = "";
-                            if (currentModel === "gemini-2.5-pro") {
-                                fallbackModel = "gemini-2.5-flash";
-                            } else if (currentModel === "gemini-2.5-flash") {
-                                fallbackModel = "gemini-2.5-flash-lite";
-                            } else if (currentModel === "gemini-2.0-flash") {
-                                fallbackModel = "gemini-2.0-flash-lite";
+                    if ((isCongested || isModelUnavailable) && !isRetry) {
+                        const fallbackModel = getGeminiFallbackModel(currentModel);
+                        if (fallbackModel && fallbackModel !== currentModel) {
+                            console.log(`[Genie] モデル切り替え: ${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
+                            if (isModelUnavailable) {
+                                localStorage.setItem('geminiModel', fallbackModel);
                             }
-
-                            if (fallbackModel) {
-                                console.log(`[Genie] サーバー混雑のため、${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
-                                return await attemptRequest(fallbackModel, true);
-                            }
+                            return await attemptRequest(fallbackModel, true);
                         }
+                    }
 
-                        // 再試行後、またはフォールバック先がない場合
+                    if (isCongested) {
                         return {
                             success: false,
-                            msg: "🧞‍♂️ ごめんね、いまちょっと魔法の世界（サーバー）がすごく混み合っているみたい。\n少しだけ時間をおいてもう一度送るか、右下の【⚙️設定】から「使用するAIモデル」を「Gemini 2.5 Flash-Lite（混雑時おすすめ）」に変えて試してみてね！"
+                            msg: "🧞‍♂️ ごめんね、いまちょっと魔法の世界（サーバー）が混み合っているみたい。\n少しだけ時間をおいてもう一度送ってみてね！"
                         };
                     }
 
