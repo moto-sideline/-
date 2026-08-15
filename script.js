@@ -93,27 +93,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const LINE_OFFICIAL_URL = 'https://lin.ee/unF2fH4'; // ランプの番人 公式LINE
 
     // Gemini モデル管理（ListModels APIによる自動検出 + 優先度フォールバック）
+    const EXCLUDED_MODELS = new Set([
+        'gemini-2.5-flash',       // 新規ユーザー利用不可
+        'gemini-2.0-flash',       // 廃止
+        'gemini-2.0-flash-lite',  // 廃止
+        'gemini-1.5-flash',       // 廃止
+    ]);
+
     const PREFERRED_MODEL_ORDER = [
-        'gemini-2.5-flash',
         'gemini-2.5-flash-lite',
         'gemini-2.5-pro',
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-1.5-flash',
         'gemini-1.5-flash-8b',
         'gemini-1.5-pro'
     ];
-    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
     const getGeminiModel = () => {
-        return localStorage.getItem('geminiModel') || DEFAULT_GEMINI_MODEL;
+        const stored = localStorage.getItem('geminiModel');
+        if (!stored || EXCLUDED_MODELS.has(stored)) {
+            return DEFAULT_GEMINI_MODEL;
+        }
+        return stored;
     };
 
     /**
      * Google AI StudioのListModels APIを叩いて、このAPIキーで実際にgenerateContentが使えるモデル一覧を取得し、
      * 最適なモデルを自動選定してlocalStorageに保存・返却する
      */
-    const discoverAndSaveBestGeminiModel = async (apiKey) => {
+    const discoverAndSaveBestGeminiModel = async (apiKey, blacklist = new Set()) => {
         if (!apiKey || !apiKey.trim()) return DEFAULT_GEMINI_MODEL;
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey.trim()}`);
@@ -126,28 +133,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 // generateContent がサポートされているモデル名を抽出（"models/xxx" -> "xxx"）
                 const availableModels = data.models
                     .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-                    .map(m => m.name.replace(/^models\//, ''));
+                    .map(m => m.name.replace(/^models\//, ''))
+                    .filter(m => !EXCLUDED_MODELS.has(m) && !blacklist.has(m));
 
-                console.log('[Genie] 利用可能なGeminiモデル一覧:', availableModels);
+                console.log('[Genie] 利用可能なGeminiモデル一覧 (除外後):', availableModels);
 
                 // 1. 優先リスト順にマッチするものを探す
                 for (const preferred of PREFERRED_MODEL_ORDER) {
-                    if (availableModels.includes(preferred)) {
+                    if (availableModels.includes(preferred) && !blacklist.has(preferred)) {
                         console.log(`[Genie] 最適モデルを自動選択: ${preferred}`);
                         localStorage.setItem('geminiModel', preferred);
                         return preferred;
                     }
                 }
 
-                // 2. 優先リストに完全一致がない場合、flashが含まれるモデルを優先して選択
-                const anyFlash = availableModels.find(m => m.includes('flash') && !m.includes('thinking'));
+                // 2. 優先リストにない場合、flashが含まれるモデルを選択
+                const anyFlash = availableModels.find(m => m.includes('flash') && !m.includes('thinking') && !blacklist.has(m));
                 if (anyFlash) {
                     console.log(`[Genie] 利用可能なFlashモデルを自動選択: ${anyFlash}`);
                     localStorage.setItem('geminiModel', anyFlash);
                     return anyFlash;
                 }
 
-                // 3. どれでも使える先頭のモデルを選択
+                // 3. 利用可能な先頭のモデルを選択
                 if (availableModels.length > 0) {
                     const fallbackAny = availableModels[0];
                     console.log(`[Genie] 利用可能なモデルを自動選択: ${fallbackAny}`);
@@ -158,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error('[Genie] モデル自動検出エラー:', e);
         }
-        return getGeminiModel();
+        return DEFAULT_GEMINI_MODEL;
     };
 
     const isGeminiModelUnavailableError = (errMsg = '', status = '') =>
@@ -1375,7 +1383,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        const attemptOcr = async (modelName, isRetry = false) => {
+        const ocrFailedModels = new Set();
+        const attemptOcr = async (modelName, retryCount = 0) => {
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
                     method: 'POST',
@@ -1395,11 +1404,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
                     const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
-                    if ((isCongested || isModelUnavailable) && !isRetry) {
-                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey);
-                        if (fallbackModel && fallbackModel !== modelName) {
+                    if ((isCongested || isModelUnavailable) && retryCount < 3) {
+                        ocrFailedModels.add(modelName);
+                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey, ocrFailedModels);
+                        if (fallbackModel && !ocrFailedModels.has(fallbackModel)) {
                             console.log(`[OCR] ${modelName} から ${fallbackModel} にフォールバックして再試行します...`);
-                            return await attemptOcr(fallbackModel, true);
+                            return await attemptOcr(fallbackModel, retryCount + 1);
                         }
                     }
                     throw new Error(errMsg || "ジーニーが文字を読み取るのに失敗しちゃった。");
@@ -2787,9 +2797,10 @@ ${historyContext}
         };
 
         const primaryModel = getGeminiModel();
+        const failedModels = new Set();
 
         // ヘルパー関数: API送信処理（エラー時に自動フォールバックを試みる）
-        const attemptRequest = async (currentModel, isRetry = false) => {
+        const attemptRequest = async (currentModel, retryCount = 0) => {
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
                     method: 'POST',
@@ -2816,11 +2827,12 @@ ${historyContext}
                     const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
                     const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus);
                     
-                    if ((isCongested || isModelUnavailable) && !isRetry) {
-                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey);
-                        if (fallbackModel && fallbackModel !== currentModel) {
-                            console.log(`[Genie] モデル切り替え: ${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
-                            return await attemptRequest(fallbackModel, true);
+                    if ((isCongested || isModelUnavailable) && retryCount < 3) {
+                        failedModels.add(currentModel);
+                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey, failedModels);
+                        if (fallbackModel && !failedModels.has(fallbackModel)) {
+                            console.log(`[Genie] モデル切り替え (再試行 ${retryCount + 1}): ${currentModel} から ${fallbackModel} に自動で切り替えて再試行します...`);
+                            return await attemptRequest(fallbackModel, retryCount + 1);
                         }
                     }
 
