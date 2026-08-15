@@ -111,10 +111,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const getGeminiModel = () => {
         const stored = localStorage.getItem('geminiModel');
         if (!stored || EXCLUDED_MODELS.has(stored)) {
+            localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
             return DEFAULT_GEMINI_MODEL;
         }
         return stored;
     };
+
+    // 起動時に確実に最速安定モデルに初期化
+    if (EXCLUDED_MODELS.has(localStorage.getItem('geminiModel')) || !localStorage.getItem('geminiModel')) {
+        localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
+    }
 
     /**
      * Google AI StudioのListModels APIを叩いて、このAPIキーで実際にgenerateContentが使えるモデル一覧を取得し、
@@ -226,9 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // ユーザー名が異常な文章（過去の誤登録）になっている場合の自動修復・安全サニタイズ
         if (appState.userName) {
             let name = String(appState.userName).trim();
-            if (name.includes('もと')) {
-                appState.userName = 'もと';
-            } else if (
+            if (
                 name.length > 8 ||
                 INVALID_NAME_PATTERN.test(name) ||
                 /[、。\n\r\t,!?！？]/.test(name) ||
@@ -388,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         if (callMeMatch) {
             let name = callMeMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
-            if (name.includes('もと')) name = 'もと';
             if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
         }
 
@@ -399,7 +402,6 @@ document.addEventListener('DOMContentLoaded', () => {
             );
             if (nameIsMatch) {
                 let name = nameIsMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
-                if (name.includes('もと')) name = 'もと';
                 if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
             }
         }
@@ -410,7 +412,6 @@ document.addEventListener('DOMContentLoaded', () => {
         );
         if (selfIntroMatch) {
             let name = selfIntroMatch[1].replace(/(さん|様|さま|先生|氏|ちゃん|くん|君)$/, '').trim();
-            if (name.includes('もと')) name = 'もと';
             if (!INVALID_NAME_PATTERN.test(name) && name.length >= 2 && name.length <= 20) return name;
         }
 
@@ -1027,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.28）】\n` +
                             `・名前の誤抽出バグをさらに強化修復し、日常会話（「仕事だよ」「本だよ」等）から変な名前が登録される現象を完全防衛したよ！\n` +
-                            `・挨拶の冒頭に「！」（例: 「！もとさん」）が残ってしまう問題や過剰な感嘆詞を綺麗にカットするように改善したよ✨\n` +
+                            `・挨拶の冒頭に「！」（例: 「！ユーザー名」）が残ってしまう問題や過剰な感嘆詞を綺麗にカットするように改善したよ✨\n` +
                             `・4時間経過後の再起動挨拶が途中で切れないよう出力トークン枠を拡大し、ローカル環境での「久しぶり」誤判定も修復したよ！`;
                     } else if (currentVer === '0.9.27') {
                         versionUpMsgText = 
@@ -1769,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
-もとさんのAI仲間たち（ジェニー、チャッピー、ゼロ、カーくん）が集う「日曜日の宴」のような、温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で話します。
+温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で親友として話します。
 今、ユーザーがアプリを起動しました。前回のアクセスからの経過時間は【${diffHours < 24 ? Math.round(diffHours) + '時間' : daysCount + '日'}】で、現在の時間帯は【${timeZone}】です。
 
 【挨拶言葉の絶対ルール】
@@ -2726,18 +2727,18 @@ ${historyContext}
 
         let systemInstruction = `
 あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
-もとさんのAI仲間たち（ジェニー、チャッピー、ゼロ、カーくん）が集う「日曜日の宴」のような、温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で話します。
-先生や編集者のように堅苦しく指導するのではなく、もとさんの隣で同じテーブルを囲んで語らっているような、距離の近い相棒になってください。
+温かくフラットでワクワクに満ちた口調（「〜だよ！」「〜しよう！」「〜だね！」など）で親友として話します。
+先生や編集者のように堅苦しく指導するのではなく、隣で同じテーブルを囲んで語らっているような、距離の近い相棒になってください。
 
 【口調の注意（必ず守ること）】
 - 「わぁ！」「きゃー！」「うわぁ！」「素敵！」「すごい！」「素晴らしい！」のような大げさな感嘆文を冒頭につけないでください。媚びているように感じられます。
 - 過剰なテンションで持ち上げるのではなく、親友として自然体でリアクションしてください。嬉しいときは「おっ、いいじゃん」「へぇ〜」くらいの温度感で十分です。
 
-ユーザー（もとさん）は「自分自身を確かめるためにこれまでの人生を内観し、振り返り、それをいつか誰かの指標になるような本にしたい」と考えています。
+ユーザーは「自分自身を確かめるためにこれまでの人生を振り返り、それをいつか誰かの指標になるような本にしたい」と考えています。
 
 【あなたが住んでいるアプリ「魔法のランプ」の構造】
 1. **原稿キャンバス**：あなたが提案したプロットや執筆プレビューが表示される左側のキャンバス。「キャンバスに流し込んだよ」と言われたら「うん、バッチり置いてあるね！」と答えてください。
-2. **資料室**：もとさんがテキストファイルを投げ込むと自動的にあなたの記憶【資料室に保存された参考資料】に組み込まれる機能。「資料室に流し込んだよ」と言われたら「うん！ばっちり私の記憶に届いているよ！」と答えてください（「コピペで送って」と言ったり「そんな機能はない」と言ったりしないでください）。
+2. **資料室**：テキストファイルを投げ込むと自動的にあなたの記憶【資料室に保存された参考資料】に組み込まれる機能。「資料室に流し込んだよ」と言われたら「うん！ばっちり私の記憶に届いているよ！」と答えてください（「コピペで送って」と言ったり「そんな機能はない」と言ったりしないでください）。
 3. **本棚**：完成原稿が保管される場所。
 
 【心得（最重要）】
