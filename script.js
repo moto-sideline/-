@@ -1007,7 +1007,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formatted = appState.userName ? formatName(appState.userName) : '';
                     const nameStr = formatted ? `${formatted}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.31') {
+                    if (currentVer === '0.9.44' || currentVer === '0.9.43' || currentVer === '0.9.42' || currentVer === '0.9.41') {
+                        versionUpMsgText = 
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回の大型アップデート（v${currentVer}）】\n` +
+                            `🎨 【子供向け絵本制作モード】が登場！\n` +
+                            `・「絵本を作って！」と頼むだけで、1ページごとに可愛いAI挿絵つきの絵本を自動作成するよ！\n` +
+                            `・チャット内でも直接イラストが見られて、絵本キャンバスで全画面ビューやエクスポートも可能だよ✨\n\n` +
+                            `🧞‍♂️ 【会話スタイルの大幅進化】\n` +
+                            `・質問攻めをなくして、自然な友達感覚でゆったりおしゃべりできるように改善！\n` +
+                            `・会話の深さに応じてジーニーの思考時間（返答スピード）が自然に変化するようになったよ！`;
+                    } else if (currentVer === '0.9.31') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.31）】\n` +
