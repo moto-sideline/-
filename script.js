@@ -366,18 +366,34 @@ document.addEventListener('DOMContentLoaded', () => {
             cleaned = cleaned.replace(/^(?:お?久しぶり|おかえり|おかえりなさい|おはよう|こんにちは|こんばんは|お疲れ様|おつかれさま)[！!♪〜~、,，\s]*(?:[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+(?:さん|ちゃん|くん|君|様)?[！!♪〜~、,，\s]*)?/gi, '').trim();
         }
 
-        // 3. 通常の会話中の場合、冒頭の不自然な名前呼びかけ（例：「もとさん！」「、もとさん、」等）を完全カット
+        // 3. 通常の会話中の場合、冒頭の不自然な名前呼びかけ（例：「もとさん！」「もとさんっ！、」等）を完全カット
         if (isChatMessage) {
             if (appState.userName) {
-                const uName = appState.userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const nameRegex = new RegExp(`^[！!♪～〜★☆✨・:：,，.!?、\\s]*${uName}(?:さん|ちゃん|くん|君|様)?[！!♪～〜★☆✨・:：,，.!?、\\s]*`, 'gi');
-                cleaned = cleaned.replace(nameRegex, '').trim();
+                const rawName = String(appState.userName).trim();
+                const formattedName = formatName(rawName);
+                const nameVariants = [...new Set([rawName, formattedName])];
+                nameVariants.forEach((name) => {
+                    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const baseName = name.replace(/(さん|ちゃん|くん|君|様)$/, '');
+                    const escapedBase = baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const nameRegex = new RegExp(
+                        `^[！!♪～〜★☆✨・:：,，.!?、\\s]*(?:${escaped}|${escapedBase})(?:さん|ちゃん|くん|君|様)?[っぞねよなぁ]*[！!♪～〜★☆✨・:：,，.!?、\\s]*`,
+                        'gi'
+                    );
+                    cleaned = cleaned.replace(nameRegex, '').trim();
+                });
             }
-            // 一般的な名前呼びかけ（例：「〇〇さん！」）が先頭にある場合もカット
-            cleaned = cleaned.replace(/^[！!♪～〜★☆✨・:：,，.!?、\s]*[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,10}(?:さん|ちゃん|くん|君|様)[！!♪～〜★☆✨・:：,，.!?、\s]*/gi, '').trim();
+            // 一般的な名前呼びかけ（例：「〇〇さんっ！、」）が先頭にある場合もカット
+            cleaned = cleaned.replace(
+                /^[！!♪～〜★☆✨・:：,，.!?、\s]*[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]{2,10}(?:さん|ちゃん|くん|君|様)[っぞねよなぁ]*[！!♪～〜★☆✨・:：,，.!?、\s]*/gi,
+                ''
+            ).trim();
         }
 
-        // 4. 先頭に残った感嘆符、感嘆記号、読点、不要な約物を除去（例: 「！もとさん」「、それはね」→「それはね」）
+        // 4. 名前除去後に残る情動語尾・孤立した「っ、」「ら～、」等を除去
+        cleaned = cleaned.replace(/^(?:[らりるれろぁぃぅぇぉ]?[～〜ー]+|[っぞねよなぁ]+)[、,，!！?？\s]+/u, '').trim();
+
+        // 5. 先頭に残った感嘆符、感嘆記号、読点、不要な約物を除去（例: 「！もとさん」「、それはね」→「それはね」）
         cleaned = cleaned.replace(/^[！!♪～〜★☆✨・:：,，.!?、\s]+/, '').trim();
         return cleaned;
     };
@@ -1007,7 +1023,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formatted = appState.userName ? formatName(appState.userName) : '';
                     const nameStr = formatted ? `${formatted}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.45' || currentVer === '0.9.44' || currentVer === '0.9.43' || currentVer === '0.9.42' || currentVer === '0.9.41') {
+                    if (currentVer === '0.9.48') {
+                        versionUpMsgText =
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.48）】\n` +
+                            `🎨 絵本の挿絵を1枚ずつ順番に表示するように改善！429エラーを避けながら、描けた絵からどんどん見られるよ。\n` +
+                            `・挿絵スタイルを子供向けのシンプルな漫画風に変更したよ！\n` +
+                            `・名前を呼ばない設定のときに「っ、」「ら～、」などが残る問題も修復したよ✨`;
+                    } else if (currentVer === '0.9.45' || currentVer === '0.9.44' || currentVer === '0.9.43' || currentVer === '0.9.42' || currentVer === '0.9.41') {
                         versionUpMsgText = 
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回の大型アップデート（v${currentVer}）】\n` +
@@ -1734,11 +1757,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lb = document.getElementById('imageLightbox');
                 const lbImg = document.getElementById('imageLightboxImg');
                 if (lb && lbImg) {
-                    lbImg.src = img.src;
+                    lbImg.src = img.src || img.getAttribute('data-pb-src') || '';
                     lb.classList.remove('hidden');
                 }
             });
         });
+
+        initPbImagesInContainer(wrapper);
 
         chatMessages.appendChild(wrapper);
         chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -3052,6 +3077,64 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
     // ===================================================================
 
     // グローバルな画像読み込み・エラー・リトライ制御
+    const pbImgQueue = [];
+    let pbImgQueueBusy = false;
+    const PB_IMG_TIMEOUT_MS = 90000;
+    const PB_IMG_GAP_MS = 2500;
+
+    const processPbImgQueue = () => {
+        if (pbImgQueueBusy || pbImgQueue.length === 0) return;
+        pbImgQueueBusy = true;
+        const item = pbImgQueue.shift();
+        const loadEl = document.getElementById(item.loadId);
+        const imgEl = item.imgEl;
+        const dataUrl = imgEl ? imgEl.getAttribute('data-pb-src') : null;
+
+        if (!loadEl || !imgEl || !dataUrl) {
+            pbImgQueueBusy = false;
+            processPbImgQueue();
+            return;
+        }
+
+        let settled = false;
+        const finish = (success) => {
+            if (settled) return;
+            settled = true;
+            if (!success) window.handlePbImgError(item.loadId);
+            pbImgQueueBusy = false;
+            setTimeout(processPbImgQueue, PB_IMG_GAP_MS);
+        };
+
+        loadEl.style.display = 'flex';
+        imgEl.style.display = 'block';
+        imgEl.style.opacity = '0';
+        imgEl.onload = () => {
+            window.handlePbImgSuccess(item.loadId);
+            finish(true);
+        };
+        imgEl.onerror = () => finish(false);
+        imgEl.src = dataUrl;
+
+        setTimeout(() => {
+            if (!settled && imgEl.style.opacity !== '1') finish(false);
+        }, PB_IMG_TIMEOUT_MS);
+    };
+
+    const enqueuePbImg = (imgEl, loadId, priority = false) => {
+        const entry = { imgEl, loadId };
+        if (priority) pbImgQueue.unshift(entry);
+        else pbImgQueue.push(entry);
+        processPbImgQueue();
+    };
+
+    const initPbImagesInContainer = (container) => {
+        if (!container) return;
+        container.querySelectorAll('img[data-pb-src]').forEach((img) => {
+            const loadId = img.getAttribute('data-load-id');
+            if (loadId) enqueuePbImg(img, loadId);
+        });
+    };
+
     window.handlePbImgSuccess = (id) => {
         const loadEl = document.getElementById(id);
         if (!loadEl) return;
@@ -3066,9 +3149,12 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         if (!loadEl) return;
         const parent = loadEl.parentElement;
         const imgEl = parent ? parent.querySelector('img') : null;
-        if (imgEl) imgEl.style.display = 'none';
+        if (imgEl) {
+            imgEl.style.display = 'none';
+            imgEl.removeAttribute('src');
+        }
         loadEl.style.display = 'flex';
-        loadEl.innerHTML = '<span style="color:#f39c12;font-size:1.3rem;">🎨</span><span style="font-size:0.75rem;color:#888;">生成タイムアウト</span>' +
+        loadEl.innerHTML = '<span style="color:#f39c12;font-size:1.3rem;">🎨</span><span style="font-size:0.75rem;color:#888;">絵の生成に時間がかかっています</span>' +
             '<button type="button" class="pb-retry-btn" onclick="window.retryPbImg(\'' + id + '\')"><i class="fas fa-sync-alt"></i> 再読み込み</button>';
     };
 
@@ -3083,38 +3169,25 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         loadEl.innerHTML = '<div class="pb-spinner"></div><span style="font-size:0.8rem;">再生成中…</span>';
         imgEl.style.display = 'block';
         imgEl.style.opacity = '0';
+        imgEl.removeAttribute('src');
 
-        const rawUrl = imgEl.getAttribute('data-raw-url') || imgEl.src;
+        const rawUrl = imgEl.getAttribute('data-pb-src') || imgEl.getAttribute('data-raw-url') || '';
         const freshSeed = Math.floor(Math.random() * 999999);
         let newUrl = rawUrl.replace(/&seed=\d+/, '&seed=' + freshSeed);
         if (!newUrl.includes('&seed=')) newUrl += '&seed=' + freshSeed;
-        newUrl += '&t=' + Date.now();
+        newUrl = newUrl.replace(/&t=\d+/, '') + '&t=' + Date.now();
 
-        imgEl.src = newUrl;
-
-        setTimeout(() => {
-            if (imgEl.style.opacity !== '1' && loadEl.style.display !== 'none') {
-                window.handlePbImgError(id);
-            }
-        }, 15000);
+        imgEl.setAttribute('data-pb-src', newUrl);
+        imgEl.setAttribute('data-raw-url', newUrl);
+        enqueuePbImg(imgEl, id, true);
     };
 
-    window.initPbImgTimeout = (id) => {
-        setTimeout(() => {
-            const loadEl = document.getElementById(id);
-            if (loadEl && loadEl.style.display !== 'none') {
-                window.handlePbImgError(id);
-            }
-        }, 15000);
-    };
-
-    /** Pollinations.ai で子供向けイラストを安全・高速生成する URL を作る (safe=true & SFWヘッダー) */
+    /** Pollinations.ai で子供向けイラストを安全・シンプルな漫画風で生成する URL を作る */
     const buildIllustrationUrl = (descriptionJa) => {
         const cleanDesc = (descriptionJa || '').replace(/[\[\]【】\(\)]/g, '').trim();
-        // 事故防止のため、SFW（全年齢対象・子供向け）英語タグを最優先で冒頭に配置
-        const safeHeaderTag = "safe for work, sfw, children's book illustration, cute watercolor storybook art, soft pastel colors, whimsical, kawaii, vibrant, clean white background, high quality";
+        const safeHeaderTag = "safe for work, sfw, simple children's manga illustration, cute comic book style, clean line art, flat bright colors, easy to understand, friendly characters, not too detailed, kawaii, white background, high quality";
         const prompt = encodeURIComponent(safeHeaderTag + (cleanDesc ? ", " + cleanDesc : ''));
-        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&safe=true&seed=' + Math.floor(Math.random() * 999999);
+        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&safe=true&model=turbo&seed=' + Math.floor(Math.random() * 999999);
     };
 
     /** ジーニーの絵本テキストを柔軟にページ配列へ変換する */
@@ -3200,13 +3273,12 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                         '<div class="pb-spinner"></div>' +
                         '<span>絵を描いているよ…</span>' +
                     '</div>' +
-                    '<img src="' + p.imageUrl + '" alt="挿絵 ' + (idx + 1) + '" class="chat-pb-img" loading="lazy" ' +
+                    '<img alt="挿絵 ' + (idx + 1) + '" class="chat-pb-img" loading="lazy" ' +
+                         'data-pb-src="' + p.imageUrl + '" ' +
                          'data-raw-url="' + p.imageUrl + '" ' +
-                         'style="opacity:0;transition:opacity 0.4s ease;" ' +
-                         'onload="window.handlePbImgSuccess(\'' + loadId + '\')" ' +
-                         'onerror="window.handlePbImgError(\'' + loadId + '\')">' +
+                         'data-load-id="' + loadId + '" ' +
+                         'style="opacity:0;transition:opacity 0.4s ease;">' +
                 '</div>';
-                setTimeout(() => window.initPbImgTimeout(loadId), 100);
             }
             html += '<div class="chat-pb-page-text">' + p.text.replace(/\n/g, '<br>') + '</div>' +
             '</div>';
@@ -3239,12 +3311,11 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                 '<div class="pb-spinner"></div>' +
                 '<span>AIが挿絵を描いています…</span>' +
             '</div>' +
-            '<img src="' + page.imageUrl + '" alt="ページ' + (index + 1) + 'のイラスト" loading="lazy" ' +
+            '<img alt="ページ' + (index + 1) + 'のイラスト" loading="lazy" ' +
+                 'data-pb-src="' + page.imageUrl + '" ' +
                  'data-raw-url="' + page.imageUrl + '" ' +
-                 'style="opacity:0;transition:opacity 0.5s ease;" ' +
-                 'onload="window.handlePbImgSuccess(\'' + loadId + '\')" ' +
-                 'onerror="window.handlePbImgError(\'' + loadId + '\')">';
-            setTimeout(() => window.initPbImgTimeout(loadId), 100);
+                 'data-load-id="' + loadId + '" ' +
+                 'style="opacity:0;transition:opacity 0.5s ease;">';
         }
 
         pageEl.innerHTML = '<div class="pb-page-number">— ' + (index + 1) + ' ページ —</div>' +
@@ -3264,6 +3335,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         };
         if (pages && pages.length > 0) {
             pages.forEach((p, i) => renderPbPage(p, i));
+            initPbImagesInContainer(pbPages);
         }
         const exportBtn = document.getElementById('pbExportBtn');
         if (exportBtn && pages && pages.length > 0) exportBtn.classList.remove('hidden');
