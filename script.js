@@ -1023,7 +1023,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const formatted = appState.userName ? formatName(appState.userName) : '';
                     const nameStr = formatted ? `${formatted}！` : '';
                     let versionUpMsgText = '';
-                    if (currentVer === '0.9.48') {
+                    if (currentVer === '0.9.49') {
+                        versionUpMsgText =
+                            `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
+                            `【今回のアップデート（v0.9.49）】\n` +
+                            `🎨 絵本のチャットとキャンバスで同じ挿絵が表示されるように修正したよ！\n` +
+                            `・1枚読み込み後に1ページ目に戻ってしまう問題も直したよ✨`;
+                    } else if (currentVer === '0.9.48') {
                         versionUpMsgText =
                             `${nameStr}ジーニーのバージョンが v${currentVer} にアップしたよ！🧞‍♂️✨\n\n` +
                             `【今回のアップデート（v0.9.48）】\n` +
@@ -1604,6 +1610,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appState.picturebook && appState.picturebook.pages && appState.picturebook.pages.length > 0) {
             renderPicturebook(appState.picturebook.pages, appState.picturebook.title);
         }
+        initAllPbImagesOrdered();
     };
 
     const renderPlots = () => {
@@ -1684,7 +1691,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.appendChild(sep);
     };
 
-    const renderMessage = (text, sender, timeStr, imageDataUrl) => {
+    const renderMessage = (text, sender, timeStr, imageDataUrl, picturebookPages) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
         
@@ -1710,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
-            const formattedBody = formatGenieReplyHtml(text);
+            const formattedBody = formatGenieReplyHtml(text, picturebookPages);
             innerHTML = `
                 <div class="message-content">
                     <div class="sender-name">ジーニー</div>
@@ -1763,14 +1770,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        initPbImagesInContainer(wrapper);
-
         chatMessages.appendChild(wrapper);
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return wrapper;
     };
 
-    const addMessage = (text, sender, imageDataUrl) => {
+    const addMessage = (text, sender, imageDataUrl, picturebookPages) => {
         const timeStr = formatTime();
         const dateStr = getDateLabel(timeStr);
         // 直前の履歴と日付が違ったら区切り線を挿入
@@ -1780,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderDateSeparator(dateStr);
         }
         appState.chatHistory.push({ text, sender, time: timeStr });
-        renderMessage(text, sender, timeStr, imageDataUrl);
+        renderMessage(text, sender, timeStr, imageDataUrl, picturebookPages);
         saveData();
         updateEntranceUI();
     };
@@ -1975,10 +1980,17 @@ ${historyContext}
 
             setTimeout(() => {
                 if (typingIndicator.parentNode) typingIndicator.parentNode.removeChild(typingIndicator);
-                addMessage(reply, 'genie');
 
-                // 絵本フォーマット検出 → 絵本キャンバスに自動反映
-                tryParsePicturebookFromReply(reply);
+                // 絵本は1回だけパースして、チャットとキャンバスで同じ imageUrl を共有
+                const pbData = extractPicturebookFromReply(reply);
+                if (pbData) {
+                    renderPicturebook(pbData.pages, pbData.title);
+                }
+                addMessage(reply, 'genie', null, pbData ? pbData.pages : null);
+                if (pbData) {
+                    openPicturebookCanvas();
+                    initAllPbImagesOrdered();
+                }
 
                 // プロットを回答から自動抽出して左キャンバスに反映
                 const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
@@ -3079,8 +3091,39 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
     // グローバルな画像読み込み・エラー・リトライ制御
     const pbImgQueue = [];
     let pbImgQueueBusy = false;
+    const pbImgQueuedUrls = new Set();
     const PB_IMG_TIMEOUT_MS = 90000;
     const PB_IMG_GAP_MS = 2500;
+
+    const applyPbImgSuccess = (dataUrl) => {
+        document.querySelectorAll('img[data-pb-src]').forEach((img) => {
+            if (img.getAttribute('data-pb-src') !== dataUrl) return;
+            img.src = dataUrl;
+            img.style.display = 'block';
+            img.style.opacity = '1';
+            img.dataset.pbLoaded = '1';
+            const loadId = img.getAttribute('data-load-id');
+            if (loadId) {
+                const loadEl = document.getElementById(loadId);
+                if (loadEl) loadEl.style.display = 'none';
+            }
+        });
+    };
+
+    const applyPbImgError = (dataUrl) => {
+        document.querySelectorAll('img[data-pb-src]').forEach((img) => {
+            if (img.getAttribute('data-pb-src') !== dataUrl) return;
+            img.style.display = 'none';
+            img.removeAttribute('src');
+            const loadId = img.getAttribute('data-load-id');
+            if (!loadId) return;
+            const loadEl = document.getElementById(loadId);
+            if (!loadEl) return;
+            loadEl.style.display = 'flex';
+            loadEl.innerHTML = '<span style="color:#f39c12;font-size:1.3rem;">🎨</span><span style="font-size:0.75rem;color:#888;">絵の生成に時間がかかっています</span>' +
+                '<button type="button" class="pb-retry-btn" onclick="window.retryPbImg(\'' + loadId + '\')"><i class="fas fa-sync-alt"></i> 再読み込み</button>';
+        });
+    };
 
     const processPbImgQueue = () => {
         if (pbImgQueueBusy || pbImgQueue.length === 0) return;
@@ -3096,11 +3139,19 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
             return;
         }
 
+        if (imgEl.dataset.pbLoaded === '1') {
+            pbImgQueueBusy = false;
+            processPbImgQueue();
+            return;
+        }
+
         let settled = false;
         const finish = (success) => {
             if (settled) return;
             settled = true;
-            if (!success) window.handlePbImgError(item.loadId);
+            pbImgQueuedUrls.delete(dataUrl);
+            if (success) applyPbImgSuccess(dataUrl);
+            else applyPbImgError(dataUrl);
             pbImgQueueBusy = false;
             setTimeout(processPbImgQueue, PB_IMG_GAP_MS);
         };
@@ -3108,10 +3159,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         loadEl.style.display = 'flex';
         imgEl.style.display = 'block';
         imgEl.style.opacity = '0';
-        imgEl.onload = () => {
-            window.handlePbImgSuccess(item.loadId);
-            finish(true);
-        };
+        imgEl.onload = () => finish(true);
         imgEl.onerror = () => finish(false);
         imgEl.src = dataUrl;
 
@@ -3121,15 +3169,30 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
     };
 
     const enqueuePbImg = (imgEl, loadId, priority = false) => {
+        if (!imgEl || imgEl.dataset.pbLoaded === '1') return;
+        const dataUrl = imgEl.getAttribute('data-pb-src');
+        if (!dataUrl || pbImgQueuedUrls.has(dataUrl)) return;
+        pbImgQueuedUrls.add(dataUrl);
         const entry = { imgEl, loadId };
         if (priority) pbImgQueue.unshift(entry);
         else pbImgQueue.push(entry);
         processPbImgQueue();
     };
 
-    const initPbImagesInContainer = (container) => {
-        if (!container) return;
-        container.querySelectorAll('img[data-pb-src]').forEach((img) => {
+    /** 絵本挿絵をページ順に1枚ずつ読み込む（同一URLはチャット・キャンバスで1回だけ） */
+    const initAllPbImagesOrdered = () => {
+        const imgs = Array.from(document.querySelectorAll('img[data-pb-src]'))
+            .filter((img) => img.dataset.pbLoaded !== '1')
+            .sort((a, b) => {
+                const ai = parseInt(a.getAttribute('data-page-index') || '0', 10);
+                const bi = parseInt(b.getAttribute('data-page-index') || '0', 10);
+                return ai - bi;
+            });
+        const seenUrls = new Set();
+        imgs.forEach((img) => {
+            const url = img.getAttribute('data-pb-src');
+            if (!url || seenUrls.has(url)) return;
+            seenUrls.add(url);
             const loadId = img.getAttribute('data-load-id');
             if (loadId) enqueuePbImg(img, loadId);
         });
@@ -3177,17 +3240,34 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         if (!newUrl.includes('&seed=')) newUrl += '&seed=' + freshSeed;
         newUrl = newUrl.replace(/&t=\d+/, '') + '&t=' + Date.now();
 
-        imgEl.setAttribute('data-pb-src', newUrl);
-        imgEl.setAttribute('data-raw-url', newUrl);
+        document.querySelectorAll('img[data-pb-src]').forEach((img) => {
+            if (img.getAttribute('data-pb-src') !== rawUrl) return;
+            img.setAttribute('data-pb-src', newUrl);
+            img.setAttribute('data-raw-url', newUrl);
+            img.dataset.pbLoaded = '0';
+            img.removeAttribute('src');
+        });
+        pbImgQueuedUrls.delete(rawUrl);
         enqueuePbImg(imgEl, id, true);
     };
 
+    /** ページ番号と説明文から毎回同じ seed を生成（チャット・キャンバスで同一画像） */
+    const hashIllustrationSeed = (descriptionJa, pageIndex) => {
+        const str = (descriptionJa || '') + '@' + pageIndex;
+        let h = pageIndex * 2654435761;
+        for (let i = 0; i < str.length; i++) {
+            h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+        }
+        return Math.abs(h) % 999999;
+    };
+
     /** Pollinations.ai で子供向けイラストを安全・シンプルな漫画風で生成する URL を作る */
-    const buildIllustrationUrl = (descriptionJa) => {
+    const buildIllustrationUrl = (descriptionJa, pageIndex) => {
         const cleanDesc = (descriptionJa || '').replace(/[\[\]【】\(\)]/g, '').trim();
         const safeHeaderTag = "safe for work, sfw, simple children's manga illustration, cute comic book style, clean line art, flat bright colors, easy to understand, friendly characters, not too detailed, kawaii, white background, high quality";
         const prompt = encodeURIComponent(safeHeaderTag + (cleanDesc ? ", " + cleanDesc : ''));
-        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&safe=true&model=turbo&seed=' + Math.floor(Math.random() * 999999);
+        const seed = hashIllustrationSeed(cleanDesc, pageIndex);
+        return 'https://image.pollinations.ai/prompt/' + prompt + '?width=600&height=450&nologo=true&safe=true&model=turbo&seed=' + seed;
     };
 
     /** ジーニーの絵本テキストを柔軟にページ配列へ変換する */
@@ -3216,7 +3296,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                     pages.push({
                         text: pageText,
                         illustDesc: illustDesc,
-                        imageUrl: illustDesc ? buildIllustrationUrl(illustDesc) : ''
+                        imageUrl: illustDesc ? buildIllustrationUrl(illustDesc, pages.length) : ''
                     });
                 }
             }
@@ -3231,7 +3311,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                         pages.push({
                             text: pageText,
                             illustDesc: illustDesc,
-                            imageUrl: illustDesc ? buildIllustrationUrl(illustDesc) : ''
+                            imageUrl: illustDesc ? buildIllustrationUrl(illustDesc, pages.length) : ''
                         });
                     }
                 });
@@ -3241,15 +3321,31 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         return pages;
     };
 
+    /** ジーニーの返答から絵本データを1回だけ抽出 */
+    const extractPicturebookFromReply = (reply) => {
+        if (!reply) return null;
+        const hasPicturebookFormat = reply.includes('【ページ') || reply.includes('ページ1') || reply.includes('[イラスト') || reply.includes('【イラスト');
+        if (!hasPicturebookFormat) return null;
+
+        const pages = parsePicturebookText(reply);
+        if (pages.length < 1) return null;
+
+        const titleMatch = reply.match(/(?:タイトル[：:]\s*|『)(.+?)(?:』|\n)/);
+        const title = titleMatch ? titleMatch[1].trim() : '絵本';
+        return { title, pages };
+    };
+
     /** チャットバブル内にも直接イラスト付き絵本カードを表示するフォーマッター */
-    const formatGenieReplyHtml = (rawText) => {
+    const formatGenieReplyHtml = (rawText, picturebookPages) => {
         if (!rawText) return '';
         const hasPicturebookFormat = rawText.includes('【ページ') || rawText.includes('ページ1') || rawText.includes('[イラスト') || rawText.includes('【イラスト');
         if (!hasPicturebookFormat) {
             return rawText.replace(/\n/g, '<br>');
         }
 
-        const pages = parsePicturebookText(rawText);
+        const pages = (picturebookPages && picturebookPages.length > 0)
+            ? picturebookPages
+            : parsePicturebookText(rawText);
         if (pages.length < 1) {
             return rawText.replace(/\n/g, '<br>');
         }
@@ -3264,7 +3360,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         '</div>';
 
         pages.forEach((p, idx) => {
-            const loadId = 'chat-pb-load-' + idx + '-' + Math.floor(Math.random() * 10000);
+            const loadId = 'chat-pb-load-' + idx;
             html += '<div class="chat-pb-page-card">' +
                 '<div class="chat-pb-page-num">— ' + (idx + 1) + ' ページ —</div>';
             if (p.imageUrl) {
@@ -3277,6 +3373,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                          'data-pb-src="' + p.imageUrl + '" ' +
                          'data-raw-url="' + p.imageUrl + '" ' +
                          'data-load-id="' + loadId + '" ' +
+                         'data-page-index="' + idx + '" ' +
                          'style="opacity:0;transition:opacity 0.4s ease;">' +
                 '</div>';
             }
@@ -3306,7 +3403,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
 
         let imgHtml = '<span style="font-size:3rem;">📖</span>';
         if (page.imageUrl) {
-            const loadId = 'pb-loading-' + index + '-' + Math.floor(Math.random() * 10000);
+            const loadId = 'pb-loading-' + index;
             imgHtml = '<div class="pb-image-loading" id="' + loadId + '">' +
                 '<div class="pb-spinner"></div>' +
                 '<span>AIが挿絵を描いています…</span>' +
@@ -3315,6 +3412,7 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
                  'data-pb-src="' + page.imageUrl + '" ' +
                  'data-raw-url="' + page.imageUrl + '" ' +
                  'data-load-id="' + loadId + '" ' +
+                 'data-page-index="' + index + '" ' +
                  'style="opacity:0;transition:opacity 0.5s ease;">';
         }
 
@@ -3329,13 +3427,15 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
         const pbPages = document.getElementById('picturebookPages');
         if (!pbPages) return;
         pbPages.innerHTML = '';
+        pbImgQueue.length = 0;
+        pbImgQueuedUrls.clear();
+        pbImgQueueBusy = false;
         appState.picturebook = {
             title: title || '絵本',
             pages: pages || []
         };
         if (pages && pages.length > 0) {
             pages.forEach((p, i) => renderPbPage(p, i));
-            initPbImagesInContainer(pbPages);
         }
         const exportBtn = document.getElementById('pbExportBtn');
         if (exportBtn && pages && pages.length > 0) exportBtn.classList.remove('hidden');
