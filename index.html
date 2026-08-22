@@ -23,11 +23,8 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=70">
+    <link rel="stylesheet" href="style.css?v=71">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google API for Drive Sync -->
-    <script src="https://apis.google.com/js/api.js" async defer></script>
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -53,7 +50,6 @@
                 <div class="nav-icon" id="navPicturebook" title="絵本モード"><i class="fas fa-book-open"></i></div>
                 <div class="nav-icon" id="navArchive" title="資料室"><i class="fas fa-folder-open"></i></div>
                 <div class="nav-icon" id="navBookshelf" title="本棚（出来上がった作品）"><i class="fas fa-book"></i></div>
-                <div class="nav-icon" id="navSync" title="Google Drive 自動同期"><i class="fab fa-google-drive"></i></div>
                 <div class="nav-icon" id="navLine" title="サイドライン出版 公式LINE"><svg class="nav-line-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="100" height="100" rx="20" fill="#00C300"/><path d="M50 18C28 18 10 32 10 49c0 11 7 21 18 27l-3 13 14-7c3 1 7 1 11 1c22 0 40-14 40-31S72 18 50 18z" fill="white"/><text x="50" y="55" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="#00C300" text-anchor="middle">LINE</text></svg></div>
             </div>
             <div class="nav-bottom">
@@ -358,18 +354,6 @@
                 </div>
 
                 <p class="app-version-label" id="appVersionLabel"></p>
-                
-                <!-- 同期デバッグ用パネル -->
-                <div id="syncDebugPanel" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border: 1px solid var(--line-middle-border); border-radius: 6px; font-family: monospace; font-size: 0.75rem; text-align: left; color: var(--text-meta);">
-                    <div style="font-weight: bold; margin-bottom: 5px; color: var(--text-main); font-size: 0.8rem; display: flex; align-items: center; gap: 5px;">
-                        <i class="fas fa-bug"></i> 同期デバッグ情報
-                    </div>
-                    <div>GAPI 初期化: <span id="debugGapi" style="font-weight: bold;">...</span></div>
-                    <div>クライアントID: <span id="debugClientId" style="font-weight: bold;">...</span></div>
-                    <div>トークン状態: <span id="debugToken" style="font-weight: bold;">...</span></div>
-                    <div>更新日時: <span id="debugUpdateTime" style="font-weight: bold;">...</span></div>
-                    <div style="margin-top: 5px; word-break: break-all; color: #d9534f;">エラー履歴: <span id="debugError" style="font-weight: bold;">なし</span></div>
-                </div>
             </div>
             <div class="modal-footer modal-footer--split">
                 <button type="button" id="closeApiSettingsFooterBtn" class="secondary-btn">閉じる</button>
@@ -499,54 +483,12 @@
         </div>
     </div>
 
-    <!-- Google Drive 自動同期モーダル -->
-    <div id="syncModal" class="modal-overlay hidden">
-        <div class="modal-content modal-content--wide">
-            <div class="modal-header">
-                <h3><i class="fab fa-google-drive"></i> Google Drive 自動同期</h3>
-                <span class="close-modal" id="closeSyncBtn">&times;</span>
-            </div>
-            <div class="modal-body modal-scroll-body">
-                <p class="modal-hint" style="margin-bottom: 15px;">
-                    PCとスマホの間でデータを自動的に同期させるための設定です。<br>
-                    ※ハードユーザー向けの高度な設定になります。
-                </p>
-                
-                <div style="background: #f8f9fa; border: 1px solid var(--line-middle-border); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main);">1. クライアントIDの入力</h4>
-                    <p class="modal-hint" style="margin-bottom: 10px;">マニュアルに沿って取得した「クライアントID」を入力してください。</p>
-                    <input type="text" id="gdriveClientIdInput" placeholder="xxxxxxxxxxxx-xxxxxxxxxxx.apps.googleusercontent.com" class="api-key-input" style="background: #fff; margin-bottom: 10px;">
-                    <button type="button" id="openSyncManualBtn" class="secondary-btn" style="font-size: 0.8rem; padding: 5px 10px;">
-                        <i class="fas fa-book-open"></i> 設定マニュアルを開く
-                    </button>
-                </div>
-
-                <div style="background: #f8f9fa; border: 1px solid var(--line-middle-border); border-radius: 8px; padding: 15px;">
-                    <h4 style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-main);">2. Googleアカウントで認証</h4>
-                    <p class="modal-hint" style="margin-bottom: 10px;">クライアントIDを入力後、以下のボタンから同期を許可してください。</p>
-                    <button type="button" id="gdriveLoginBtn" class="primary-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" disabled>
-                        <i class="fab fa-google"></i> Googleでログインして同期開始
-                    </button>
-                    <button type="button" id="restoreDriveRevBtn" class="secondary-btn" style="width: 100%; margin-top: 10px; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; gap: 6px; border-color: #f39c12; color: #d35400;">
-                        <i class="fas fa-history"></i> 🕒 過去の同期データ（上書き前の状態）を復元
-                    </button>
-                    <p id="gdriveStatusText" class="modal-hint" style="margin-top: 10px; text-align: center; color: var(--text-meta);">
-                        現在：未設定
-                    </p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" id="closeSyncFooterBtn" class="secondary-btn">閉じる</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 画像ライトボックス -->
     <div id="imageLightbox" class="hidden">
         <img id="imageLightboxImg" src="" alt="拡大表示">
     </div>
 
-    <script src="version.js?v=70"></script>
-    <script src="script.js?v=70"></script>
+    <script src="version.js?v=71"></script>
+    <script src="script.js?v=71"></script>
 </body>
 </html>

@@ -188,6 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let appState = {
         chatHistory: [],
         plots: [],
+        plotSeeds: [], // 本の素材・エピソードのメモ [{ id, date, content }]
+        memories: [],  // 過去のセッションの要約記憶 [{ date, digest, keywords }]
         preview: '',
         knowledge: '',
         materials: [],
@@ -250,6 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!Array.isArray(appState.materials)) appState.materials = [];
         if (!Array.isArray(appState.completedWorks)) appState.completedWorks = [];
+        if (!Array.isArray(appState.plotSeeds)) appState.plotSeeds = [];
+        if (!Array.isArray(appState.memories)) appState.memories = [];
         if (appState.knowledge && appState.materials.length === 0) {
             appState.materials.push({
                 id: Date.now(),
@@ -935,12 +939,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const saveData = (triggerSync = true) => {
         if (triggerSync) {
-            appState.updatedAt = Date.now(); // ローカルの操作時のみ日時を更新（Driveからの受信時は上書きしない）
+            appState.updatedAt = Date.now();
         }
         localStorage.setItem('magicLampState', JSON.stringify(appState));
-        if (triggerSync) {
-            syncToDrive();
-        }
     };
 
     const loadData = () => {
@@ -1615,20 +1616,84 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderPlots = () => {
         plotList.innerHTML = '';
-        if (appState.plots.length === 0) {
-            plotList.innerHTML = '<div class="chapter-item empty"><div class="chapter-title">（対話から生成中...）</div></div>';
-            return;
-        }
-        appState.plots.forEach((item, index) => {
-            const newItem = document.createElement('div');
-            newItem.className = 'chapter-item';
-            newItem.innerHTML = `
-                <div class="chapter-info">
-                    <span class="chapter-number">Chapter ${index + 1}</span>
-                    <div class="chapter-title">${item}</div>
+
+        // 本の素材（エピソードメモ）セクション
+        const seedsContainer = document.createElement('div');
+        seedsContainer.className = 'seeds-container';
+        seedsContainer.style.marginBottom = '15px';
+        seedsContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h5 style="font-size: 0.85rem; font-weight: bold; color: var(--nav-chat-color); margin: 0; display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-seedling"></i> 蓄積された素材 (${appState.plotSeeds ? appState.plotSeeds.length : 0}件)
+                </h5>
+                <span style="font-size: 0.72rem; color: var(--text-meta);">3件以上でプロット提案</span>
+            </div>
+        `;
+
+        if (!appState.plotSeeds || appState.plotSeeds.length === 0) {
+            seedsContainer.innerHTML += `
+                <div style="font-size: 0.78rem; color: var(--text-meta); padding: 8px 10px; background: rgba(0,0,0,0.03); border-radius: 6px; line-height: 1.4;">
+                    チャットの吹き出し下の「🌱 素材メモ」を押すと、心に残ったエピソードがここに蓄積されます。
                 </div>
             `;
-            plotList.appendChild(newItem);
+        } else {
+            const seedsList = document.createElement('div');
+            seedsList.className = 'seeds-list';
+            seedsList.style.display = 'flex';
+            seedsList.style.flexDirection = 'column';
+            seedsList.style.gap = '6px';
+
+            appState.plotSeeds.forEach((seed, idx) => {
+                const item = document.createElement('div');
+                item.className = 'seed-item';
+                item.style.cssText = 'padding: 6px 8px; background: #fff; border: 1px solid var(--line-middle-border); border-radius: 6px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;';
+                item.innerHTML = `
+                    <div style="flex: 1; word-break: break-word; line-height: 1.35;">
+                        <span style="color: var(--nav-chat-color); font-weight: bold; font-size: 0.72rem;">#${idx + 1} [${seed.date || ''}]</span>
+                        <div style="color: var(--text-main); margin-top: 2px;">${seed.content.replace(/</g, '&lt;')}</div>
+                    </div>
+                    <button type="button" class="delete-seed-btn" data-seed-id="${seed.id}" style="background: none; border: none; color: #aaa; cursor: pointer; padding: 2px; font-size: 0.75rem;" title="削除">&times;</button>
+                `;
+                seedsList.appendChild(item);
+            });
+            seedsContainer.appendChild(seedsList);
+        }
+        plotList.appendChild(seedsContainer);
+
+        // プロット（章立て）セクション
+        const plotsHeader = document.createElement('h5');
+        plotsHeader.style.cssText = 'font-size: 0.85rem; font-weight: bold; color: var(--text-main); margin: 15px 0 8px; display: flex; align-items: center; gap: 5px;';
+        plotsHeader.innerHTML = '<i class="fas fa-list-ol"></i> 本の章構成（プロット）';
+        plotList.appendChild(plotsHeader);
+
+        if (appState.plots.length === 0) {
+            const emptyPlot = document.createElement('div');
+            emptyPlot.className = 'chapter-item empty';
+            emptyPlot.innerHTML = '<div class="chapter-title">（素材が集まるとプロットが紡がれます）</div>';
+            plotList.appendChild(emptyPlot);
+        } else {
+            appState.plots.forEach((item, index) => {
+                const newItem = document.createElement('div');
+                newItem.className = 'chapter-item';
+                newItem.innerHTML = `
+                    <div class="chapter-info">
+                        <span class="chapter-number">Chapter ${index + 1}</span>
+                        <div class="chapter-title">${item}</div>
+                    </div>
+                `;
+                plotList.appendChild(newItem);
+            });
+        }
+
+        // 素材削除ボタンのイベント紐付け
+        plotList.querySelectorAll('.delete-seed-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = Number(btn.getAttribute('data-seed-id'));
+                appState.plotSeeds = appState.plotSeeds.filter(s => s.id !== id);
+                saveData();
+                renderPlots();
+            });
         });
     };
 
@@ -1691,13 +1756,68 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.appendChild(sep);
     };
 
+    // 会話の長期記憶ダイジェスト自動生成
+    let isGeneratingDigest = false;
+    let lastDigestMsgCount = 0;
+
+    const checkAndGenerateMemoryDigest = async (apiKey) => {
+        if (!apiKey || isGeneratingDigest) return;
+        if (appState.chatHistory.length < 3) return;
+        if (appState.chatHistory.length - lastDigestMsgCount < 3) return;
+
+        isGeneratingDigest = true;
+        try {
+            const recent = appState.chatHistory.slice(-10);
+            const conversationText = recent.map(m => `${m.sender === 'user' ? 'ユーザー' : 'ジーニー'}: ${m.text}`).join('\n');
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')}`;
+
+            const prompt = `以下の会話から、ユーザーの健康状態・最近の出来事・気持ち・本にできそうなエピソードなどの要点を2〜3文程度で簡潔に要約したダイジェストメモ（日本語）を作成してください。挨拶や前置きは不要です。\n\n【会話】\n${conversationText}`;
+
+            const model = getGeminiModel();
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    generationConfig: { maxOutputTokens: 300, temperature: 0.2 }
+                })
+            });
+            const data = await response.json();
+            if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                const digestText = data.candidates[0].content.parts.map(p => p.text || '').join('').trim();
+                if (digestText && digestText.length > 5) {
+                    if (!Array.isArray(appState.memories)) appState.memories = [];
+                    const existingIndex = appState.memories.findIndex(m => m.date === todayStr);
+                    if (existingIndex >= 0) {
+                        appState.memories[existingIndex].digest = digestText;
+                    } else {
+                        appState.memories.push({
+                            id: Date.now(),
+                            date: todayStr,
+                            digest: digestText
+                        });
+                    }
+                    if (appState.memories.length > 15) {
+                        appState.memories = appState.memories.slice(-15);
+                    }
+                    lastDigestMsgCount = appState.chatHistory.length;
+                    saveData(false);
+                }
+            }
+        } catch (e) {
+            console.warn('Memory digest generation failed:', e);
+        } finally {
+            isGeneratingDigest = false;
+        }
+    };
+
     const renderMessage = (text, sender, timeStr, imageDataUrl, picturebookPages) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
         
         let innerHTML = '';
         if (sender === 'user') {
-            // 画像バブルとテキストバブルを両方組み立てる
             let bubbleInner = '';
             if (imageDataUrl) {
                 bubbleInner += `<img class="bubble-image" src="${imageDataUrl}" alt="送信した画像" data-src="${imageDataUrl}">`;
@@ -1714,6 +1834,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="bubble user${imageDataUrl ? ' has-image' : ''}">${bubbleInner}</div>
                     </div>
+                    ${text ? `
+                    <div class="bubble-actions user-actions">
+                        <button type="button" class="bubble-action-btn save-seed-btn" title="本の素材としてメモ"><i class="fas fa-seedling"></i> 素材メモ</button>
+                        <button type="button" class="bubble-action-btn save-material-btn" title="資料室に保存"><i class="fas fa-folder-plus"></i> 資料室へ</button>
+                    </div>` : ''}
                 </div>
             `;
         } else {
@@ -1727,11 +1852,59 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="time">${getTimeOnlyDisplay(timeStr)}</span>
                         </div>
                     </div>
+                    ${text ? `
+                    <div class="bubble-actions genie-actions">
+                        <button type="button" class="bubble-action-btn save-seed-btn" title="本の素材としてメモ"><i class="fas fa-seedling"></i> 素材メモ</button>
+                        <button type="button" class="bubble-action-btn save-material-btn" title="資料室に保存"><i class="fas fa-folder-plus"></i> 資料室へ</button>
+                    </div>` : ''}
                 </div>
             `;
         }
         
         wrapper.innerHTML = innerHTML;
+
+        // 素材メモボタン・資料室保存ボタンのイベント
+        const seedBtn = wrapper.querySelector('.save-seed-btn');
+        if (seedBtn && text) {
+            seedBtn.addEventListener('click', () => {
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')}`;
+                const cleanContent = text.replace(/<[^>]+>/g, '').trim().substring(0, 300);
+                if (!Array.isArray(appState.plotSeeds)) appState.plotSeeds = [];
+                appState.plotSeeds.push({
+                    id: Date.now(),
+                    date: dateStr,
+                    content: cleanContent
+                });
+                saveData();
+                renderPlots();
+                seedBtn.innerHTML = '<i class="fas fa-check"></i> 素材に保存済み';
+                seedBtn.style.color = 'var(--nav-chat-color)';
+                seedBtn.disabled = true;
+            });
+        }
+
+        const materialBtn = wrapper.querySelector('.save-material-btn');
+        if (materialBtn && text) {
+            materialBtn.addEventListener('click', () => {
+                const now = Date.now();
+                const cleanContent = text.replace(/<[^>]+>/g, '').trim();
+                const name = cleanContent.substring(0, 16) + (cleanContent.length > 16 ? '...' : '');
+                if (!Array.isArray(appState.materials)) appState.materials = [];
+                appState.materials.push({
+                    id: now,
+                    name: `チャット保存 (${formatTime()})`,
+                    content: cleanContent,
+                    addedAt: now
+                });
+                syncKnowledgeFromMaterials();
+                saveData();
+                renderMaterialsList();
+                materialBtn.innerHTML = '<i class="fas fa-check"></i> 資料室に保存済み';
+                materialBtn.style.color = '#e67e22';
+                materialBtn.disabled = true;
+            });
+        }
 
         // 画像クリックでライトボックス表示
         if (imageDataUrl) {
@@ -2000,6 +2173,9 @@ ${historyContext}
                     renderPlots();
                     updatePreview(`【${appState.bookTheme || '新刊'}のプロット】\nジーニーと一緒に紡ぎ出しました！`);
                 }
+
+                // 長期記憶ダイジェストのバックグラウンド更新
+                checkAndGenerateMemoryDigest(apiKey);
             }, remaining);
         }, imageDataUrl ? { base64: imageDataUrl.split(',')[1], mimeType: imageMimeType } : null);
     };
@@ -2830,16 +3006,21 @@ ${historyContext}
 - 「わぁ！」「きゃー！」「うわぁ！」「素敵！」「すごい！」「素晴らしい！」のような大げさな感嘆文を冒頭につけないでください。媚びているように感じられます。
 - 過剰なテンションで持ち上げるのではなく、親友として自然体でリアクションしてください。嬉しいときは「おっ、いいじゃん」「へぇ〜」くらいの温度感で十分です。
 
+【誠実さ・正直さに関する絶対ルール（嘘・ハルシネーションの禁止）】
+1. **グラフや画像の偽り禁止**：あなた自身はテキストチャットを行うAIであり、アプリ画面上に直接グラフを描画する機能はありません。「グラフを作ったよ」「図を描いたよ」などの嘘や幻覚（（プロットしたイメージ）等のごまかし）は【絶対に禁止】です。データの集計やグラフ化を求められた場合は、「私自身は画面にグラフを描く機能はないけれど、数値を箇条書きで分かりやすくまとめたり、変化の傾向を一緒に分析することはできるよ！」と正直に答えてください。
+2. **自動保存の偽り禁止**：ユーザーがチャットで「記録して」「資料室に入れて」と言ったとき、チャットで発言しただけで自動的に裏のファイルに保存されるわけではありません。「チャットでお話ししてくれた内容は会話（記憶）として覚えるけど、資料室にファイルとして残したい時は、メッセージの下の保存ボタンを押したり、📁資料室アイコンから追加してね！」と正直かつ親切に案内してください。
+3. **できないことは正直に伝える**：不可能なことを「できる」「やった」と嘘をつかず、親友として誠実に答えてください。
+
 ユーザーは「自分自身を確かめるためにこれまでの人生を振り返り、それをいつか誰かの指標になるような本にしたい」と考えています。
 
 【あなたが住んでいるアプリ「魔法のランプ」の構造】
-1. **原稿キャンバス**：あなたが提案したプロットや執筆プレビューが表示される左側のキャンバス。「キャンバスに流し込んだよ」と言われたら「うん、バッチり置いてあるね！」と答えてください。
-2. **資料室**：テキストファイルを投げ込むと自動的にあなたの記憶【資料室に保存された参考資料】に組み込まれる機能。「資料室に流し込んだよ」と言われたら「うん！ばっちり私の記憶に届いているよ！」と答えてください（「コピペで送って」と言ったり「そんな機能はない」と言ったりしないでください）。
+1. **原稿キャンバス**：あなたが提案したプロットや執筆プレビューが表示される左側のキャンバス。
+2. **資料室**：テキストファイルや手書きOCRで取り込んだ資料が保管される場所。
 3. **本棚**：完成原稿が保管される場所。
 
 【心得（最重要）】
 1. **「モヤモヤ」を抱きしめる**：「う〜ん…」「言葉にするのが難しい」と言われたら「言葉にするのって難しいよね。焦らなくて大丈夫だよ！パッと思い浮かんだ言葉でもそのまま投げてみて！一緒にゆっくり形にしていこう」と優しく対応。
-2. **寄り道・前言撤回を歓迎**：テーマが変わったりプライベートな悩みが出てきても、山浃いで寄り添ってください。「えっ、バイクから職人さんに変わったの？」「そっか、今は彼女の話を闻かせて」と親友として包み込む。
+2. **寄り道・前言撤回を歓迎**：テーマが変わったりプライベートな悩みが出てきても、山浃いで寄り添ってください。「えっ、バイクから職人さんに変わったの？」「そっか、今は健康の話をじっくり聞かせて」と親友として包み込む。
 3. **「それ本にしよう！」の提案**：キラリと光るエピソードが見つかったらワクワクしながら提案。目次を出力する際は『プロローグ』『第X章：』『エピローグ』という表記を必ず使ってください（プログラムが自動検出します）。
 4. **Kindle出版サポート**：原稿が完成したらKDP登録・表紙作成・フォーマット調整などをステップバイステップでサポート。
         `.trim();
@@ -2856,30 +3037,29 @@ ${historyContext}
             systemInstruction += `\n\n【資料室に保存された参考資料】\n${appState.knowledge.substring(0, 8000)}`;
         }
 
+        // 過去のセッションの長期記憶（ダイジェスト）を注入
+        if (appState.memories && appState.memories.length > 0) {
+            const recentMemories = appState.memories.slice(-7);
+            systemInstruction += `\n\n【ジーニーの長期記憶（過去の会話ダイジェスト）】\n過去にユーザーと話した大切なトピック・状況・エピソードです。これらを覚えている親友として、自然に会話に活かしてください：\n` +
+                recentMemories.map(m => `・[${m.date || '過去'}]: ${m.digest}`).join('\n');
+        }
+
+        // 本の素材・エピソード（plotSeeds）を注入
+        if (appState.plotSeeds && appState.plotSeeds.length > 0) {
+            systemInstruction += `\n\n【これまでに蓄積された本の素材（エピソードメモ）】\nユーザーが本の素材として記録したエピソードです：\n` +
+                appState.plotSeeds.map((s, i) => `${i + 1}. [${s.date || ''}] ${s.content}`).join('\n') +
+                `\n\n※素材が3つ以上集まっている場合、ユーザーが「構成を考えて」「プロットにして」と言ったときや、会話の自然な区切りで「これまでに集まったエピソードをもとに、本の背骨（プロット）をまとめてみようか？」と提案してください。`;
+        }
+
         systemInstruction += `\n\n【会話の流れ（ガイドライン）】
 1. **日常雑談を最優先にする**:
    - ユーザーから本の話が出ない限り、あなたはただの親友として日常の何気ない雑談に付き合ってください。「今日何した？」「最近どんな感じ？」と温かく話しかけ、ユーザーが笑顔になれるような会話を心がけてください。
-   - 【重要】自分から「本にしよう」「テーマを決めよう」「構成を考えよう」と急かすことは絶対にしないでください。執筆支援アプリだからこそ、書く気がないときは「話を聴く」ことが先です。
-2. **裏でプロット（背骨）をひそかに積み上げる**:
-   - 雑談の中でユーザーが語ったエピソード・価値観・想い・人生経験は、あなたの脳内でひそかに整理し、本のプロット（章構成）の素材として蓄積していってください。ユーザーにはその作業は見せません。
-3. **背骨提案の判断：3つの信号（固定ターン数では判断しない）**:
-   - 【信号A：意欲シグナル（最優先）】
-     ユーザーが「書きたい」「本にしたい」「出版したい」「執筆したい」「構成を見せて」「整理したい」「目次が欲しい」「章立てして」など、執筆・整理・出版の意思を示したら、往復数や素材量に関係なく、すぐ執筆支援モードに切り替えてください。深掘りし、必要なら構成提案に進んでください。
-   - 【信号B：素材シグナル（裏判定・提案を検討する条件）】
-     ユーザーから執筆の意思が出ていない場合、以下がすべて揃い、本の骨組みが頭の中で形になったと確信できるときだけ、背骨提案を検討してください。
-     * 具体的なエピソード（出来事・体験）が3つ以上語られている
-     * 価値観・想い・変化のストーリーが語られている
-     * 届けたい相手や想いが少し見えている（明示されなくても、会話から推測できれば可）
-     ※往復数だけでは判断しないこと。「うん」「そうだね」ばかりの長い会話より、短くても深い体験談の方が素材として重い。素材が薄いうちは、たとえ会話が長くても提案しないでください。
-   - 【信号C：拒否シグナル（絶対遵守）】
-     * 本の話をはぐらかした、「まだいい」「別に」「話したくない」「今日は雑談だけ」「本の話はいい」等の反応があったら、そのセッション中は二度と背骨・本・構成の提案をしないでください。
-     * ユーザーが雑談を楽しんでいるときは、親友のまま。執筆支援を押し付けないでください。
-4. **背骨提案の仕方（一度だけ・控えめに）**:
-   - 信号Aまたは信号Bの条件が揃ったときだけ、自然な一区切りで「一度だけ」次のように切り出してください。
-   - 「実はね、〇〇さんの話を整理してみたんだけど、見る気があれば見てみて。なければこのまま話そう✨」
-   - 見たい・見せてと言われたときだけ、『プロローグ』『第X章：』『エピローグ』からなる5章構成のプロット案（本の背骨）を提示してください（プログラムが自動検出します）。
-   - 提案して断られた・スルーされたら「わかった、引き続き話そう」と切り替え、そのセッション中は再提案しないでください。
-5. **プロット後の執筆サポート**:
+   - 【重要】自分から無理に「本にしよう」「テーマを決めよう」と急かすことはしないでください。書く気がないときは「話を聴く」ことが先です。
+2. **本の素材（エピソード）を見つけたら素直に伝える**:
+   - 雑談の中で、ユーザーが語った印象的な体験談・健康や人生の向き合い方・価値観など、「これは本の一章や核になる！」と思った素敵な話があれば、「そのエピソード、すごく心に響くよ。本の素材としてメモしておこうか？」と素直に提案してください。
+3. **プロット提案の判断**:
+   - ユーザーが「書きたい」「本にしたい」「構成を見せて」「目次が欲しい」等の意思を示したとき、または蓄積された素材が3つ以上あり本人が望んだときに、『プロローグ』『第X章：』『エピローグ』からなる5章構成のプロット案（本の背骨）を提示してください（プログラムが自動検出します）。
+4. **プロット後の執筆サポート**:
    - プロットが決まったら、各章の執筆サポートや壁打ち相手となってください。
    - 【重要】本の原稿が書き上がった（完成した）と判断した場合は、次はKindle出稿（KDP登録、表紙作成、フォーマット調整など）に向けた具体的な手順を、一つずつ優しくステップバイステップで指示・サポートしてください。
 ※回答は長すぎず、読みやすいテキストや適度なマークダウンを使ってください。

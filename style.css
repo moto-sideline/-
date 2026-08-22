@@ -1942,3 +1942,64 @@ body.dark-theme .pwa-desc {
 .pb-theme-chip:active {
     transform: scale(0.96);
 }
+
+/* --- Bubble Actions (素材メモ・資料室保存) --- */
+.bubble-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    align-items: center;
+}
+
+.user-actions {
+    justify-content: flex-end;
+}
+
+.genie-actions {
+    justify-content: flex-start;
+}
+
+.bubble-action-btn {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 12px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    color: var(--text-meta, #777);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.bubble-action-btn:hover {
+    background: var(--bg-hover, #f5f5f5);
+    color: var(--text-main, #333);
+    border-color: var(--nav-chat-color, #007bff);
+}
+
+.save-seed-btn:hover {
+    color: #27ae60;
+    border-color: #27ae60;
+}
+
+.save-material-btn:hover {
+    color: #e67e22;
+    border-color: #e67e22;
+}
+
+.bubble-action-btn:disabled {
+    cursor: default;
+    opacity: 0.85;
+}
+
+/* --- Seeds Container in Canvas --- */
+.seeds-container {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--line-middle-border, #eef0f3);
+    border-radius: 8px;
+    padding: 10px;
+}
+
