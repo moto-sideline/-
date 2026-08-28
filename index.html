@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
     <!-- LINE内ブラウザ対策：自動的に外部ブラウザ（Safari/Chrome）で開くようにリダイレクト -->
@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- External Assets -->
-    <link rel="stylesheet" href="style.css?v=71">
+    <link rel="stylesheet" href="style.css?v=72">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
@@ -42,20 +42,18 @@
     <div class="app-container">
         
         <!-- 1列目: 左端の細いナビゲーションバー -->
-        <nav class="line-nav">
+                <nav class="line-nav">
             <div class="nav-top">
-                <div class="nav-icon" id="navManual" title="取扱説明書"><i class="fas fa-book-open"></i></div>
-                <div class="nav-icon active" id="navChat" title="チャット"><i class="fas fa-comment-dots"></i></div>
-                <div class="nav-icon" id="navRecord" title="原稿キャンバス"><i class="fas fa-feather-alt"></i></div>
-                <div class="nav-icon" id="navPicturebook" title="絵本モード"><i class="fas fa-book-open"></i></div>
-                <div class="nav-icon" id="navArchive" title="資料室"><i class="fas fa-folder-open"></i></div>
-                <div class="nav-icon" id="navBookshelf" title="本棚（出来上がった作品）"><i class="fas fa-book"></i></div>
-                <div class="nav-icon" id="navLine" title="サイドライン出版 公式LINE"><svg class="nav-line-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="100" height="100" rx="20" fill="#00C300"/><path d="M50 18C28 18 10 32 10 49c0 11 7 21 18 27l-3 13 14-7c3 1 7 1 11 1c22 0 40-14 40-31S72 18 50 18z" fill="white"/><text x="50" y="55" font-family="Arial,sans-serif" font-weight="bold" font-size="20" fill="#00C300" text-anchor="middle">LINE</text></svg></div>
+                <div class="nav-icon active" id="navChat" title="トーク"><i class="fas fa-comment-dots"></i><span class="nav-label">トーク</span></div>
+                <div class="nav-icon" id="navRecord" title="キャンバス"><i class="fas fa-feather-alt"></i><span class="nav-label">キャンバス</span></div>
+                <div class="nav-icon" id="navArchive" title="資料室"><i class="fas fa-folder-open"></i><span class="nav-label">資料室</span></div>
+                <div class="nav-icon" id="navBookshelf" title="本棚"><i class="fas fa-book"></i><span class="nav-label">本棚</span></div>
+                <div class="nav-icon" id="navSeeds" title="素材メモ"><i class="fas fa-seedling"></i><span class="nav-label">素材メモ</span></div>
             </div>
             <div class="nav-bottom">
-                <div class="nav-icon" id="themeToggleBtn" title="テーマ切替"><i class="fas fa-moon"></i></div>
-                <div class="nav-icon" id="settingsBtn" title="設定 (API)"><i class="fas fa-cog"></i></div>
-                <div class="nav-version" id="navVersion">v0.9.45</div>
+                <div class="nav-icon" id="themeToggleBtn" title="テーマ切替"><i class="fas fa-moon"></i><span class="nav-label">テーマ</span></div>
+                <div class="nav-icon" id="settingsBtn" title="設定"><i class="fas fa-cog"></i><span class="nav-label">設定</span></div>
+                <div class="nav-version" id="navVersion">v0.9.51</div>
             </div>
         </nav>
 
@@ -90,34 +88,7 @@
             </div>
 
             <!-- 絵本モードパネル -->
-            <div class="middle-content hidden" id="picturebookPanel">
-                <div class="picturebook-header">
-                    <span class="pb-badge">🎨 絵本モード</span>
-                    <button class="pb-generate-btn" id="pbGenerateBtn" type="button">
-                        <i class="fas fa-magic"></i> ジーニーに絵本を作ってもらう
-                    </button>
-                </div>
-                <div class="pb-theme-bar">
-                    <span class="pb-theme-label">ワンタップ作成:</span>
-                    <div class="pb-theme-chips">
-                        <button type="button" class="pb-theme-chip" data-theme="森の小さなうさぎと虹の冒険">🐰 森のうさぎ</button>
-                        <button type="button" class="pb-theme-chip" data-theme="空飛ぶこねこと星の旅">🚀 宇宙のネコ</button>
-                        <button type="button" class="pb-theme-chip" data-theme="海のお城と優しいクジラ">🐬 海のクジラ</button>
-                        <button type="button" class="pb-theme-chip" data-theme="魔法の森の小さなお菓子屋さん">🍰 まほうの森</button>
-                    </div>
-                </div>
-                <div id="picturebookPages" class="picturebook-pages">
-                    <div class="pb-empty-state">
-                        <div class="pb-empty-icon">📖</div>
-                        <p>ジーニーに<strong>絵本を作って！</strong>と話しかけてみよう</p>
-                        <p class="pb-empty-sub">テーマや主人公を伝えると、絵つきの絵本を作ってくれるよ✨</p>
-                    </div>
-                </div>
-                <button class="pb-export-btn hidden" id="pbExportBtn" type="button">
-                    <i class="fas fa-download"></i> 絵本を保存する
-                </button>
-            </div>
-        </section>
+            </section>
 
         <!-- 3列目: 右側のチャット画面 -->
         <main class="line-chat">
@@ -488,7 +459,7 @@
         <img id="imageLightboxImg" src="" alt="拡大表示">
     </div>
 
-    <script src="version.js?v=71"></script>
-    <script src="script.js?v=71"></script>
+    <script src="version.js?v=72"></script>
+    <script src="script.js?v=72"></script>
 </body>
 </html>
