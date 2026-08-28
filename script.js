@@ -2211,16 +2211,8 @@ ${historyContext}
                 if (typingIndicator.parentNode) typingIndicator.parentNode.removeChild(typingIndicator);
 
                 // 絵本は1回だけパースして、チャットとキャンバスで同じ imageUrl を共有
-                const pbData = extractPicturebookFromReply(reply);
-                if (pbData) {
-                    renderPicturebook(pbData.pages, pbData.title);
-                }
-                addMessage(reply, 'genie', null, pbData ? pbData.pages : null);
-                if (pbData) {
-                    openPicturebookCanvas();
-                    initAllPbImagesOrdered();
-                }
-
+                // ジーニーからの返答を表示
+                addMessage(reply, 'genie');
                 // プロットを回答から自動抽出して左キャンバスに反映
                 const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
                 if (plotLines.length >= 3) {
