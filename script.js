@@ -1976,9 +1976,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const openBtn = wrapper.querySelector('.chat-open-pb-btn');
         if (openBtn) {
             openBtn.addEventListener('click', () => {
-                if (typeof openPicturebookCanvas === 'function') {
-                    openPicturebookCanvas();
-                }
+                
             });
         }
 
