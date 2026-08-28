@@ -1,3 +1,16 @@
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    try {
+        var errDiv = document.getElementById('debugErrorBanner');
+        if (!errDiv) {
+            errDiv = document.createElement('div');
+            errDiv.id = 'debugErrorBanner';
+            errDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#e74c3c;color:#fff;padding:12px 16px;z-index:999999;font-size:14px;font-weight:bold;word-break:break-all;box-shadow:0 4px 15px rgba(0,0,0,0.4);display:flex;justify-content:space-between;align-items:center;';
+            document.body.appendChild(errDiv);
+        }
+        errDiv.innerHTML = '<span>⚠️ エラー発生: ' + msg + ' (行: ' + lineNo + ')</span><button onclick=\"this.parentElement.remove()\" style=\"background:#fff;color:#e74c3c;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-weight:bold;\">閉じる</button>';
+    } catch(e){}
+    return false;
+};
 document.addEventListener('DOMContentLoaded', () => {
     // --- Selectors ---
     const chatMessages = document.getElementById('chatMessages');
@@ -3286,4 +3299,35 @@ B. **ジーニー自身の自己開示（返報性の原則）**：
 
     // ===================================================================
     // ===================================================================
+
+    /** ナビ・パネル切り替え共通関数 */
+    const switchToPanel = (mode) => {
+        const normalPanel = document.getElementById('normalCanvasPanel');
+        const navRecord = document.getElementById('navRecord');
+        const navSeeds = document.getElementById('navSeeds');
+        const title = document.getElementById('canvasModeTitle');
+        const middleCanvas = document.getElementById('middleCanvas');
+
+        if (mode === 'canvas' || mode === 'seeds') {
+            if (normalPanel) normalPanel.classList.remove('hidden');
+            if (navRecord) navRecord.classList.add('active');
+            if (middleCanvas) {
+                middleCanvas.classList.remove('hidden');
+                middleCanvas.classList.add('active');
+            }
+            if (title) title.textContent = '原稿キャンバス';
+        }
+    };
+
+    // ===================================================================
+    // Load Initial Data & App Startup
+    // ===================================================================
+    loadData();
+    initPwaInstallation();
+
+    // バックグラウンドで利用可能な最適なGeminiモデルを自動検出・更新
+    const savedApiKey = localStorage.getItem('geminiApiKey');
+    if (savedApiKey && savedApiKey.trim()) {
+        discoverAndSaveBestGeminiModel(savedApiKey.trim());
+    }
 });
