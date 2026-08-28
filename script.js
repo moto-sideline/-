@@ -1842,10 +1842,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-        const formatGenieReplyHtml = (rawText) => {
-        if (!rawText) return '';
-        return formatMarkdown(rawText);
+            const escapeHtml = (str) => {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     };
+
+    const formatGenieReplyHtml = (rawText) => {
+        if (!rawText) return '';
+        let escaped = escapeHtml(rawText);
+        // 太字 **text**
+        escaped = escaped.replace(/\*\*(.+?)\*\*/g, '<strong></strong>');
+        // URL リンク化
+        escaped = escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: underline;"></a>');
+        // 改行
+        escaped = escaped.replace(/\n/g, '<br>');
+        return escaped;
+    };;
     const renderMessage = (text, sender, timeStr, imageDataUrl, picturebookPages) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
