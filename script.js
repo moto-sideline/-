@@ -1628,10 +1628,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         renderPlots();
         if (appState.preview) previewArea.innerHTML = appState.preview;
-        if (appState.picturebook && appState.picturebook.pages && appState.picturebook.pages.length > 0) {
-            renderPicturebook(appState.picturebook.pages, appState.picturebook.title);
-        }
-        initAllPbImagesOrdered();
+        
     };
 
     const renderPlots = () => {
@@ -1832,6 +1829,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+        const formatGenieReplyHtml = (rawText) => {
+        if (!rawText) return '';
+        return formatMarkdown(rawText);
+    };
     const renderMessage = (text, sender, timeStr, imageDataUrl, picturebookPages) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
