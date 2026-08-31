@@ -2520,15 +2520,17 @@ ${historyContext}
 
     if (navSeeds) navSeeds.addEventListener('click', () => {
         // キャンバスを開いて素材メモエリアへスクロール
-        if (window.innerWidth > 750 && middleCanvas.classList.contains('hidden')) {
+        if (window.innerWidth <= 750) {
+            middleCanvas.classList.add('active');
+        } else {
             middleCanvas.classList.remove('hidden');
-            updateToggleCanvasIcon && updateToggleCanvasIcon();
         }
+        updateToggleCanvasIcon();
+        setNavActive('navSeeds');
         setTimeout(() => {
             const seedsEl = document.querySelector('.seeds-container');
             if (seedsEl) seedsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 120);
-        updateNavActive(navSeeds);
     });
 
     if (navSync) navSync.addEventListener('click', openSyncModal);
