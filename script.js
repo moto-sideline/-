@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navRecord = document.getElementById('navRecord');
     const navArchive = document.getElementById('navArchive');
     const navBookshelf = document.getElementById('navBookshelf');
+    const navSeeds = document.getElementById('navSeeds');
     const navSync = document.getElementById('navSync');
     const navLine = document.getElementById('navLine');
     const manualModal = document.getElementById('manualModal');
@@ -107,23 +108,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Gemini モデル管理（ListModels APIによる自動検出 + 優先度フォールバック）
     const EXCLUDED_MODELS = new Set([
-        'gemini-2.5-flash',       // 新規ユーザー利用不可
-        'gemini-2.0-flash',       // 廃止
-        'gemini-2.0-flash-lite',  // 廃止
-        'gemini-1.5-flash',       // 廃止
+        'gemini-1.0-pro',
+        'embedding-001',
+        'text-embedding-004',
+        'aqa'
     ]);
 
     const PREFERRED_MODEL_ORDER = [
-        'gemini-2.5-flash-lite',
-        'gemini-2.5-pro',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-1.5-flash',
         'gemini-1.5-flash-8b',
         'gemini-1.5-pro'
     ];
-    const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
+    const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
 
     const getGeminiModel = () => {
         const stored = localStorage.getItem('geminiModel');
-        if (!stored || EXCLUDED_MODELS.has(stored)) {
+        if (!stored || EXCLUDED_MODELS.has(stored) || stored.startsWith('gemini-2.5') || stored.startsWith('gemini-3.')) {
             localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
             return DEFAULT_GEMINI_MODEL;
         }
@@ -131,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 起動時に確実に最速安定モデルに初期化
-    if (EXCLUDED_MODELS.has(localStorage.getItem('geminiModel')) || !localStorage.getItem('geminiModel')) {
+    if (EXCLUDED_MODELS.has(localStorage.getItem('geminiModel')) || !localStorage.getItem('geminiModel') || (localStorage.getItem('geminiModel') || '').startsWith('gemini-2.5') || (localStorage.getItem('geminiModel') || '').startsWith('gemini-3.')) {
         localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
     }
 
@@ -1228,8 +1230,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
             body.classList.add('dark-theme');
-            const icon = themeToggleBtn.querySelector('i');
-            if (icon) icon.className = 'fas fa-sun';
+            if (themeToggleBtn) {
+                const icon = themeToggleBtn.querySelector('i');
+                if (icon) icon.className = 'fas fa-sun';
+            }
         }
     };
 
@@ -1728,18 +1732,28 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Interaction ---
-    userInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
-
-    // ペースト時の高さ自動調整
-    userInput.addEventListener('paste', function() {
-        setTimeout(() => {
+    if (userInput) {
+        userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
-        }, 10);
-    });
+        });
+
+        // ペースト時の高さ自動調整
+        userInput.addEventListener('paste', function() {
+            setTimeout(() => {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            }, 10);
+        });
+
+        // PC向け：Enterキーで送信（Shift+Enterで改行、日本語IME変換中は送信しない）
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+    }
 
     const formatTime = () => {
         const now = new Date();
@@ -2454,9 +2468,9 @@ ${historyContext}
     };
 
     // --- Listeners ---
-
-
-    sendBtn.addEventListener('click', handleSend);
+    if (sendBtn) {
+        sendBtn.addEventListener('click', handleSend);
+    }
 
     const crystallizeBtn = document.querySelector('.crystallize-btn');
     if (crystallizeBtn) {
@@ -2465,17 +2479,19 @@ ${historyContext}
 
     if (toggleCanvasBtn) toggleCanvasBtn.addEventListener('click', toggleCanvasPanel);
 
-    themeToggleBtn.addEventListener('click', () => {
-        body.classList.toggle('dark-theme');
-        const icon = themeToggleBtn.querySelector('i');
-        if (body.classList.contains('dark-theme')) {
-            icon.className = 'fas fa-sun';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            icon.className = 'fas fa-moon';
-            localStorage.setItem('theme', 'light');
-        }
-    });
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            const icon = themeToggleBtn.querySelector('i');
+            if (body.classList.contains('dark-theme')) {
+                if (icon) icon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                if (icon) icon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    }
 
     // --- Modal helpers (settings) ---
     const openApiSettingsModal = () => {
@@ -2740,6 +2756,19 @@ ${historyContext}
     if (navArchive) navArchive.addEventListener('click', openArchiveModal);
 
     if (navBookshelf) navBookshelf.addEventListener('click', openBookshelfModal);
+
+    if (navSeeds) {
+        navSeeds.addEventListener('click', () => {
+            closeAllPanels();
+            middleCanvas.classList.remove('hidden');
+            middleCanvas.classList.add('active');
+            setNavActive('navSeeds');
+            setTimeout(() => {
+                const seedsEl = document.querySelector('.seeds-container');
+                if (seedsEl) seedsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        });
+    }
 
     if (navSync) navSync.addEventListener('click', openSyncModal);
 
