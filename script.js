@@ -1745,14 +1745,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.style.height = (this.scrollHeight) + 'px';
             }, 10);
         });
-
-        // PC向け：Enterキーで送信（Shift+Enterで改行、日本語IME変換中は送信しない）
-        userInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-                e.preventDefault();
-                handleSend();
-            }
-        });
     }
 
     const formatTime = () => {
