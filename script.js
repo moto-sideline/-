@@ -1856,16 +1856,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-            const escapeHtml = (str) => {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    };
-
     const escapeHtml = (str) => {
         if (!str) return '';
         return String(str)
@@ -1883,7 +1873,8 @@ document.addEventListener('DOMContentLoaded', () => {
         escaped = escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: underline;">$1</a>');
         escaped = escaped.replace(/\n/g, '<br>');
         return escaped;
-    };;;
+    };
+
     const renderMessage = (text, sender, timeStr, imageDataUrl, picturebookPages) => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
