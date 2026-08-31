@@ -389,8 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return cleaned;
     };
 
-    const INVALID_NAME_PATTERN = /^(よろしく|おはよう|こんにちは|こんばんは|はじめまして|ジーニー|じーにー|マスター|ご主人様|ねえ|はい|うん|ね|です|ます|ください|かな|のか|とか|から|まで|より|これ|それ|あれ|どれ|なに|なん|か|き|く|け|こ|さ|し|す|せ|そ|た|ち|つ|て|と|な|に|ぬ|ね|の|は|ひ|ふ|へ|ほ|ま|み|む|め|も|や|ゆ|よ|ら|り|る|れ|ろ|わ|を|ん|奥|客|皆|みんな|仕事|今日|明日|昨日|秘密|未定|主人公|キャラクター|キャラ|タイトル|見出し|章|節|本|作品|話|資料|メモ)$/i;
-
     const extractUserNameFromText = (text) => {
         const normalized = text.replace(/\r\n/g, '\n').trim();
 
