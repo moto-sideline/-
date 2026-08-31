@@ -851,28 +851,43 @@ body.dark-theme .ocr-reset-btn:hover {
         left: 0;
         right: 0;
         width: 100%;
-        height: 55px;
+        height: 56px;
         flex-direction: row;
         justify-content: space-between;
-        padding: 0 5px;
+        padding: 0 4px;
         z-index: 300;
         background-color: var(--line-nav-bg);
     }
 
-    .nav-top, .nav-bottom {
+    .nav-top {
         display: flex;
         flex-direction: row;
         align-items: center;
+        flex: 5;
+        justify-content: space-around;
+    }
+
+    .nav-bottom {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        flex: 2;
+        justify-content: space-around;
     }
 
     .nav-version {
         display: none;
     }
 
-    .nav-icon {
-        padding: 10px 5px;
-        width: auto;
-        font-size: 1.2rem;
+    .line-nav .nav-icon {
+        padding: 4px 1px;
+        min-width: 0;
+        flex: 1;
+        font-size: 1.05rem;
+    }
+
+    .line-nav .nav-icon .nav-label {
+        font-size: 9px;
     }
 
     #navLine .nav-line-svg,
@@ -1603,266 +1618,7 @@ body.dark-theme .pwa-desc {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
 }
 
-
-/* ==========================================================================
-   チャット内絵本カード・挿絵ビューア (v0.9.42)
-   ========================================================================== */
-.chat-pb-container {
-    margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-}
-
-.chat-pb-header {
-    background: linear-gradient(135deg, rgba(255, 154, 162, 0.25), rgba(255, 183, 178, 0.25));
-    border: 1px solid rgba(255, 154, 162, 0.4);
-    border-radius: 12px;
-    padding: 10px 14px;
-    text-align: center;
-}
-
-.chat-pb-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #e056fd;
-}
-
-.dark-theme .chat-pb-title {
-    color: #ff9ff3;
-}
-
-.chat-pb-subtitle {
-    font-size: 0.82rem;
-    color: var(--text-muted);
-    margin-top: 2px;
-}
-
-.chat-pb-page-card {
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.chat-pb-page-card:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-}
-
-.chat-pb-page-num {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #ff6b81;
-    text-align: center;
-    margin-bottom: 6px;
-    letter-spacing: 1px;
-}
-
-.chat-pb-image-wrap {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    border-radius: 10px;
-    overflow: hidden;
-    background: linear-gradient(135deg, #fce4ec, #e8f0fe);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-}
-
-.dark-theme .chat-pb-image-wrap {
-    background: linear-gradient(135deg, #2d1b36, #1e293b);
-}
-
-.chat-pb-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    cursor: pointer;
-}
-
-.chat-pb-img-loading {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: #888;
-    font-size: 0.82rem;
-}
-
-.pb-retry-btn {
-    margin-top: 4px;
-    padding: 6px 14px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    background: #ffffff;
-    color: #e67e22;
-    border: 1px solid #f39c12;
-    border-radius: 16px;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    transition: all 0.2s ease;
-}
-
-.pb-retry-btn:hover {
-    background: #f39c12;
-    color: #ffffff;
-}
-
-.chat-pb-page-text {
-    font-size: 0.95rem;
-    line-height: 1.6;
-    color: var(--text-main);
-    padding: 4px 4px 0 4px;
-    word-break: break-word;
-}
-
-.chat-open-pb-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(255, 117, 140, 0.35);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    margin-top: 4px;
-}
-
-.chat-open-pb-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(255, 117, 140, 0.45);
-}
-
-.chat-open-pb-btn:active {
-    transform: scale(0.98);
-}
-
-.pb-theme-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: rgba(255, 117, 140, 0.08);
-    border-bottom: 1px solid var(--border-color);
-    flex-wrap: wrap;
-}
-
-.pb-theme-label {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #ff6b81;
-    white-space: nowrap;
-}
-
-.pb-theme-chips {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.pb-theme-chip {
-    background: var(--bg-primary);
-    border: 1px solid rgba(255, 117, 140, 0.35);
-    color: var(--text-main);
-    padding: 4px 10px;
-    border-radius: 14px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
-}
-
-.pb-theme-chip:hover {
-    background: linear-gradient(135deg, #ff758c, #ff7eb3);
-    color: #fff;
-    border-color: transparent;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(255, 117, 140, 0.3);
-}
-
-.pb-theme-chip:active {
-    transform: scale(0.96);
-}
-
-/* --- Bubble Actions (素材メモ・資料室保存) --- */
-.bubble-actions {
-    display: flex;
-    gap: 6px;
-    margin-top: 4px;
-    align-items: center;
-}
-
-.user-actions {
-    justify-content: flex-end;
-}
-
-.genie-actions {
-    justify-content: flex-start;
-}
-
-.bubble-action-btn {
-    background: var(--bg-card, #ffffff);
-    border: 1px solid var(--border-color, #e0e0e0);
-    border-radius: 12px;
-    padding: 3px 8px;
-    font-size: 0.72rem;
-    color: var(--text-meta, #777);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.bubble-action-btn:hover {
-    background: var(--bg-hover, #f5f5f5);
-    color: var(--text-main, #333);
-    border-color: var(--nav-chat-color, #007bff);
-}
-
-.save-seed-btn:hover {
-    color: #27ae60;
-    border-color: #27ae60;
-}
-
-.save-material-btn:hover {
-    color: #e67e22;
-    border-color: #e67e22;
-}
-
-.bubble-action-btn:disabled {
-    cursor: default;
-    opacity: 0.85;
-}
-
-/* --- Seeds Container in Canvas --- */
-.seeds-container {
-    background: var(--bg-card, #ffffff);
-    border: 1px solid var(--line-middle-border, #eef0f3);
-    border-radius: 8px;
-    padding: 10px;
-}
-
-
-/* ===== ナビゲーション アイコン & ラベル ===== */
+/* ===== ナビゲーション アイコン & 日本語ラベル ===== */
 .line-nav .nav-icon {
     display: flex;
     flex-direction: column;
@@ -1889,5 +1645,59 @@ body.dark-theme .pwa-desc {
     background: rgba(255, 255, 255, 0.08);
 }
 .line-nav .nav-icon.active {
-    color: var(--nav-chat-color);
+    color: var(--nav-chat-color, #6eb5ff);
 }
+
+/* --- Bubble Actions (素材メモ・資料室保存) --- */
+.bubble-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    align-items: center;
+}
+.user-actions {
+    justify-content: flex-end;
+}
+.genie-actions {
+    justify-content: flex-start;
+}
+.bubble-action-btn {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 12px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    color: var(--text-meta, #777);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.bubble-action-btn:hover {
+    background: var(--bg-hover, #f5f5f5);
+    color: var(--text-main, #333);
+    border-color: var(--nav-chat-color, #007bff);
+}
+.save-seed-btn:hover {
+    color: #27ae60;
+    border-color: #27ae60;
+}
+.save-material-btn:hover {
+    color: #e67e22;
+    border-color: #e67e22;
+}
+.bubble-action-btn:disabled {
+    cursor: default;
+    opacity: 0.85;
+}
+
+/* --- Seeds Container in Canvas --- */
+.seeds-container {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--line-middle-border, #eef0f3);
+    border-radius: 8px;
+    padding: 10px;
+}
+
