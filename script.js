@@ -1631,18 +1631,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- Interaction ---
-    userInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
-
-    // ペースト時の高さ自動調整
-    userInput.addEventListener('paste', function() {
-        setTimeout(() => {
+    if (userInput) {
+        userInput.addEventListener('input', function() {
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
-        }, 10);
-    });
+        });
+
+        // ペースト時の高さ自動調整
+        userInput.addEventListener('paste', function() {
+            setTimeout(() => {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            }, 10);
+        });
+    }
 
     const formatTime = () => {
         const now = new Date();
@@ -2229,8 +2231,7 @@ ${historyContext}
 
     // --- Listeners ---
 
-
-    sendBtn.addEventListener('click', handleSend);
+    if (sendBtn) sendBtn.addEventListener('click', handleSend);
 
     const crystallizeBtn = document.querySelector('.crystallize-btn');
     if (crystallizeBtn) {
@@ -2239,17 +2240,19 @@ ${historyContext}
 
     if (toggleCanvasBtn) toggleCanvasBtn.addEventListener('click', toggleCanvasPanel);
 
-    themeToggleBtn.addEventListener('click', () => {
-        body.classList.toggle('dark-theme');
-        const icon = themeToggleBtn.querySelector('i');
-        if (body.classList.contains('dark-theme')) {
-            icon.className = 'fas fa-sun';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            icon.className = 'fas fa-moon';
-            localStorage.setItem('theme', 'light');
-        }
-    });
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-theme');
+            const icon = themeToggleBtn.querySelector('i');
+            if (body.classList.contains('dark-theme')) {
+                if (icon) icon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                if (icon) icon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    }
 
     // --- Modal helpers (settings) ---
     const openApiSettingsModal = () => {
