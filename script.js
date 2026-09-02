@@ -365,8 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!text) return '';
         let cleaned = text.trim();
 
-        // 1. 冒頭の感嘆詞・枕詞を強力除去
-        cleaned = cleaned.replace(/^(?:わぁ|わーい|わー|きゃー|うわぁ|わぁい|お|おっ|あ|あぁ|やあ|やぁ|ハーイ|イェイ|ひゃー|へぇ|へえ)[！!♪〜~、,，\s]*/gi, '').trim();
+        // 1. 冒頭の感嘆詞・枕詞を強力除去（「おはよう」「ありがとう」等の頭文字が削られないよう区切り記号[+]を必須化）
+        cleaned = cleaned.replace(/^(?:わぁ|わーい|わー|きゃー|うわぁ|わぁい|ハーイ|イェイ|ひゃー|へぇ|へえ|おっと|おっ|あぁ|やあ|やぁ|えっ|お|あ)[！!♪〜~、,，\s]+/gi, '').trim();
 
         // 2. 挨拶直後の返答の場合は、冒頭の重複再会挨拶（「おかえり」「おはよう」等）をカット
         if (isReplyAfterGreeting) {
