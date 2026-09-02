@@ -850,13 +850,18 @@ body.dark-theme .ocr-reset-btn:hover {
         bottom: 0;
         left: 0;
         right: 0;
-        width: 100%;
+        width: 100vw;
+        max-width: 100%;
         height: 56px;
         flex-direction: row;
         justify-content: space-between;
-        padding: 0 4px;
+        align-items: stretch;
+        padding: 0 2px;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-sizing: border-box;
         z-index: 300;
         background-color: var(--line-nav-bg);
+        overflow: hidden;
     }
 
     .nav-top {
@@ -865,6 +870,7 @@ body.dark-theme .ocr-reset-btn:hover {
         align-items: center;
         flex: 5;
         justify-content: space-around;
+        min-width: 0;
     }
 
     .nav-bottom {
@@ -873,21 +879,29 @@ body.dark-theme .ocr-reset-btn:hover {
         align-items: center;
         flex: 2;
         justify-content: space-around;
+        min-width: 0;
     }
 
     .nav-version {
-        display: none;
+        display: none !important;
     }
 
     .line-nav .nav-icon {
-        padding: 4px 1px;
-        min-width: 0;
-        flex: 1;
-        font-size: 1.05rem;
+        padding: 4px 1px !important;
+        min-width: 0 !important;
+        width: 100% !important;
+        flex: 1 !important;
+        font-size: 1rem !important;
+        gap: 2px !important;
+    }
+
+    .line-nav .nav-icon i {
+        font-size: 1.05rem !important;
     }
 
     .line-nav .nav-icon .nav-label {
-        font-size: 9px;
+        font-size: 8.5px !important;
+        letter-spacing: -0.5px;
     }
 
     #navLine .nav-line-svg,
@@ -1629,7 +1643,11 @@ body.dark-theme .pwa-desc {
     cursor: pointer;
     border-radius: 8px;
     transition: background 0.2s, color 0.2s, transform 0.1s;
-    min-width: 48px;
+}
+@media (min-width: 751px) {
+    .line-nav .nav-icon {
+        min-width: 48px;
+    }
 }
 .line-nav .nav-icon i {
     font-size: 1.15rem;
