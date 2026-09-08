@@ -1622,13 +1622,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const showToast = (message, duration = 2500) => {
+        let toast = document.getElementById('genieToast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'genieToast';
+            toast.className = 'genie-toast';
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toast._timer);
+        toast._timer = setTimeout(() => {
+            toast.classList.remove('show');
+        }, duration);
+    };
+
+    const isSeedSaved = (text) => {
+        if (!text || !Array.isArray(appState.plotSeeds) || appState.plotSeeds.length === 0) return false;
+        const trimmed = text.trim();
+        return appState.plotSeeds.some(s => {
+            const c = (s.content || '').trim();
+            if (!c) return false;
+            if (c === trimmed) return true;
+            // 短い場合は完全一致のみ、ある程度長い文章（20文字以上）は相互包含もチェック
+            if (c.length >= 20 && trimmed.length >= 20) {
+                if (trimmed.includes(c) || c.includes(trimmed)) return true;
+            }
+            return false;
+        });
+    };
+
     const saveSeed = (content) => {
-        if (!content || !content.trim()) return;
+        if (!content || !content.trim()) return false;
         if (!Array.isArray(appState.plotSeeds)) appState.plotSeeds = [];
-        appState.plotSeeds.push({ id: Date.now(), content: content.trim() });
+        const trimmed = content.trim();
+        if (isSeedSaved(trimmed)) {
+            return false; // 重複保存を防止
+        }
+        appState.plotSeeds.push({ id: Date.now(), content: trimmed });
         saveData();
         renderSeeds();
+        return true;
     };
+
 
     // --- Interaction ---
     if (userInput) {
@@ -1747,18 +1784,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 🌱 素材メモ保存ボタン（ジーニーの返答にのみ表示）
+        // 🌱 素材メモ保存ボタン（ジーニーの返答に表示）
         if (sender === 'genie' && text && text.trim()) {
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'bubble-actions genie-actions';
             const seedBtn = document.createElement('button');
             seedBtn.className = 'bubble-action-btn save-seed-btn';
-            seedBtn.innerHTML = '🌱 素材メモ';
-            seedBtn.title = 'このジーニーの返答を素材メモに保存';
-            seedBtn.addEventListener('click', () => {
-                saveSeed(text);
+            
+            const alreadySaved = isSeedSaved(text);
+            if (alreadySaved) {
                 seedBtn.textContent = '✓ 保存済み';
                 seedBtn.disabled = true;
+                seedBtn.classList.add('saved');
+            } else {
+                seedBtn.innerHTML = '🌱 素材メモ';
+                seedBtn.title = 'このジーニーの返答を素材メモに保存';
+            }
+
+            seedBtn.addEventListener('click', () => {
+                const success = saveSeed(text);
+                seedBtn.textContent = '✓ 保存済み';
+                seedBtn.disabled = true;
+                seedBtn.classList.add('saved');
+                if (success) {
+                    showToast('🌱 素材メモに保存しました！');
+                }
             });
             actionsDiv.appendChild(seedBtn);
             wrapper.querySelector('.message-content').appendChild(actionsDiv);
@@ -1770,12 +1820,25 @@ document.addEventListener('DOMContentLoaded', () => {
             actionsDiv.className = 'bubble-actions user-actions';
             const seedBtn = document.createElement('button');
             seedBtn.className = 'bubble-action-btn save-seed-btn';
-            seedBtn.innerHTML = '🌱 素材メモ';
-            seedBtn.title = 'この発言を素材メモに保存';
-            seedBtn.addEventListener('click', () => {
-                saveSeed(text);
+            
+            const alreadySaved = isSeedSaved(text);
+            if (alreadySaved) {
                 seedBtn.textContent = '✓ 保存済み';
                 seedBtn.disabled = true;
+                seedBtn.classList.add('saved');
+            } else {
+                seedBtn.innerHTML = '🌱 素材メモ';
+                seedBtn.title = 'この発言を素材メモに保存';
+            }
+
+            seedBtn.addEventListener('click', () => {
+                const success = saveSeed(text);
+                seedBtn.textContent = '✓ 保存済み';
+                seedBtn.disabled = true;
+                seedBtn.classList.add('saved');
+                if (success) {
+                    showToast('🌱 素材メモに保存しました！');
+                }
             });
             actionsDiv.appendChild(seedBtn);
             wrapper.querySelector('.message-content').appendChild(actionsDiv);
@@ -1787,6 +1850,30 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const addMessage = (text, sender, imageDataUrl) => {
+        let displayText = text;
+
+        // ジーニーの発言から [SEED: ...] または [素材メモ: ...] を自動検出して素材メモへ保存
+        if (sender === 'genie' && text) {
+            const seedRegex = /\[(?:SEED|素材メモ)[:：]\s*([\s\S]+?)\]/gi;
+            const seedMatches = [...text.matchAll(seedRegex)];
+            if (seedMatches.length > 0) {
+                let savedAny = false;
+                for (const match of seedMatches) {
+                    const seedContent = match[1].trim();
+                    if (seedContent) {
+                        if (saveSeed(seedContent)) {
+                            savedAny = true;
+                        }
+                    }
+                }
+                if (savedAny) {
+                    showToast('🌱 素材メモに自動保存しました！');
+                }
+                // チャット表示用テキストからはタグを除去
+                displayText = text.replace(seedRegex, '').trim();
+            }
+        }
+
         const timeStr = formatTime();
         const dateStr = getDateLabel(timeStr);
         // 直前の履歴と日付が違ったら区切り線を挿入
@@ -1795,8 +1882,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dateStr && dateStr !== lastDateStr) {
             renderDateSeparator(dateStr);
         }
-        appState.chatHistory.push({ text, sender, time: timeStr });
-        renderMessage(text, sender, timeStr, imageDataUrl);
+        appState.chatHistory.push({ text: displayText, sender, time: timeStr });
+        renderMessage(displayText, sender, timeStr, imageDataUrl);
         saveData();
         updateEntranceUI();
     };
@@ -2859,6 +2946,11 @@ ${historyContext}
 2. **資料室**：テキストファイルを投げ込むと自動的にあなたの記憶【資料室に保存された参考資料】に組み込まれる機能。「資料室に流し込んだよ」と言われたら「うん！ばっちり私の記憶に届いているよ！」と答えてください（「コピペで送って」と言ったり「そんな機能はない」と言ったりしないでください）。
 3. **本棚**：完成原稿が保管される場所。
 4. **素材メモ**：チャットの吹き出しから「🌱 素材メモ」ボタンで保存されたエピソードや一言が蓄積されるメモ帳。
+【素材メモへの自動保存ルール（超重要）】：
+- ユーザーから「これ素材メモに入れて」「メモしておいて」と頼まれたり、あなた自身が「素材メモに入れておくね！」「大切にとっておくね」と伝える場合は、返答の末尾に必ず以下のようにタグを付けてください：
+  `[SEED: 保存したいエピソード・名言・素材の要約]`
+- システムがこのタグを検知して自動的に素材メモへ記録します。タグは画面上では自動的に非表示になり、ユーザーには見えません。
+- 口先だけで「素材メモに入れておくね」と言ってタグを付け忘れると、実際には保存されませんので、必ず `[SEED: ...]` を末尾に付与してください。
 
 【心得（最重要）】
 1. **「モヤモヤ」を抱きしめる**：「う〜ん…」「言葉にするのが難しい」と言われたら「言葉にするのって難しいよね。焦らなくて大丈夫だよ！パッと思い浮かんだ言葉でもそのまま投げてみて！一緒にゆっくり形にしていこう」と優しく対応。

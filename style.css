@@ -1711,6 +1711,22 @@ body.dark-theme .pwa-desc {
     opacity: 0.85;
 }
 
+/* --- Save Seed Button States --- */
+.save-seed-btn.saved,
+.save-seed-btn:disabled {
+    background: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    border-color: #a5d6a7 !important;
+    cursor: default !important;
+    opacity: 0.95;
+}
+body.dark-theme .save-seed-btn.saved,
+body.dark-theme .save-seed-btn:disabled {
+    background: #1b382b !important;
+    color: #81c784 !important;
+    border-color: #2e7d32 !important;
+}
+
 /* --- Seeds Container in Canvas --- */
 .seeds-container {
     background: var(--bg-card, #ffffff);
@@ -1718,4 +1734,28 @@ body.dark-theme .pwa-desc {
     border-radius: 8px;
     padding: 10px;
 }
+
+/* --- Toast Notification --- */
+.genie-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-30px);
+    background: rgba(39, 174, 96, 0.95);
+    color: #ffffff;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.genie-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
 
