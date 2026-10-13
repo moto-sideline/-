@@ -973,35 +973,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     appState.onboardingStep = 1;
                     saveData();
                 } else {
-                    const lastUpdated = appState.updatedAt || Date.now();
+                    // 自動挨拶は廃止：ユーザーが開いた瞬間にすぐ書き込めるよう、静かに待機
                     if (!appState.updatedAt) {
                         appState.updatedAt = Date.now();
                         saveData();
-                    }
-                    const diffHours = (Date.now() - lastUpdated) / (1000 * 60 * 60);
-
-                    // 4時間以上空いていた場合のみ挨拶を表示
-                    if (diffHours >= 4) {
-                        const loadingEl = renderMessage("ジーニーが挨拶を紡いでいます... 🧞‍♂️✨", "genie", formatTime());
-                        const apiKey = localStorage.getItem('geminiApiKey');
-                        
-                        let welcomeText = null;
-                        if (apiKey) {
-                            welcomeText = await generateWelcomeGreeting(apiKey.trim(), diffHours);
-                        }
-                        
-                        if (!welcomeText) {
-                            welcomeText = getFallbackGreeting();
-                        }
-                        
-                        // ローディング要素を削除して、会話履歴として保存・レンダリング
-                        if (loadingEl && loadingEl.parentNode) {
-                            loadingEl.parentNode.removeChild(loadingEl);
-                        }
-                        
-                        if (welcomeText) {
-                            addMessage(welcomeText, 'genie');
-                        }
                     }
                 }
 
@@ -1886,98 +1861,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEntranceUI();
     };
 
-    const getFallbackGreeting = () => {
-        const nameStr = appState.userName ? `${formatName(appState.userName)}` : '';
-        const namePrefix = nameStr ? `${nameStr}、` : '';
+    // 起動時の自動挨拶機能は廃止（ユーザーの執筆テンポ優先のため、ユーザー発言起点で応答する設計へ刷新）
 
-        const calmGreetings = [
-            `${namePrefix}来てくれて嬉しいよ。今日もマイペースにいこうね。`,
-            `${namePrefix}何か話したいことがあれば、いつでも気軽に声かけてね。`,
-            `${namePrefix}のんびりいこう。気が向いたらいつでもどうぞ。`,
-            `${namePrefix}一息ついていかない？ 今日もよろしくね。`
-        ];
-        const index = Math.floor(Math.random() * calmGreetings.length);
-        return calmGreetings[index];
-    };
-
-    const generateWelcomeGreeting = async (apiKey, diffHours = 4) => {
-        const historyLength = Math.min(appState.chatHistory.length, 3);
-        const recent = appState.chatHistory.slice(-historyLength);
-        let historyContext = "";
-        if (recent.length > 0) {
-            historyContext = "\n【直前の会話の流れ】\n" + recent.map(msg => `${msg.sender === 'user' ? 'ユーザー' : 'ジーニー'}: ${msg.text}`).join('\n');
-        }
-
-        const nameStr = appState.userName ? `${formatName(appState.userName)}` : '';
-        const isLongAbsence = diffHours >= 48; // 2日（48時間）以上空いているか
-        const daysCount = Math.floor(diffHours / 24);
-
-        const systemInstruction = `
-あなたはKindle出版をサポートするAIアシスタント『ジーニー』です。魔法のランプの精霊であり、ユーザーの「一番の親友・理解者・伴走者」です。
-落ち着いた自然体のトーン（過剰なハイテンションや「わぁ！」「やっほー！」等の大げさな感嘆文は使わない）で、親しい友人のように話します。
-今、ユーザーがアプリを開きました。前回のアクセスからの経過時間は【${diffHours < 24 ? Math.round(diffHours) + '時間' : daysCount + '日'}】です。
-
-【挨拶の重要ルール】
-- ユーザーの生活リズム（早起き、夜勤、昼型など）は人それぞれです。時計の時刻だけで「おはよう」「お疲れ様」「遅くまで」などと勝手に決めつけないでください。
-- 直前の会話の流れがある場合はそれに軽く触れても良いですが、なければ「来てくれて嬉しいよ」「今日もマイペースにいこう」といった、何時に見ても心温まる落ち着いた言葉（1〜2文）でお出迎えしてください。
-${isLongAbsence ? `- 2日以上（${daysCount}日）間が空いているため、「少し間が空いたね」「また会えて嬉しいよ」といった自然な再会の言葉を添えても構いません。` : `- 前回からあまり時間が空いていないため、「久しぶり」「お久しぶり」は使わないでください。`}
-- 冒頭に「！」や「！」付きの感嘆詞（「わぁ！」「おっ！」「やっほー！」など）を付けず、大げさにはしゃがない自然な日本語で話しかけてください。
-- ユーザーの呼び名は「${nameStr}」です。呼ぶ場合は自然に文頭または文中で「${nameStr}」と添えてください（「マスター」「ご主人様」や本名フルネームは禁止）。
-${historyContext}
-        `.trim();
-
-        const requestBody = {
-            systemInstruction: { parts: [{ text: systemInstruction }] },
-            contents: [{ role: 'user', parts: [{ text: "お出迎えの自然な一言をかけてね。" }] }],
-            generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1500
-            }
-        };
-
-        const primaryModel = getGeminiModel();
-        const failedModels = new Set();
-
-        const attemptGreeting = async (currentModel, retryCount = 0) => {
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-                const data = await response.json();
-                if (data.error) {
-                    const errMsg = data.error.message || "";
-                    const errStatus = data.error.status || "";
-                    console.warn(`[Genie Greeting] API Error on model ${currentModel}:`, data.error);
-                    const isCongested = errMsg.includes("high demand") || errMsg.includes("quota") || errMsg.includes("limit") || response.status === 429 || response.status === 503;
-                    const isModelUnavailable = isGeminiModelUnavailableError(errMsg, errStatus) || (errStatus === "INVALID_ARGUMENT" && /model|unsupported|not supported|not found/i.test(errMsg));
-                    if ((isCongested || isModelUnavailable) && retryCount < 2) {
-                        failedModels.add(currentModel);
-                        const fallbackModel = await discoverAndSaveBestGeminiModel(apiKey, failedModels);
-                        if (fallbackModel && !failedModels.has(fallbackModel)) {
-                            return await attemptGreeting(fallbackModel, retryCount + 1);
-                        }
-                    }
-                    return null;
-                }
-                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts) {
-                    const parts = data.candidates[0].content.parts;
-                    let textParts = parts.filter(p => !p.thought).map(p => p.text || "");
-                    let text = textParts.join("").trim();
-                    if (!text && parts[0] && parts[0].text) text = parts[0].text;
-                    text = text.replace(/^(?:SPECIAL INSTRUCTION|thought|思考):.*?\n/is, "").trim();
-                    text = cleanLeadingExclamations(text);
-                    if (text && text.length > 3) return text;
-                }
-            } catch (e) {
-                console.error("Failed to generate custom greeting:", e);
-            }
-            return null;
-        };
-
-        return await attemptGreeting(primaryModel);
-    };
 
     // 入り口の台本ロジックは廃止されました（AIフル解放）
     // eslint-disable-next-line no-unused-vars
