@@ -1,1 +1,2 @@
-﻿const APP_VERSION = 'v1.0.0 Stable';
+const APP_VERSION = '1.0.0';
+const APP_STAGE = 'Stable';

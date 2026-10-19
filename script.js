@@ -96,23 +96,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Gemini モデル管理（ListModels APIによる自動検出 + 優先度フォールバック）
     const EXCLUDED_MODELS = new Set([
         'gemini-1.0-pro',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-8b',
+        'gemini-1.5-pro',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
         'embedding-001',
         'text-embedding-004',
         'aqa'
     ]);
 
     const PREFERRED_MODEL_ORDER = [
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-lite',
-        'gemini-1.5-flash',
-        'gemini-1.5-flash-8b',
-        'gemini-1.5-pro'
+        'gemini-3.5-flash',
+        'gemini-2.5-flash',
+        'gemini-3.5-pro',
+        'gemini-2.5-pro'
     ];
-    const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+    const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
 
     const getGeminiModel = () => {
         const stored = localStorage.getItem('geminiModel');
-        if (!stored || EXCLUDED_MODELS.has(stored) || stored.startsWith('gemini-2.5') || stored.startsWith('gemini-3.')) {
+        if (!stored || EXCLUDED_MODELS.has(stored)) {
             localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
             return DEFAULT_GEMINI_MODEL;
         }
@@ -120,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 起動時に確実に最速安定モデルに初期化
-    if (EXCLUDED_MODELS.has(localStorage.getItem('geminiModel')) || !localStorage.getItem('geminiModel') || (localStorage.getItem('geminiModel') || '').startsWith('gemini-2.5') || (localStorage.getItem('geminiModel') || '').startsWith('gemini-3.')) {
+    if (EXCLUDED_MODELS.has(localStorage.getItem('geminiModel')) || !localStorage.getItem('geminiModel')) {
         localStorage.setItem('geminiModel', DEFAULT_GEMINI_MODEL);
     }
 
@@ -349,6 +353,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 300);
     };
 
+    // HTMLエスケープ処理（XSS防止）
+    const escapeHtml = (str) => {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+
     // 敬称（さん、さま等）の重複を防ぐヘルパー関数（異常な文章は弾く安全ガード付き）
     const formatName = (name) => {
         if (!name || typeof name !== 'string') return '';
@@ -370,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 2. 挨拶直後の返答の場合は、冒頭の重複再会挨拶（「おかえり」「おはよう」等）をカット
         if (isReplyAfterGreeting) {
-            cleaned = cleaned.replace(/^(?:お?久しぶり|おかえり|おかえりなさい|おはよう|こんにちは|こんばんは|お疲れ様|おつかれさま)[！!♪〜~、,，\s]*(?:[ぁ-んァ-ンーa-zA-Z0-9一-龠々〆〤]+(?:さん|ちゃん|くん|君|様)?[！!♪〜~、,，\s]*)?/gi, '').trim();
+            cleaned = cleaned.replace(/^(?:お?久しぶり(?:だね|です)?|おかえり(?:なさい)?|おはよう(?:ございます)?|こんにちは|こんばんは|お疲れ様(?:です)?|おつかれさま(?:です)?)[！!♪〜~、,，\s]*/i, '').trim();
         }
 
         // 3. 通常の会話中の場合、冒頭の不自然な名前呼びかけ（例：「もとさん！」「、もとさん、」等）を完全カット
@@ -1424,10 +1439,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `
                     <div class="archive-item" data-id="${m.id}">
                         <div class="archive-item-header">
-                            <span class="archive-item-title">${m.name}</span>
+                            <span class="archive-item-title">${escapeHtml(m.name)}</span>
                             <span class="archive-item-meta">${date}</span>
                         </div>
-                        <div class="archive-item-snippet">${snippet.replace(/</g, '&lt;')}</div>
+                        <div class="archive-item-snippet">${escapeHtml(snippet)}</div>
                         <div class="archive-item-actions">
                             <button type="button" class="archive-delete-btn" data-delete-id="${m.id}">削除</button>
                         </div>
@@ -1705,15 +1720,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const wrapper = document.createElement('div');
         wrapper.className = `message-wrapper ${sender}`;
         
+        const safeText = escapeHtml(text || '').replace(/\n/g, '<br>');
+        const safeImageDataUrl = (imageDataUrl && typeof imageDataUrl === 'string' && imageDataUrl.startsWith('data:image/')) ? imageDataUrl : null;
+
         let innerHTML = '';
         if (sender === 'user') {
             // 画像バブルとテキストバブルを両方組み立てる
             let bubbleInner = '';
-            if (imageDataUrl) {
-                bubbleInner += `<img class="bubble-image" src="${imageDataUrl}" alt="送信した画像" data-src="${imageDataUrl}">`;
+            if (safeImageDataUrl) {
+                bubbleInner += `<img class="bubble-image" src="${safeImageDataUrl}" alt="送信した画像" data-src="${safeImageDataUrl}">`;
             }
             if (text) {
-                bubbleInner += (imageDataUrl ? `<div style="font-size:0.92rem;padding:4px 6px 2px;">` : '') + text.replace(/\n/g, '<br>') + (imageDataUrl ? '</div>' : '');
+                bubbleInner += (safeImageDataUrl ? `<div style="font-size:0.92rem;padding:4px 6px 2px;">` : '') + safeText + (safeImageDataUrl ? '</div>' : '');
             }
             innerHTML = `
                 <div class="message-content">
@@ -1722,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="read">既読</span>
                             <span class="time">${getTimeOnlyDisplay(timeStr)}</span>
                         </div>
-                        <div class="bubble user${imageDataUrl ? ' has-image' : ''}">${bubbleInner}</div>
+                        <div class="bubble user${safeImageDataUrl ? ' has-image' : ''}">${bubbleInner}</div>
                     </div>
                 </div>
             `;
@@ -1731,7 +1749,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="message-content">
                     <div class="sender-name">ジーニー</div>
                     <div class="bubble-row">
-                        <div class="bubble genie">${text.replace(/\n/g, '<br>')}</div>
+                        <div class="bubble genie">${safeText}</div>
                         <div class="message-meta">
                             <span class="time">${getTimeOnlyDisplay(timeStr)}</span>
                         </div>
@@ -1743,14 +1761,14 @@ document.addEventListener('DOMContentLoaded', () => {
         wrapper.innerHTML = innerHTML;
 
         // 画像クリックでライトボックス表示
-        if (imageDataUrl) {
+        if (safeImageDataUrl) {
             const img = wrapper.querySelector('.bubble-image');
             if (img) {
                 img.addEventListener('click', () => {
                     const lb = document.getElementById('imageLightbox');
                     const lbImg = document.getElementById('imageLightboxImg');
                     if (lb && lbImg) {
-                        lbImg.src = imageDataUrl;
+                        lbImg.src = safeImageDataUrl;
                         lb.classList.remove('hidden');
                     }
                 });
@@ -1958,9 +1976,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 addMessage(reply, 'genie');
 
                 // プロットを回答から自動抽出して左キャンバスに反映
-                const plotLines = reply.split('\n').filter(line => line.match(/^(第.章|プロローグ|エピローグ|[\d]+\.)/));
+                const plotRegex = /^[\s*#>\-・]*(?:\*\*)?(第[0-9０-９一二三四五六七八九十]+章|プロローグ|エピローグ)/;
+                const plotLines = reply.split('\n').filter(line => plotRegex.test(line));
                 if (plotLines.length >= 3) {
-                    appState.plots = plotLines.map(p => p.replace(/^.*?[:\uff1a\s]/, '').trim()).filter(p => p);
+                    appState.plots = plotLines.map(p => p.replace(/^[\s*#>\-・]+/, '').replace(/\*\*+\s*$/, '').trim()).filter(p => p);
                     if (appState.plots.length === 0) appState.plots = plotLines;
                     renderPlots();
                     updatePreview(`【${appState.bookTheme || '新刊'}のプロット】\nジーニーと一緒に紡ぎ出しました！`);
@@ -1975,9 +1994,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="preview-item">
                 <span class="preview-label">【ジーニーの執筆メモ】</span>
                 <p>${text}</p>
-                <div class="genie-insight">
-                    ✨ 出版のヒント：このエピソードは、第1章の「共感」を呼ぶパートで非常に強力な武器になります。
-                </div>
             </div>
         `;
         appState.preview = previewContent + (appState.preview || '');
@@ -2141,7 +2157,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportBackup = () => {
         const backupData = {
             appState: appState,
-            geminiApiKey: localStorage.getItem('geminiApiKey') || '',
             geminiModel: getGeminiModel(),
             theme: localStorage.getItem('theme') || 'light'
         };
@@ -2165,9 +2180,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     appState = imported.appState;
                     normalizeAppState();
                     
-                    if (imported.geminiApiKey) {
-                        localStorage.setItem('geminiApiKey', imported.geminiApiKey);
-                    }
                     if (imported.geminiModel) {
                         localStorage.setItem('geminiModel', imported.geminiModel);
                     }
@@ -2386,6 +2398,15 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAll();
             closeApiSettingsModal();
             alert('設定を保存したよ！続きから対話できます。');
+        });
+    }
+
+    if (apiModelSelect) {
+        apiModelSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val && !EXCLUDED_MODELS.has(val)) {
+                localStorage.setItem('geminiModel', val);
+            }
         });
     }
 
